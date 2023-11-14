@@ -6,4 +6,4 @@ C++ SDK for FAIRINO collaborative robots for Linux operating systems. Please dec
 
 Documentation
 ----------------
-Please check [C++ SDK手册](https://fair-documentation.readthedocs.io/en/latest/SDKManual/cpp_intro.html)。
+Please check [C++ SDK](https://fair-documentation.readthedocs.io/en/latest/SDKManual/cpp_intro.html)。
