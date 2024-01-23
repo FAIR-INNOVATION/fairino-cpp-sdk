@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-	FRRobot robot;                
-	robot.RPC("192.168.58.2");    
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	char program_name[64] = "/fruser/pptest.lua";
 	char loaded_name[64] = "";
@@ -33,7 +33,7 @@ int main(void)
 
 	robot.ProgramLoad(program_name);
 	robot.ProgramRun();
-	std::this_thread::sleep_for(std::chrono::milliseconds(3000));     //ms
+	std::this_thread::sleep_for(std::chrono::milliseconds(3000));     //单位ms
 	robot.ProgramPause();
 	robot.GetProgramState(&state);
 	printf("program state:%u\n", state);

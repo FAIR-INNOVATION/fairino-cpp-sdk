@@ -15,14 +15,14 @@
 
 using namespace std;
 
-// Note: Before running this program, verify that the end load is configured correctly and that you can switch into drag teach-in mode
+//注意：运行此程序前，请确认末端负载是否配置正确以及能否切入拖动示教模式
 int main(void)
 {
-	FRRobot robot;                
-	robot.RPC("192.168.58.2");     
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	int type = 1;
-	char name[30] = "tpd2023";
+	char name[30] = "tpd2023_1226";
 	int period_ms = 4;
 	uint16_t di_choose = 0;
 	uint16_t do_choose = 0;
@@ -33,7 +33,7 @@ int main(void)
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	robot.DragTeachSwitch(1);
 	robot.SetTPDStart(type, name, period_ms, di_choose, do_choose);
-	std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+	std::this_thread::sleep_for(std::chrono::milliseconds(20000));
 	robot.SetWebTPDStop();
 	robot.DragTeachSwitch(0);
 

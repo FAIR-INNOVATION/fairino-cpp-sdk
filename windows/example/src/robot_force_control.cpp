@@ -18,7 +18,7 @@ using namespace std;
 int main(void)
 {
     FRRobot robot;                 
-    robot.RPC("192.168.58.2");     
+    robot.RPC("192.168.58.2");    
 
     uint8_t flag = 1;
     uint8_t sensor_id = 1;
@@ -50,26 +50,26 @@ int main(void)
     j3 = {-107.686,-106.385,-114.325,-48.895,89.167,30.258};
     j4 = {-63.536,-91.994,-122.111,-55.805,89.952,28.389};
 
-    desc_p1.tran.x = 116.764;
-    desc_p1.tran.y = -522.248;
-    desc_p1.tran.z = 129.517;
-    desc_p1.rpy.rx = 178.757;
-    desc_p1.rpy.ry = -2.399;
-    desc_p1.rpy.rz = 176.839;
+    desc_p1.tran.x = -433.06;
+    desc_p1.tran.y = 212.862;
+    desc_p1.tran.z = 419.955;
+    desc_p1.rpy.rx = 179.056;
+    desc_p1.rpy.ry = 0.422;
+    desc_p1.rpy.rz = 48.117;
 
-    desc_p2.tran.x = -291.312;
-    desc_p2.tran.y = -509.566;
-    desc_p2.tran.z = 54.578;
-    desc_p2.rpy.rx = -178.776;
-    desc_p2.rpy.ry = -1.005;
-    desc_p2.rpy.rz = 133.398;
+    desc_p2.tran.x = -341.078;
+    desc_p2.tran.y = -98.77;
+    desc_p2.tran.z = 369.866;
+    desc_p2.rpy.rx = -178.888;
+    desc_p2.rpy.ry = 0.441;
+    desc_p2.rpy.rz = 84.562;
 
-    desc_p3.tran.x = -286.293;
-    desc_p3.tran.y = -457.724;
-    desc_p3.tran.z = 47.845;
-    desc_p3.rpy.rx = -179.239;
-    desc_p3.rpy.ry = -0.524;
-    desc_p3.rpy.rz = 132.049;
+    desc_p3.tran.x = -442.474;
+    desc_p3.tran.y = -290.893;
+    desc_p3.tran.z = 324.923;
+    desc_p3.rpy.rx = -174.106;
+    desc_p3.rpy.ry = -1.298;
+    desc_p3.rpy.rz = 109.225;
 
     desc_p4.tran.x = 81.396;
     desc_p4.tran.y = -455.715;
@@ -80,11 +80,14 @@ int main(void)
 
     ft.fz = -10.0;
 
-    robot.MoveJ(&j1,&desc_p1,9,0,100.0,180.0,100.0,&epos,-1.0,0,&offset_pos);
+    // robot.MoveJ(&j1,&desc_p1,9,0,100.0,180.0,100.0,&epos,-1.0,0,&offset_pos);
+    robot.MoveCart(&desc_p1, 0, 0, 100.0, 100.0, 100.0, -1.0, -1);
     robot.FT_Control(flag, sensor_id, select, &ft, ft_pid, adj_sign, ILC_sign, max_dis, max_ang);
-    robot.MoveL(&j2,&desc_p2,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
-    robot.MoveL(&j3,&desc_p3,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
-    robot.MoveL(&j4,&desc_p4,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
+    // robot.MoveL(&j2,&desc_p2,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
+    // robot.MoveL(&j3,&desc_p3,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
+    // robot.MoveL(&j4,&desc_p4,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
+    robot.MoveCart(&desc_p2, 0, 0, 100.0, 100.0, 100.0, -1.0, -1);
+    robot.MoveCart(&desc_p3, 0, 0, 100.0, 100.0, 100.0, -1.0, -1);
     flag = 0;
     robot.FT_Control(flag, sensor_id, select, &ft, ft_pid, adj_sign, ILC_sign, max_dis, max_ang);
 

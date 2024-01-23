@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-	FRRobot robot;                 
-	robot.RPC("192.168.58.2");    
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	float yangle, zangle;
 	int flag = 0;
@@ -46,9 +46,6 @@ int main(void)
 
 	robot.GetActualJointPosDegree(flag, &j_deg);
 	printf("joint pos deg:%f,%f,%f,%f,%f,%f\n", j_deg.jPos[0], j_deg.jPos[1], j_deg.jPos[2], j_deg.jPos[3], j_deg.jPos[4], j_deg.jPos[5]);
-
-	robot.GetActualJointPosRadian(flag, &j_rad);
-	printf("joint pos rad:%f,%f,%f,%f,%f,%f\n", j_rad.jPos[0], j_rad.jPos[1], j_rad.jPos[2], j_rad.jPos[3], j_rad.jPos[4], j_rad.jPos[5]);
 
 	robot.GetActualTCPPose(flag, &tcp);
 	printf("tcp pose:%f,%f,%f,%f,%f,%f\n", tcp.tran.x, tcp.tran.y, tcp.tran.z, tcp.rpy.rx, tcp.rpy.ry, tcp.rpy.rz);
@@ -90,7 +87,8 @@ int main(void)
 	robot.GetDefaultTransVel(&vel);
 	printf("trans vel:%f\n", vel);
 
-	if (0)
+	//std::this_thread::sleep_for(std::chrono::seconds(3));
+	if (1)
 	{
 		int retval = 0;
 		float joint_speed_deg[6] = {0};
@@ -134,26 +132,6 @@ int main(void)
 		DescPose start_cart_pose;
 		memset(&start_cart_pose, 0, sizeof(DescPose));
 
-		retval = robot.GetForwardKin(&start_joint_pose, &start_cart_pose);
-		printf("GetForwardKin retval is: %d \n", retval);
-		printf("desc_pos:%f,%f,%f,%f,%f,%f\n",start_cart_pose.tran.x,start_cart_pose.tran.y,start_cart_pose.tran.z,
-											start_cart_pose.rpy.rx,start_cart_pose.rpy.ry,start_cart_pose.rpy.rz);
-
-		uint8_t solve = 0;
-		retval = robot.GetInverseKinHasSolution(0, &start_cart_pose, &start_joint_pose, &solve);
-		printf("GetInverseKinHasSolution retval is: %d, solve is: %u\n", retval, solve);
-
-		retval = robot.GetInverseKinRef(0, &start_cart_pose, &start_joint_pose, &start_joint_pose);
-		printf("GetInverseKinRef retval is: %d \n", retval);
-		printf("xyz is: %f, %f, %f; rpy is: %f, %f, %f\n", start_joint_pose.jPos[0], start_joint_pose.jPos[1], start_joint_pose.jPos[2],  \
-													start_joint_pose.jPos[3], start_joint_pose.jPos[4], start_joint_pose.jPos[5]);
-
-
-		memset(&start_joint_pose, 0, sizeof(JointPos));
-		retval = robot.GetInverseKin(0, &start_cart_pose, -1, &start_joint_pose);
-		printf("GetInverseKin retval is: %d \n", retval);
-		printf("xyz is: %f, %f, %f; rpy is: %f, %f, %f\n", start_joint_pose.jPos[0], start_joint_pose.jPos[1], start_joint_pose.jPos[2],  \
-													start_joint_pose.jPos[3], start_joint_pose.jPos[4], start_joint_pose.jPos[5]);
 		
 		uint8_t motion_done = 0;
 		retval = robot.GetRobotMotionDone(&motion_done);
@@ -168,7 +146,7 @@ int main(void)
 		retval = robot.GetMotionQueueLength(&que_len);
 		printf("GetMotionQueueLength retval is: %d, queue length is: %d \n", retval, que_len);
 		
-		char point_name[64] = "111";
+		char point_name[64] = "1";
 		float point_data[20] = {0};
 		retval = robot.GetRobotTeachingPoint(point_name, point_data);
 		printf("GetRobotTeachingPoint retval is: %d \n", retval);
@@ -179,7 +157,7 @@ int main(void)
 			}
 			printf("point data %d is: %f.", i, point_data[i]);
 		}
-
+		printf("\n");
 
 		for (int i = 1; i < 21; i++)
 		{

@@ -18,8 +18,8 @@ using namespace std;
 int main(void)
 {
 	printf("start to debug\n");
-	FRRobot robot;                 //Instantiate the robot object
-	robot.RPC("192.168.58.2");     //Establish communication connection with robot controller
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	char ip[64] = "";
 	char version[64] = "";
@@ -31,7 +31,7 @@ int main(void)
 	printf("controller ip:%s\n", ip);
 
 	robot.Mode(1);
-	this_thread::sleep_for(std::chrono::milliseconds(1000));   //unit : ms
+	this_thread::sleep_for(std::chrono::milliseconds(1000));   //单位ms
 	robot.DragTeachSwitch(1);
 	robot.IsInDragTeach(&state);
 	printf("drag state :%u\n", state);

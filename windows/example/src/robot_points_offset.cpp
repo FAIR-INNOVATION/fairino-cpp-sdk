@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-	FRRobot robot;                 
-	robot.RPC("192.168.58.2");    
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	JointPos j1, j2;
 	DescPose desc_pos1, desc_pos2, offset_pos, offset_pos1;
@@ -32,21 +32,31 @@ int main(void)
 	memset(&offset_pos1, 0, sizeof(DescPose));
 	memset(&epos, 0, sizeof(ExaxisPos));
 
-	j1 = { 114.578, -117.798, -97.745, -54.436, 90.053, -45.216 };
-	desc_pos1.tran.x = -140.418;
-	desc_pos1.tran.y = 619.351;
-	desc_pos1.tran.z = 198.369;
-	desc_pos1.rpy.rx = -179.948;
-	desc_pos1.rpy.ry = 0.023;
-	desc_pos1.rpy.rz = 69.793;
+	j1.jPos[0] = -78.011;
+	j1.jPos[1] = -93.495;
+	j1.jPos[2] = -110.064;
+	j1.jPos[3] = -60.077;
+	j1.jPos[4] = 65.601;
+	j1.jPos[5] = 21.277;
+	desc_pos1.tran.x = -36.435;
+	desc_pos1.tran.y = -518.325;
+	desc_pos1.tran.z = 339.133;
+	desc_pos1.rpy.rx = -164.426;
+	desc_pos1.rpy.ry = -20.019;
+	desc_pos1.rpy.rz = 166.57;
 
-	j2 = { 115.401, -105.206, -117.959, -49.727, 90.054, -45.222 };
-	desc_pos2.tran.x = -95.586;
-	desc_pos2.tran.y = 504.143;
-	desc_pos2.tran.z = 186.880;
-	desc_pos2.rpy.rx = 178.001;
-	desc_pos2.rpy.ry = 2.091;
-	desc_pos2.rpy.rz = 70.585;
+	j2.jPos[0] = -34.08;
+	j2.jPos[1] = -93.504;
+	j2.jPos[2] = -110.073;
+	j2.jPos[3] = -66.142;
+	j2.jPos[4] = 91.713;
+	j2.jPos[5] = 21.167;
+	desc_pos2.tran.x = 350.773;
+	desc_pos2.tran.y = -356.852;
+	desc_pos2.tran.z = 318.755;
+	desc_pos2.rpy.rx = 179.643;
+	desc_pos2.rpy.ry = 1.699;
+	desc_pos2.rpy.rz = -145.248;
 
 	offset_pos1.tran.x = 0;
 	offset_pos1.tran.y = 0;
@@ -57,9 +67,9 @@ int main(void)
 
 	int tool = 0;
 	int user = 0;
-	float vel = 100.0;
+	float vel = 70.0;
 	float acc = 100.0;
-	float ovl = 100.0;
+	float ovl = 70.0;
 	float blendT = -1.0;
 	float blendR = 0.0;
 	uint8_t flag = 0;
@@ -67,14 +77,23 @@ int main(void)
 
 	robot.SetSpeed(20);
 
-	robot.MoveJ(&j1, &desc_pos1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
-	robot.MoveJ(&j2, &desc_pos2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
-	std::this_thread::sleep_for(std::chrono::milliseconds(2000));    //ms
-	robot.PointsOffsetEnable(type, &offset_pos1);
-	robot.MoveJ(&j1, &desc_pos1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
-	int ret = robot.MoveJ(&j2, &desc_pos2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
-	printf("ret = %d\n", ret);
-	robot.PointsOffsetDisable();
+	int ret = 0;
+	ret = robot.MoveJ(&j1, &desc_pos1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+	printf("MoveJ ret = %d\n", ret);
+	ret = robot.MoveJ(&j2, &desc_pos2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+	printf("MoveJ ret = %d\n", ret);
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(2000));    //单位ms
+	ret = robot.PointsOffsetEnable(type, &offset_pos1);
+	printf("PointsOffsetEnable ret is:%d\n", ret);
+
+	ret = robot.MoveJ(&j1, &desc_pos1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+	printf("MoveJ ret = %d\n", ret);
+	ret = robot.MoveJ(&j2, &desc_pos2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+	printf("MoveJ ret = %d\n", ret);
+
+	ret = robot.PointsOffsetDisable();
+	printf("PointsOffsetDisable ret is:%d\n", ret);
 
 	return 0;
 }

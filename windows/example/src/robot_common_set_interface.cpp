@@ -15,8 +15,8 @@
 using namespace std;
 int main(void)
 {
-	FRRobot robot;			   // Instantiate the robot object
-	robot.RPC("192.168.58.2"); // Establish communication connection with robot controller
+	FRRobot robot;			   // 实例化机器人对象
+	robot.RPC("192.168.58.2"); // 与机器人控制器建立通信连接
 
 	int i;
 	float value;
@@ -39,14 +39,14 @@ int main(void)
 		memset(&tool0_pose, 0, sizeof(DescPose));
 		//
 		printf("SetToolPoint start\n");
-		//std::this_thread::sleep_for(std::chrono::seconds(3));
+		std::this_thread::sleep_for(std::chrono::seconds(3));
 		for (int i = 1; i < 7; i++)
 		{
 			retval = robot.SetToolPoint(i);
 			printf("SetToolPoint retval is: %d\n", retval);
-			//std::this_thread::sleep_for(std::chrono::seconds(3));
+			// std::this_thread::sleep_for(std::chrono::seconds(3));
 		}
-		//std::this_thread::sleep_for(std::chrono::seconds(3));
+		// std::this_thread::sleep_for(std::chrono::seconds(3));
 		printf("SetToolPoint end\n");
 		retval = robot.ComputeTool(&tool0_pose);
 		printf("ComputeTool retval is: %d\n", retval);
@@ -69,14 +69,14 @@ int main(void)
 		DescPose extcp_0_pose;
 		memset(&extcp_0_pose, 0, sizeof(DescPose));
 		printf("SetExTCPPoint start\n");
-		//std::this_thread::sleep_for(std::chrono::seconds(3));
+		// std::this_thread::sleep_for(std::chrono::seconds(3));
 		for (int i = 1; i < 7; i++)
 		{
 			retval = robot.SetExTCPPoint(i);
 			printf("SetExTCPPoint retval is: %d\n", retval);
 			//std::this_thread::sleep_for(std::chrono::seconds(3));
 		}
-		//std::this_thread::sleep_for(std::chrono::seconds(3));
+		// std::this_thread::sleep_for(std::chrono::seconds(3));
 		printf("SetExTCPPoint end\n");
 		retval = robot.ComputeExTCF(&extcp_0_pose);
 		printf("ComputeExTCF retval is: %d\n", retval);
@@ -92,8 +92,20 @@ int main(void)
 		}
 		retval = robot.ComputeWObjCoord(0, &wobj_0_pose);
 		printf("ComputeWObjCoord retval is: %d\n", retval);
-		printf("xyz is: %f, %f, %f; rpy is: %f, %f, %f\n", wobj_0_pose.tran.x, wobj_0_pose.tran.y, wobj_0_pose.tran.z,  \
-	 												wobj_0_pose.rpy.rx, wobj_0_pose.rpy.ry, wobj_0_pose.rpy.rz);
+		printf("xyz is: %f, %f, %f; rpy is: %f, %f, %f\n", wobj_0_pose.tran.x, wobj_0_pose.tran.y, wobj_0_pose.tran.z,
+			   wobj_0_pose.rpy.rx, wobj_0_pose.rpy.ry, wobj_0_pose.rpy.rz);
+	}
+	if (0)
+	{
+		retval = robot.SetLoadWeight(0.1);
+		printf("SetLoadWeight retval is: %d\n", retval);
+
+		coord.x = 0.1;
+		coord.y = 0.1;
+		coord.z = 0.1;
+
+		retval = robot.SetLoadCoord(&coord);
+		printf("SetLoadCoord retval is: %d\n", retval);
 	}
 	if (0)
 	{
@@ -112,16 +124,6 @@ int main(void)
 			robot.GetSysVarValue(i, &value);
 			printf("sys value:%f\n", value);
 		}
-
-		// retval = robot.SetLoadWeight(0.1);
-		// printf("SetLoadWeight retval is: %d\n", retval);
-
-		// coord.x = 0.1;
-		// coord.y = 0.1;
-		// coord.z = 0.1;
-
-		// retval = robot.SetLoadCoord(&coord);
-		// printf("SetLoadCoord retval is: %d\n", retval);
 
 		tool_id = 10;
 		t_coord.tran.x = 1.0;

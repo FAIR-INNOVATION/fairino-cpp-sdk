@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-	FRRobot robot;                 
-	robot.RPC("192.168.58.2");     
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	JointPos j1, j2, j3, j4;
 	DescPose desc_pos1, desc_pos2, desc_pos3, desc_pos4, offset_pos;
@@ -35,43 +35,63 @@ int main(void)
 	memset(&offset_pos, 0, sizeof(DescPose));
 	memset(&epos, 0, sizeof(ExaxisPos));
 
-	j1 = { { 72.577, -67.27, 119.251, -136.726, -84.359, 9.484 } };
-	desc_pos1.tran.x = -43;
-	desc_pos1.tran.y = -510.509;
-	desc_pos1.tran.z = 124.369;
-	desc_pos1.rpy.rx = 173.868;
-	desc_pos1.rpy.ry = 4.672;
-	desc_pos1.rpy.rz = 152.584;
+j1.jPos[0] = -78.011;
+	j1.jPos[1] = -93.495;
+	j1.jPos[2] = -110.064;
+	j1.jPos[3] = -60.077;
+	j1.jPos[4] = 65.601;
+	j1.jPos[5] = 21.277;
+	desc_pos1.tran.x = -36.435;
+	desc_pos1.tran.y = -518.325;
+	desc_pos1.tran.z = 339.133;
+	desc_pos1.rpy.rx = -164.426;
+	desc_pos1.rpy.ry = -20.019;
+	desc_pos1.rpy.rz = 166.57;
 
-	j2 = { { 96.764, -79.41, 119.251, -124.725, -86.395, 9.491 } };
-	desc_pos2.tran.x = 163.37;
-	desc_pos2.tran.y = -458.036;
-	desc_pos2.tran.z = 208.202;
-	desc_pos2.rpy.rx = 174.353;
-	desc_pos2.rpy.ry = 2.698;
-	desc_pos2.rpy.rz = 176.979;
+	j2.jPos[0] = -34.08;
+	j2.jPos[1] = -93.504;
+	j2.jPos[2] = -110.073;
+	j2.jPos[3] = -66.142;
+	j2.jPos[4] = 91.713;
+	j2.jPos[5] = 21.167;
+	desc_pos2.tran.x = 350.773;
+	desc_pos2.tran.y = -356.852;
+	desc_pos2.tran.z = 318.755;
+	desc_pos2.rpy.rx = 179.643;
+	desc_pos2.rpy.ry = 1.699;
+	desc_pos2.rpy.rz = -145.248;
 
-	j3 = { { 127.379, -97.378, 119.244, -109.431, -80.629, 9.568 } };
-	desc_pos3.tran.x = 342.727;
-	desc_pos3.tran.y = -253.774;
-	desc_pos3.tran.z = 323.464;
-	desc_pos3.rpy.rx = 176.001;
-	desc_pos3.rpy.ry = 8.822;
-	desc_pos3.rpy.rz = -152.698;
+	j3.jPos[0] = -18.239;
+	j3.jPos[1] = -104.603;
+	j3.jPos[2] = -99.5;
+	j3.jPos[3] = -64.648;
+	j3.jPos[4] = 92.438;
+	j3.jPos[5] = 21.167;
+	desc_pos3.tran.x = 512.541;
+	desc_pos3.tran.y = -271.823;
+	desc_pos3.tran.z = 304.302;
+	desc_pos3.rpy.rx = -179.714;
+	desc_pos3.rpy.ry = 2.725;
+	desc_pos3.rpy.rz = -129.373;
 
-	j4 = { { 154.671, -64.046, 112.177, -149.892, -87.904, 9.549 } };
-	desc_pos4.tran.x = 560.2845;
-	desc_pos4.tran.y = -148.293;
-	desc_pos4.tran.z = 162.943;
-	desc_pos4.rpy.rx = -168.724;
-	desc_pos4.rpy.ry = 3.963;
-	desc_pos4.rpy.rz = -124.27;
+	j4.jPos[0] = -4.627;
+	j4.jPos[1] = -93.756;
+	j4.jPos[2] = -114.223;
+	j4.jPos[3] = -64.012;
+	j4.jPos[4] = 92.451;
+	j4.jPos[5] = 21.192;
+	desc_pos4.tran.x = 465.707;
+	desc_pos4.tran.y = -135.736;
+	desc_pos4.tran.z = 287.378;
+	desc_pos4.rpy.rx = 177.256;
+	desc_pos4.rpy.ry = 1.564;
+	desc_pos4.rpy.rz = -115.899;
 
 	int tool = 0;
 	int user = 0;
-	float vel = 100.0;
-	float acc = 100.0;
-	float ovl = 100.0;
+	float vel = 50.0;
+	float acc = 50.0;
+	float ovl = 50.0;
 	float blendT = -1.0;
 	float blendR = 0.0;
 	uint8_t flag = 0;

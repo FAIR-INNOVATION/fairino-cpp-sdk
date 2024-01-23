@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-    FRRobot robot;                 
-    robot.RPC("192.168.58.2");   
+    FRRobot robot;                
+    robot.RPC("192.168.58.2");    
 
     int rcs = 0;
     uint8_t dir = 1;

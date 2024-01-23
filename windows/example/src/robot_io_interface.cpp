@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-	FRRobot robot;                
-	robot.RPC("192.168.58.2");    
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	uint8_t status = 0;
 	uint8_t smooth = 0;
@@ -103,7 +103,7 @@ int main(void)
 	robot.WaitMultiDI(1, 3, 3, 10000, 1);   
 	tool_di = robot.GetToolDI(1, block, &tool_di);
 	printf("tool_di1:%u\n", tool_di);
-	robot.WaitToolDI(1, 1, 0, 2);         
+	robot.WaitToolDI(1, 1, 0, 1);         
 
 	robot.GetAI(0, block, &ai);
 	printf("ai0:%f\n", ai);

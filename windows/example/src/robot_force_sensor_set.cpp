@@ -18,9 +18,9 @@ using namespace std;
 int main(void)
 {
     FRRobot robot;                 
-    robot.RPC("192.168.58.2");    
+    robot.RPC("192.168.58.2");     
 
-    /* Adjust posture */
+    /* 调整位姿 */
     int tool, user;
     DescPose desc_pos;
     memset(&desc_pos, 0, sizeof(DescPose));

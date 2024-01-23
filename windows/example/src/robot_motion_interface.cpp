@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-	FRRobot robot;                
-	robot.RPC("192.168.58.2");     
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	JointPos j1, j2, j3, j4;
 	DescPose desc_pos1, desc_pos2, desc_pos3, desc_pos4, offset_pos;
@@ -35,57 +35,57 @@ int main(void)
 	memset(&offset_pos, 0, sizeof(DescPose));
 	memset(&epos, 0, sizeof(ExaxisPos));
 
-	j1.jPos[0] = 114.578;
-	j1.jPos[1] = -117.798;
-	j1.jPos[2] = -97.745;
-	j1.jPos[3] = -54.436;
-	j1.jPos[4] = 90.053;
-	j1.jPos[5] = -45.216;
-	desc_pos1.tran.x = -140.418;
-	desc_pos1.tran.y = 619.351;
-	desc_pos1.tran.z = 198.369;
-	desc_pos1.rpy.rx = -179.948;
-	desc_pos1.rpy.ry = 0.023;
-	desc_pos1.rpy.rz = 69.793;
+	j1.jPos[0] = -78.011;
+	j1.jPos[1] = -93.495;
+	j1.jPos[2] = -110.064;
+	j1.jPos[3] = -60.077;
+	j1.jPos[4] = 65.601;
+	j1.jPos[5] = 21.277;
+	desc_pos1.tran.x = -36.435;
+	desc_pos1.tran.y = -518.325;
+	desc_pos1.tran.z = 339.133;
+	desc_pos1.rpy.rx = -164.426;
+	desc_pos1.rpy.ry = -20.019;
+	desc_pos1.rpy.rz = 166.57;
 
-	j2.jPos[0] = 121.381;
-	j2.jPos[1] = -97.108;
-	j2.jPos[2] = -123.768;
-	j2.jPos[3] = -45.824;
-	j2.jPos[4] = 89.877;
-	j2.jPos[5] = -47.296;
-	desc_pos2.tran.x = -127.772;
-	desc_pos2.tran.y = 459.534;
-	desc_pos2.tran.z = 221.274;
-	desc_pos2.rpy.rx = -177.850;
-	desc_pos2.rpy.ry = -2.507;
-	desc_pos2.rpy.rz = 78.627;
+	j2.jPos[0] = -34.08;
+	j2.jPos[1] = -93.504;
+	j2.jPos[2] = -110.073;
+	j2.jPos[3] = -66.142;
+	j2.jPos[4] = 91.713;
+	j2.jPos[5] = 21.167;
+	desc_pos2.tran.x = 350.773;
+	desc_pos2.tran.y = -356.852;
+	desc_pos2.tran.z = 318.755;
+	desc_pos2.rpy.rx = 179.643;
+	desc_pos2.rpy.ry = 1.699;
+	desc_pos2.rpy.rz = -145.248;
 
-	j3.jPos[0] = 138.884;
-	j3.jPos[1] = -114.522;
-	j3.jPos[2] = -103.933;
-	j3.jPos[3] = -49.694;
-	j3.jPos[4] = 90.688;
-	j3.jPos[5] = -47.291;
-	desc_pos3.tran.x = -360.468;
-	desc_pos3.tran.y = 485.600;
-	desc_pos3.tran.z = 196.363;
-	desc_pos3.rpy.rx = -178.239;
-	desc_pos3.rpy.ry = -0.893;
-	desc_pos3.rpy.rz = 96.172;
+	j3.jPos[0] = -18.239;
+	j3.jPos[1] = -104.603;
+	j3.jPos[2] = -99.5;
+	j3.jPos[3] = -64.648;
+	j3.jPos[4] = 92.438;
+	j3.jPos[5] = 21.167;
+	desc_pos3.tran.x = 512.541;
+	desc_pos3.tran.y = -271.823;
+	desc_pos3.tran.z = 304.302;
+	desc_pos3.rpy.rx = -179.714;
+	desc_pos3.rpy.ry = 2.725;
+	desc_pos3.rpy.rz = -129.373;
 
-	j4.jPos[0] = 159.164;
-	j4.jPos[1] = -96.105;
-	j4.jPos[2] = -128.653;
-	j4.jPos[3] = -41.170;
-	j4.jPos[4] = 90.704;
-	j4.jPos[5] = -47.290;
-	desc_pos4.tran.x = -360.303;
-	desc_pos4.tran.y = 274.911;
-	desc_pos4.tran.z = 203.968;
-	desc_pos4.rpy.rx = -176.720;
-	desc_pos4.rpy.ry = -2.514;
-	desc_pos4.rpy.rz = 116.407;
+	j4.jPos[0] = -4.627;
+	j4.jPos[1] = -93.756;
+	j4.jPos[2] = -114.223;
+	j4.jPos[3] = -64.012;
+	j4.jPos[4] = 92.451;
+	j4.jPos[5] = 21.192;
+	desc_pos4.tran.x = 465.707;
+	desc_pos4.tran.y = -135.736;
+	desc_pos4.tran.z = 287.378;
+	desc_pos4.rpy.rx = 177.256;
+	desc_pos4.rpy.ry = 1.564;
+	desc_pos4.rpy.rz = -115.899;
 
 	int tool = 0;
 	int user = 0;
