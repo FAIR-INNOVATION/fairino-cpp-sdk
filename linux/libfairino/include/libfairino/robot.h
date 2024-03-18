@@ -9,6 +9,8 @@
 
 #include "robot_types.h"
 #include <iostream>
+#include <list>
+#include <vector>
 
 class FR_LIB_EXPORT FRRobot
 {
@@ -102,8 +104,8 @@ public:
     *@brief  Joint space motion
     *@param  [in] joint_pos  Target joint location, unit: deg
     *@param  [in] desc_pos   Target Cartesian position
-    *@param  [in] tool  Tool coordinate number, range [1~15]
-    *@param  [in] user  Workpiece coordinate number, range [1~15]
+    *@param  [in] tool  Tool coordinate number, range [0~14]
+    *@param  [in] user  Workpiece coordinate number, range [0~14]
     *@param  [in] vel  Percentage of speed, range [0~100]
     *@param  [in] acc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] ovl  Velocity scaling factor, range[0~100]
@@ -119,8 +121,8 @@ public:
     *@brief  Rectilinear motion in Cartesian space
     *@param  [in] joint_pos  Target joint location, unit: deg
     *@param  [in] desc_pos   Target Cartesian position
-    *@param  [in] tool  Tool coordinate number, range [1~15]
-    *@param  [in] user  Workpiece coordinate number, range [1~15]
+    *@param  [in] tool  Tool coordinate number, range [0~14]
+    *@param  [in] user  Workpiece coordinate number, range [0~14]
     *@param  [in] vel  Percentage of speed, range [0~100]
     *@param  [in] acc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] ovl  Velocity scaling factor, range[0~100]
@@ -137,8 +139,8 @@ public:
     *@brief  Circular arc motion in Cartesian space
     *@param  [in] joint_pos_p  Waypoint joint position, unit: deg
     *@param  [in] desc_pos_p   Waypoint Cartesian position
-    *@param  [in] ptool  Tool coordinate number, range [1~15]
-    *@param  [in] puser  Workpiece coordinate number, range [1~15]
+    *@param  [in] ptool  Tool coordinate number, range [0~14]
+    *@param  [in] puser  Workpiece coordinate number, range [0~14]
     *@param  [in] pvel  Percentage of speed, range [0~100]
     *@param  [in] pacc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] epos_p  Position of expansion shaft, unit: mm
@@ -146,8 +148,8 @@ public:
     *@param  [in] offset_pos_p  The pose offset
     *@param  [in] joint_pos_t  Target joint position, unit: deg
     *@param  [in] desc_pos_t   Target point Cartesian position
-    *@param  [in] ttool  Tool coordinate number, range [1~15]
-    *@param  [in] tuser  Workpiece coordinate number, range [1~15]
+    *@param  [in] ttool  Tool coordinate number, range [0~14]
+    *@param  [in] tuser  Workpiece coordinate number, range [0~14]
     *@param  [in] tvel  Percentage of speed, range [0~100]
     *@param  [in] tacc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] epos_t  Position of expansion shaft, unit: mm
@@ -163,15 +165,15 @@ public:
     *@brief  Circular motion in Cartesian space
     *@param  [in] joint_pos_p  Path point 1 joint position, unit: deg
     *@param  [in] desc_pos_p   Waypoint 1 Cartesian position
-    *@param  [in] ptool  Tool coordinate number, range [1~15]
-    *@param  [in] puser  Workpiece coordinate number, range [1~15]
+    *@param  [in] ptool  Tool coordinate number, range [0~14]
+    *@param  [in] puser  Workpiece coordinate number, range [0~14]
     *@param  [in] pvel  Percentage of speed, range [0~100]
     *@param  [in] pacc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] epos_p  Position of expansion shaft, unit: mm
     *@param  [in] joint_pos_t  Joint position at waypoint 2, unit: deg
     *@param  [in] desc_pos_t   Waypoint 2 Cartesian position
-    *@param  [in] ttool  Tool coordinate number, range [1~15]
-    *@param  [in] tuser  Workpiece coordinate number, range [1~15]
+    *@param  [in] ttool  Tool coordinate number, range [0~14]
+    *@param  [in] tuser  Workpiece coordinate number, range [0~14]
     *@param  [in] tvel  Percentage of speed, range [0~100]
     *@param  [in] tacc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] epos_t  Position of expansion shaft, unit: mm
@@ -186,8 +188,8 @@ public:
     *@brief  Spiral motion in Cartesian space
     *@param  [in] joint_pos  Target joint location, unit: deg
     *@param  [in] desc_pos   Target Cartesian position
-    *@param  [in] tool  Tool coordinate number, range [1~15]
-    *@param  [in] user  Workpiece coordinate number, range [1~15]
+    *@param  [in] tool  Tool coordinate number, range [0~14]
+    *@param  [in] user  Workpiece coordinate number, range [0~14]
     *@param  [in] vel  Percentage of speed, range [0~100]
     *@param  [in] acc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] epos  Position of expansion shaft, unit: mm
@@ -241,8 +243,8 @@ public:
 	/**
     *@brief  Point to point motion in Cartesian space
     *@param  [in]  desc_pos  Target Cartesian pose or pose increment
-    *@param  [in] tool  Tool coordinate number, range [1~15]
-    *@param  [in] user  Workpiece coordinate number, range [1~15]
+    *@param  [in] tool  Tool coordinate number, range [0~14]
+    *@param  [in] user  Workpiece coordinate number, range [0~14]
     *@param  [in] vel  Percentage of speed, range [0~100]
     *@param  [in] acc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] ovl  Velocity scaling factor, range[0~100]
@@ -262,8 +264,8 @@ public:
     *@brief  Joint space spline movement
     *@param  [in] joint_pos  Target joint location, unit: deg
     *@param  [in] desc_pos   Target Cartesian position
-    *@param  [in] tool  Tool coordinate number, range [1~15]
-    *@param  [in] user  Workpiece coordinate number, range [1~15]
+    *@param  [in] tool  Tool coordinate number, range [0~14]
+    *@param  [in] user  Workpiece coordinate number, range [0~14]
     *@param  [in] vel  Percentage of speed, range [0~100]
     *@param  [in] acc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] ovl  Velocity scaling factor, range[0~100]   
@@ -288,8 +290,8 @@ public:
 	 *@brief New Spline Cue Points
 	 *@param  [in] joint_pos  Target joint position, unit: deg
 	 *@param  [in] desc_pos   Target Cartesian pose
-	 *@param  [in] tool  Tool coordinate number, range [1~15]
-	 *@param  [in] user  Workpiece coordinate number, range [1~15]
+	 *@param  [in] tool  Tool coordinate number, range [0~14]
+	 *@param  [in] user  Workpiece coordinate number, range [0~14]
 	 *@param  [in] vel  Speed percentage, range [0~100]
 	 *@param  [in] acc  Acceleration percentage, range [0~100], not open yet
 	 *@param  [in] ovl  Speed scaling factor, range [0~100]
@@ -542,7 +544,7 @@ public:
 	
 	/**
     *@brief  Set the tool coordinate list
-    *@param  [in] id Frame number, range[1~14]
+    *@param  [in] id Frame number, range[0~14]
     *@param  [in] coord  Tool center position relative to end flange center position
     *@param  [in] type  0- tool coordinates, 1- sensor coordinates
     *@param  [in] install Installation position, 0- robot end, 1- robot outside
@@ -576,7 +578,7 @@ public:
 	
 	/**
     *@brief  Set the list of external tool coordinate systems
-    *@param  [in] id Frame number, range[1~15]
+    *@param  [in] id Frame number, range[0~14]
     *@param  [in] etcp  Tool center position relative to end flange center position
     *@param  [in] etool  To be determined
     *@return  Error code
@@ -600,7 +602,7 @@ public:
 
 	/**
 	 * @brief  Set workpiece coordinate system
-	 * @param  [in] id Coordinate system number, range [1~14]
+	 * @param  [in] id Coordinate system number, range [0~14]
 	 * @param  [in] coord  The workpiece coordinate system relative to the end flange center pose
 	 * @return  Error code
      */	 
@@ -608,7 +610,7 @@ public:
 	
 	/**
     *@brief  Set the list of work coordinate systems
-    *@param  [in] id Frame number, range[1~15]
+    *@param  [in] id Frame number, range[0~14]
     *@param  [in] coord  Tool center position relative to end flange center position
     *@return  Error code
      */	 
@@ -1861,7 +1863,7 @@ public:
 	 *@param[in]isWeave Weave or not
 	 *@param[in]weaveNum Weave welding parameter configuration number
 	 *@param[in]tool tool number
-	 *@param[in]user Workpiece coordinate number, range [1~15]
+	 *@param[in]user Workpiece coordinate number, range [0~14]
 	 *@param[in]vel Percentage of speed [0~100]
 	 *@param[in]acc Acceleration percentage, range[0~100]
 	 *@param[in]ovl Velocity scaling factor, range[0~100]
@@ -1878,7 +1880,51 @@ public:
 							 ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos);
 
 	/**
-	 *@brief  Robot interface class destructor
+	 * @brief Initialize log parameters;
+	 * @param output_model：Output mode, 0-direct output; 1-buffered output; 2 - asynchronous output;
+	 * @param file_path: File save path + name, the maximum length is 256, and the name must be in the form of xxx.log, such as /home/fr/linux/fairino.log;
+	 * @param file_num：Scroll the number of files stored, 1~20. The maximum size of a single file is 50M;
+	 * @return errno_t Error code;
+	 */
+	errno_t LoggerInit(int output_model = 0, std::string file_path = "", int file_num = 5);
+
+    /**
+     * @brief Set the log filtering level;
+     * @param lvl: Filter the level value, the smaller the value, the less the output log, the default value is 1. 1-error, 2-warnning, 3-inform, 4-debug;
+    */
+    void SetLoggerLevel(int lvl = 1);
+
+	/**
+     * @brief Download Lua file
+     * @param [in] fileName The name of the lua file to be downloaded "test.lua"
+     * @param [in] savePath Save the file local path "D://Down/"
+     * @return error code
+     */
+	errno_t LuaDownLoad(std::string fileName, std::string savePath);
+
+	/**
+     * @brief Upload Lua file
+     * @param [in] filePath local lua file path name
+     * @return error code
+     */
+	errno_t LuaUpload(std::string filePath);
+
+	/**
+     * @brief Delete Lua files
+     * @param [in] fileName The name of the lua file to be deleted "test.lua"
+     * @return error code
+     */
+	errno_t LuaDelete(std::string fileName);
+
+	/**
+     * @brief Get the names of all current lua files
+     * @param [out] luaNames lua file name list
+     * @return error code
+     */
+	errno_t GetLuaList(std::list<std::string>* luaNames);
+
+	/**
+	 *@brief  Robot interface class destructors
 	 */
 	~FRRobot();
 
@@ -1888,6 +1934,16 @@ private:
 	static void RobotInstCmdRecvRoutineThread();
 	static void RobotTaskRoutineThread();
 	char serverUrl[64];
+	bool rpc_done = false;
+	errno_t FileDownLoad(int fileType, std::string fileName, std::string saveFilePath);
+
+	errno_t FileUpLoad(int fileType, std::string filePath);
+
+	errno_t FileDelete(int fileType, std::string fileName);
+
+	std::vector<std::string> split(const std::string& s, char delim);
+
+	std::vector<std::string> split(std::string s, std::string delimiter);
 };
 
 #endif
