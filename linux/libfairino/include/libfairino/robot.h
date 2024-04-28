@@ -282,9 +282,10 @@ public:
 	/**
 	 *@brief New spline motion starts
 	 *@param  [in] type   0-arc transition, 1-the given point is the path point
+	 *@param  [in] averageTime global average connection time (ms) (10 ~ ), default 2000
 	 *@return  Error code
 	 */
-	errno_t  NewSplineStart(int type);
+	errno_t NewSplineStart(int type, int averageTime=2000);
 	
 	/**
 	 *@brief New Spline Cue Points
@@ -1788,13 +1789,19 @@ public:
 	 * @param [in] weaveFrequency weave frequency(Hz)
 	 * @param [in] weaveIncStayTime Wait mode 0- period does not contain wait time; 1- Period contains the wait time
 	 * @param [in] weaveRange weave amplitude(mm)
+	 * @param [in] weaveLeftRange Vertical triangle swing left chord length (mm)
+	 * @param  [in] weaveRightRange Vertical triangle swing right chord length (mm)
+	 * @param  [in] additionalStayTime Vertical triangle swing vertical triangle point stay time (mm)
 	 * @param [in] weaveLeftStayTime weave left residence time(ms)
 	 * @param [in] weaveRightStayTime weave right residence time(ms)
 	 * @param [in] weaveCircleRadio Circular wiggle-pullback ratio(0-100%)
 	 * @param [in] weaveStationary weave position wait, 0- position continue to move within the waiting time; 1- The position is stationary during the waiting time
 	 * @return Error code
 	 */
-	errno_t WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency, int weaveIncStayTime, double weaveRange, int weaveLeftStayTime, int weaveRightStayTime, int weaveCircleRadio, int weaveStationary);
+	errno_t WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency, 
+                            int weaveIncStayTime, double weaveRange, double weaveLeftRange, 
+                            double weaveRightRange, int additionalStayTime, int weaveLeftStayTime, 
+                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary);
 
 	/**
 	 * @brief Set weave parameters in real time
@@ -1924,7 +1931,129 @@ public:
 	errno_t GetLuaList(std::list<std::string>* luaNames);
 
 	/**
-	 *@brief  Robot interface class destructors
+	  * @brief Set 485 extended axis parameters
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [in] servoCompany Servo drive manufacturer, 1-Dynatec
+      * @param [in] servoModel servo drive model, 1-FD100-750C
+      * @param [in] servoSoftVersion servo driver software version, 1-V1.0
+      * @param [in] servoResolution encoder resolution
+      * @param [in] axisMechTransRatio mechanical transmission ratio
+      * @return error code
+	 */
+	errno_t AuxServoSetParam(int servoId, int servoCompany, int servoModel,
+							 int servoSoftVersion, int servoResolution, double axisMechTransRatio);
+	/**
+	 * @brief Get 485 extended axis configuration parameters
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [out] servoCompany Servo drive manufacturer, 1-Dynatec
+      * @param [out] servoModel Servo drive model, 1-FD100-750C
+      * @param [out] servoSoftVersion servo driver software version, 1-V1.0
+      * @param [out] servoResolution encoder resolution
+      * @param [out] axisMechTransRatio mechanical transmission ratio
+      * @return error code
+	 */
+	errno_t AuxServoGetParam(int servoId, int* servoCompany, int* servoModel,
+                                  int* servoSoftVersion, int* servoResolution, double* axisMechTransRatio);
+
+	/**
+	 * @brief Set 485 expansion axis enable/disable
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [in] status enable status, 0-disabled, 1-enabled
+      * @return error code
+	 */
+	errno_t AuxServoEnable(int servoId, int status);
+
+	/**
+	 * @brief Set 485 extended axis control mode
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [in] mode control mode, 0-position mode, 1-speed mode
+      * @return error code
+	 */
+	errno_t AuxServoSetControlMode(int servoId, int mode);
+	/**
+	 * @brief Set the 485 extended axis target position (position mode)
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [in] pos target position, mm or °
+      * @param [in] speed target speed, mm/s or °/s
+      * @return error code
+	 */
+	errno_t AuxServoSetTargetPos(int servoId, double pos, double speed);
+
+	/**
+	 * @brief Set the 485 extended axis target speed (speed mode)
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [in] speed target speed, mm/s or °/s
+      * @return error code
+	 */
+	errno_t AuxServoSetTargetSpeed(int servoId, double speed);
+
+	/**
+	 * @brief Set 485 extended axis target torque (torque mode)
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [in] torque target torque, Nm
+      * @return error code
+	 */
+	errno_t AuxServoSetTargetTorque(int servoId, double torque);
+
+	/**
+	 * @brief Set 485 extended axis zero return
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [in] mode zero return mode, 0-current position return to zero; 1-limit return to zero
+      * @param [in] searchVel zero return speed, mm/s or °/s
+      * @param [in] latchVel hoop speed, mm/s or °/s
+      * @return error code
+	 */
+	errno_t AuxServoHoming(int servoId, int mode, double searchVel, double latchVel);
+
+	/**
+	 * @brief Clear 485 extended axis error message
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @return error code
+	 */
+	errno_t AuxServoClearError(int servoId);
+
+	/**
+	 * @brief Get 485 extended axis servo status
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @param [out] servoErrCode servo drive fault code
+      * @param [out] servoState servo drive status [decimal number converted to binary, bit0-bit5: servo enable-servo running-positive limit trigger-negative limit trigger-positioning completed-zero return completed]
+      * @param [out] servoPos servo current position mm or °
+      * @param [out] servoSpeed Servo current speed mm/s or °/s
+      * @param [out] servoTorque Servo current torque Nm
+      * @return error code
+	 */
+	errno_t AuxServoGetStatus(int servoId, int* servoErrCode, int* servoState, double* servoPos,
+                                   double* servoSpeed, double* servoTorque);
+
+	/**
+	  * @brief Set the 485 extended axis data axis number in status feedback
+      * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
+      * @return error code
+	 */
+	errno_t AuxServosetStatusID(int servoId);
+
+	/**
+	 * @brief Get the real-time status structure of the robot
+      * @param [out] pkg robot real-time status structure
+      * @return error code
+	 */
+	errno_t GetRobotRealTimeState(ROBOT_STATE_PKG *pkg);
+	/**
+	* @brief Get the robot peripheral protocol
+      * @param [out] protocol Robot peripheral protocol number 4096-Extended axis control card; 4097-ModbusSlave; 4098-ModbusMaster
+      * @return error code
+	 */
+	errno_t GetExDevProtocol(int *protocol);
+
+	/**
+	  * @brief Set the robot peripheral protocol
+      * @param [in] protocol Robot peripheral protocol number 4096-Extended axis control card; 4097-ModbusSlave; 4098-ModbusMaster
+      * @return error code
+	 */
+	errno_t SetExDevProtocol(int protocol);
+
+	/**
+	 *@brief  Robot interface class destructor
 	 */
 	~FRRobot();
 

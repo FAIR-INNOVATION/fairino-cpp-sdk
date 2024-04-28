@@ -83,6 +83,15 @@ typedef  struct
 	unsigned int rot_direction;  /* Rotation direction, 0- clockwise, 1- counterclockwise  */
 }SpiralParam;
 
+typedef struct ROBOT_AUX_STATE
+{
+	uint8_t servoId;
+	int servoErrCode;
+	int servoState;
+	double servoPos;
+	float servoVel;
+	float servoTorque;
+} robot_aux_state;
 #pragma pack(push)
 #pragma pack(1)
 
@@ -135,6 +144,7 @@ typedef struct _ROBOT_STATE_PKG
     int8_t   gripper_current;     /* Gripper current */
     int      gripper_temp;        /* Gripper temperature */
     int      gripper_voltage;     /* Gripper voltage */
+	robot_aux_state aux_state;
 }ROBOT_STATE_PKG;
 
 #pragma pack(pop)
