@@ -18,9 +18,16 @@
 #define     ERR_INVERSE_KINEMATICS_COMPUTE_FAILED  28      //The inverse kinematics calculation failed
 #define     ERR_SERVOJ_JOINT_OVERRUN               29      //The joint value is exceeded
 #define     ERR_NON_RESSETTABLE_FAULT              30      //The fault cannot be reset, please power off and restart the control box
+#define     ERR_EXTAXIS_CONFIG_FAILURE             33      //External axis is not in zero position, lead and resolution Settings fail
 #define     ERR_WORKPIECE_NUM                      34      //The workpiece number is incorrect
 #define     ERR_FILENAME_TOO_LONG                  36      //The file name is too long
 #define     ERR_STRANGE_POSE                       38      //Singular pose
+#define     ERR_EXTAXIS_NOT_HOMING				   41	   //The external axis does not return to zero
+#define     ERR_EXTAXIS_NOT_ACTIVING			   45      //The external axis is not active
+#define     ERR_EXTAXIS_NOT_CALIB				   46      //The synchronization function requires calibration of the external axis
+#define     ERR_EXTAXIS_SERVO_CONFIG_FAIL		   47      //Failed to configure the external drive information
+#define     ERR_EXTAXIS_SERVO_CONFIG_OVER	       48      //Obtaining external shaft drive information timed out
+#define     ERR_EXTAXIS_NOT_STEP_OPERATE	       52      //The synchronization function cannot be performed in a single step
 #define     ERR_NOT_ADD_CMD_QUEUE                  64      //Not queued for instructions
 #define     ERR_CIRCLE_SPIRAL_MIDDLE_POINT1        66      //The middle point of the circle is 1 incorrect
 #define     ERR_CIRCLE_SPIRAL_MIDDLE_POINT2        67      //The middle point of the circle is 2 incorrect

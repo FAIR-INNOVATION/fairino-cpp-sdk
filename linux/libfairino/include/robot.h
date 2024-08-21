@@ -7,10 +7,16 @@
 	#define FR_LIB_EXPORT 
 #endif
 
+#ifdef WIN32
+#include <winsock2.h>
+#endif // WIN32
+
 #include "robot_types.h"
 #include <iostream>
 #include <list>
 #include <vector>
+
+class FRTcpClient;
 
 class FR_LIB_EXPORT FRRobot
 {
@@ -131,9 +137,11 @@ public:
     *@param  [in] search  0- no wire seeking, 1- wire seeking
     *@param  [in] offset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
     *@param  [in] offset_pos  The pose offset
-    *@return  Error code
+	*@param  [in] overSpeedStrategy  Overspeed treatment strategy, 1- standard; 2- Speed times wrong stop; 3- Adaptive deceleration. The default is 0
+    *@param  [in] speedPercent  Rate reduction threshold percentage [0-100]. The default value is 10%
+	*@return  Error code
 	 */	
-	errno_t  MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos);
+	errno_t MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int overSpeedStrategy = 0, int speedPercent = 10);
 
 	/**
     *@brief  Circular arc motion in Cartesian space
@@ -1325,8 +1333,8 @@ public:
     *@param  [in] ref  0- tool frame, 1- base frame
     *@return  Error code
 	 */
-	errno_t  FT_SetRCS(uint8_t ref);	
-	
+	errno_t FT_SetRCS(uint8_t ref, DescPose coord);
+
 	/**
     *@brief  Load weight identification record
     *@param  [in] id  Sensor coordinate system number, range [1~14]
@@ -1396,9 +1404,12 @@ public:
     *@param  [in] ILC_sign ILC start stop control, 0- stop, 1- training, 2- operation
     *@param  [in] Maximum Adjustment distance, unit: mm
     *@param  [in] Maximum Adjustment Angle, unit: deg
-    *@return  Error code
-	 */	
-	errno_t  FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque *ft, float ft_pid[6], uint8_t adj_sign, uint8_t ILC_sign, float max_dis, float max_ang);	
+	* @param  [in] filter_Sign Filter on mark 0-off; 1- On, off by default
+    * @param  [in] posAdapt_sign Attitude conform to open sign 0-off; 1- On, off by default
+    * @param  [in] isNoBlock Block flag, 0- block; 1- Non-blocking
+	* @return Error code
+	*/	
+	errno_t FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque *ft, float ft_pid[6], uint8_t adj_sign, uint8_t ILC_sign, float max_dis, float max_ang, int filter_Sign = 0, int posAdapt_sign = 0, int isNoBlock = 0);
 
 	/**
     *@brief  Spiral exploration
@@ -1683,6 +1694,13 @@ public:
 	 */
 	errno_t GetDHCompensation(double dhCompensation[6]);
 
+
+	/**
+	 * @brief Point Table Switch
+	 * @param [in] pointTableName Point Table name    pointTable1.db
+	 * @return error code
+	 */
+	errno_t PointTableSwitch(const std::string pointTableName);
 	/**
 	 * @brief Download the point table database
 	 * @param [in] pointTableName The name of the point table to be downloaded   pointTable1.db
@@ -1730,9 +1748,10 @@ public:
 	 * @param [in] currentMax current value at the right point of the linear relationship between welding current and analog output (A)
 	 * @param [in] outputVoltageMin Analog output voltage value (V) of the left point of the linear relationship between welding current and analog output
 	 * @param [in] outputVoltageMax The analog output voltage value (V) of the right point of the linear relationship between welding current and analog output
+	 * @param [in] AOIndex Welding current analog output port
 	 * @return Error code
 	 */
-	errno_t WeldingSetCurrentRelation(double currentMin, double currentMax, double outputVoltageMin, double outputVoltageMax);
+	errno_t WeldingSetCurrentRelation(double currentMin, double currentMax, double outputVoltageMin, double outputVoltageMax, int AOIndex = 0);
 
 	/**
 	 * @brief Set the corresponding relationship between welding voltage and output analog quantity
@@ -1740,9 +1759,10 @@ public:
 	 * @param [in] weldVoltageMax Welding voltage-analog output linear relationship right point welding voltage value (A)
 	 * @param [in] outputVoltageMin Analog output voltage value (V) of the left point of the linear relationship between welding voltage and analog output
 	 * @param [in] outputVoltageMax The analog output voltage value (V) of the right point of the linear relationship between welding voltage and analog output
+	 * @param [in] AOIndex Welding voltage analog output port
 	 * @return Error code
 	 */
-	errno_t WeldingSetVoltageRelation(double weldVoltageMin, double weldVoltageMax, double outputVoltageMin, double outputVoltageMax);
+	errno_t WeldingSetVoltageRelation(double weldVoltageMin, double weldVoltageMax, double outputVoltageMin, double outputVoltageMax, int AOIndex = 1);
 
 	/**
 	 * @brief Get the corresponding relationship between welding current and output analog quantity
@@ -1750,9 +1770,10 @@ public:
 	 * @param [out] currentMax welding current and analog output (A)
 	 * @param [out] outputVoltageMin Analog output voltage value (V) of the left point of the linear relationship between welding current and analog output
 	 * @param [out] outputVoltageMax The analog output voltage value (V) of the right point of the linear relationship between welding current and analog output
+	 * @param [out] AOIndex Welding current analog output port
 	 * @return Error code
 	 */
-	errno_t WeldingGetCurrentRelation(double *currentMin, double *currentMax, double *outputVoltageMin, double *outputVoltageMax);
+	errno_t WeldingGetCurrentRelation(double *currentMin, double *currentMax, double *outputVoltageMin, double *outputVoltageMax, int* AOIndex);
 
 	/**
 	 * @brief Get the corresponding relationship between welding voltage and output analog quantity
@@ -1760,27 +1781,30 @@ public:
 	 * @param [out] weldVoltageMax Welding voltage-analog output linear relationship right point welding voltage value (A)
 	 * @param [out] outputVoltageMin Analog output voltage value (V) of the left point of the linear relationship between welding voltage and analog output
 	 * @param [out] outputVoltageMax The analog output voltage value (V) of the right point of the linear relationship between welding voltage and analog output
+	 * @param [out] AOIndex Welding voltage analog output port
 	 * @return Error code
 	 */
-	errno_t WeldingGetVoltageRelation(double *weldVoltageMin, double *weldVoltageMax, double *outputVoltageMin, double *outputVoltageMax);
+	errno_t WeldingGetVoltageRelation(double *weldVoltageMin, double *weldVoltageMax, double *outputVoltageMin, double *outputVoltageMax, int* AOIndex);
 
 	/**
 	 * @brief Set welding current
 	 * @param [in] ioType 0-control box IO； 1-extend IO
 	 * @param [in] current welding current(A)
 	 * @param [in] AOIndexWelding current control box analog output port(0-1)
+	 * @param [in] blend Whether it is smooth 0- No; 1- Smooth
 	 * @return Error code
 	 */
-	errno_t WeldingSetCurrent(int ioType, double current, int AOIndex);
+	errno_t WeldingSetCurrent(int ioType, double current, int AOIndex, int blend);
 
 	/**
 	 * @brief Set welding voltage
 	 * @param [in] ioType 0-control box IO； 1-extend IO
 	 * @param [in] voltage welding voltage(V)
 	 * @param [in] AOIndex Welding voltage control box analog output port(0-1)
+	 * @param [in] blend Whether it is smooth 0- No; 1- Smooth
 	 * @return Error code
 	 */
-	errno_t WeldingSetVoltage(int ioType, double voltage, int AOIndex);
+	errno_t WeldingSetVoltage(int ioType, double voltage, int AOIndex, int blend);
 
 	/**
 	 * @brief Set weave parameters
@@ -1796,12 +1820,13 @@ public:
 	 * @param [in] weaveRightStayTime weave right residence time(ms)
 	 * @param [in] weaveCircleRadio Circular wiggle-pullback ratio(0-100%)
 	 * @param [in] weaveStationary weave position wait, 0- position continue to move within the waiting time; 1- The position is stationary during the waiting time
+	 * @param [in] weaveYawAngle Azimuth (rotation about the z-axis of the swing), in °
 	 * @return Error code
 	 */
 	errno_t WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency, 
                             int weaveIncStayTime, double weaveRange, double weaveLeftRange, 
                             double weaveRightRange, int additionalStayTime, int weaveLeftStayTime, 
-                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary);
+                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle);
 
 	/**
 	 * @brief Set weave parameters in real time
@@ -1986,7 +2011,6 @@ public:
       * @return error code
 	 */
 	errno_t AuxServoSetTargetSpeed(int servoId, double speed);
-
 	/**
 	 * @brief Set 485 extended axis target torque (torque mode)
       * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
@@ -1994,7 +2018,6 @@ public:
       * @return error code
 	 */
 	errno_t AuxServoSetTargetTorque(int servoId, double torque);
-
 	/**
 	 * @brief Set 485 extended axis zero return
       * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
@@ -2011,7 +2034,6 @@ public:
       * @return error code
 	 */
 	errno_t AuxServoClearError(int servoId);
-
 	/**
 	 * @brief Get 485 extended axis servo status
       * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
@@ -2024,14 +2046,12 @@ public:
 	 */
 	errno_t AuxServoGetStatus(int servoId, int* servoErrCode, int* servoState, double* servoPos,
                                    double* servoSpeed, double* servoTorque);
-
 	/**
 	  * @brief Set the 485 extended axis data axis number in status feedback
       * @param [in] servoId servo drive ID, range [1-16], corresponding slave ID
       * @return error code
 	 */
 	errno_t AuxServosetStatusID(int servoId);
-
 	/**
 	 * @brief Get the real-time status structure of the robot
       * @param [out] pkg robot real-time status structure
@@ -2053,26 +2073,867 @@ public:
 	errno_t SetExDevProtocol(int protocol);
 
 	/**
+	 * @brief set robot acceleration
+	 * @param [in] acc acceleration
+	 * @return error code
+	 */
+	errno_t SetOaccScale(double acc);
+
+	/**
+	* @brief Set control box AO when the robot moves Start
+	* @param [in] AONum Control box AO num
+	* @param [in] maxTCPSpeed the maximum TCP speed[1-5000mm/s]，default 1000
+	* @param [in] maxAOPercent the AO percentage corresponding to the maximum TCP speed, default 100%
+	* @param [in] zeroZoneCmp dead zone compensation value AO percentage, integer, default is 20, range [0-100]
+	* @return error code
+	*/
+	errno_t MoveAOStart(int AONum, int maxTCPSpeed, int maxAOPercent, int zeroZoneCmp);
+
+	/**
+	* @brief Set control box AO when the robot moves stop
+	* @return error code
+	*/
+	errno_t MoveAOStop();
+
+	/**
+	* @brief Set tool AO when the robot moves start
+	* @param [in] AONum tool AO num
+	* @param [in] maxTCPSpeed the maximum TCP speed[1-5000mm/s]，default 1000
+	* @param [in] maxAOPercent the AO percentage corresponding to the maximum TCP speed, default 100%
+	* @param [in] zeroZoneCmp dead zone compensation value AO percentage, integer, default is 20, range [0-100]
+	* @return error code
+	*/
+	errno_t MoveToolAOStart(int AONum, int maxTCPSpeed, int maxAOPercent, int zeroZoneCmp);
+
+	/**
+	* @brief Set tool AO when the robot moves stop
+	* @return error code
+	*/
+	errno_t MoveToolAOStop();
+
+	/**
+	* @brief Configure UDP extension axis communication parameters
+	* @param [in] ip PLC IP address
+	* @param [in] port	 port num
+	* @param [in] period	Communication period(ms，default 2ms)
+	* @param [in] lossPkgTime	Packet loss detection time(ms)
+	* @param [in] lossPkgNum	the number of packet loss times
+	* @param [in] disconnectTime	the duration of communication disconnection confirmation
+	* @param [in] reconnectEnable	 Automatic reconnection when communication is disconnected Enable;0-Disable, 1-Enable
+	* @param [in] reconnectPeriod	 Reconnection period(ms)
+	* @param [in] reconnectNum Reconnection times
+	* @return error code
+	*/
+	errno_t ExtDevSetUDPComParam(std::string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum);
+
+	/**
+	* @brief Get the UDP extension axis communication parameter configuration
+	* @param [out] ip PLC IP address
+	* @param [out] port port num
+	* @param [out] period	Communication period(ms，default 2ms)
+	* @param [out] lossPkgTime Packet loss detection time(ms)
+	* @param [out] lossPkgNum	 Indicates the number of packet loss times
+	* @param [out] disconnectTime	 the duration of communication disconnection confirmation
+	* @param [out] reconnectEnable Automatic reconnection when communication is disconnected Enable;0-Disable, 1-Enable
+	* @param [out] reconnectPeriod Reconnection period(ms)
+	* @param [out] reconnectNum	Reconnection times
+	* @return error code
+	*/
+	errno_t ExtDevGetUDPComParam(std::string& ip, int& port, int& period, int& lossPkgTime, int& lossPkgNum, int& disconnectTime, int& reconnectEnable, int& reconnectPeriod, int& reconnectNum);
+
+	/**
+	* @brief Load the UDP communication connection
+	* @return error code
+	*/
+	errno_t ExtDevLoadUDPDriver();
+
+	/**
+	* @brief Unload the UDP communication connection
+	* @return error code
+	*/
+	errno_t ExtDevUnloadUDPDriver();
+
+	/**
+	* @brief Set the UDP extension axis homing
+	* @param [in] axisID Axis number[1-4]
+	* @param [in] mode homing mode; 0-Current position homing, 1-negative limit homing, 2-positive limit homing
+	* @param [in] searchVel homing velocity(mm/s)
+	* @param [in] latchVel homing latch velocity(mm/s)
+	* @return error code
+	*/
+	errno_t ExtAxisSetHoming(int axisID, int mode, double searchVel, double latchVel);
+
+	/**
+	* @brief UDP extension axis jog start
+	* @param [in] axisID Axis number[1-4]
+	* @param [in] direction Rotation direction 0- reverse; 1-forward
+	* @param [in] vel velocity(mm/s)
+	* @param [in] acc Acceleration  (mm/s2)
+	* @param [in] maxDistance maximum jog distance(mm)
+	* @return error code
+	*/
+	errno_t ExtAxisStartJog(int axisID, int direction, double vel, double acc, double maxDistance);
+
+	/**
+	* @brief UDP extension axis jog stop
+	* @param [in] axisID Axis number[1-4]
+	* @return error code
+	*/
+	errno_t ExtAxisStopJog(int axisID);
+
+	/**
+	* @brief Enable the UDP extension axis
+	* @param [in] axisID Axis number [1-4]
+	* @param [in] status 0-Disable, 1-Enable
+	* @return error code
+	*/
+	errno_t ExtAxisServoOn(int axisID, int status);
+
+	/**
+	* @brief UDP extension axis movement
+	* @param [in] pos target position
+	* @param [in] ovl Speed percentage
+	* @return error code
+	*/
+	errno_t ExtAxisMove(ExaxisPos pos, double ovl);
+
+	/**
+	* @brief Set extended DO
+	* @param [in] DONum DO number
+	* @param [in] bOpen True- on,False- off
+	* @param [in] smooth whether it is smooth; True-Yes, False-no
+	* @param [in] block True-block, False-no block
+	* @return error code
+	*/
+	errno_t SetAuxDO(int DONum, bool bOpen, bool smooth, bool block);
+
+	/**
+	* @brief Set extended AO
+	* @param [in] AONum AO number
+	* @param [in] value analog quantity value [0-4095]
+	* @param [in] block True-block, False-no block
+	* @return error code
+	*/
+	errno_t SetAuxAO(int AONum, double value, bool block);
+
+	/**
+	* @brief Set the extended DI input filtering time
+	* @param [in] filterTime DI input filtering time(ms)
+	* @return error code
+	*/
+	errno_t SetAuxDIFilterTime(int filterTime);
+
+	/**
+	* @brief Set the extended AI input filtering time
+	* @param [in] filterTime AI input filtering time(ms)
+	* @return error code
+	*/
+	errno_t SetAuxAIFilterTime(int AONum, int filterTime);
+
+	/**
+	* @brief Wait for the extended DI input
+	* @param [in] DINum DI number
+	* @param [in] bOpen True- on,False- off
+	* @param [in] time Maximum waiting time(ms)
+	* @param [in] errorAlarm Whether to continue a motion. True- Yes,False- no
+	* @return error code
+	*/
+	errno_t WaitAuxDI(int DINum, bool bOpen, int time, bool errorAlarm);
+
+	/**
+	* @brief Wait for the extended AI input
+	* @param [in] AINum AI number
+	* @param [in] sign 0-greater than, 1-less than
+	* @param [in] value AI value
+	* @param [in] time Maximum waiting time(ms)
+	* @param [in] errorAlarm Whether to continue a motion. True- Yes,False- no
+	* @return error code
+	*/
+	errno_t WaitAuxAI(int AINum, int sign, int value, int time, bool errorAlarm);
+
+	/**
+	* @brief Gets the extended DI value
+	* @param [in] DINum DI number
+	* @param [in] isNoBlock True-block, False-no block
+	* @param [out] isOpen True- on,False- off
+	* @return error code
+	*/
+	errno_t GetAuxDI(int DINum, bool isNoBlock, bool& isOpen);
+
+	/**
+	* @brief Gets the extended AI value
+	* @param [in] AINum AI number
+	* @param [in] isNoBlock True-block, False-no block
+	* @param [in] value input value
+	* @return error code
+	*/
+	errno_t GetAuxAI(int AINum, bool isNoBlock, int& value);
+
+	/**
+	* @brief Reconnect UDP communication after abnormal disconnected
+	* @return error code
+	*/
+	errno_t ExtDevUDPClientComReset();
+
+	/**
+	* @brief Close UDP communication after abnormal disconnected
+	* @return error code
+	*/
+	errno_t ExtDevUDPClientComClose();
+
+	/**
+	* @brief Configure UDP extension axis parameters
+	* @param [in] axisID Axis number [1-4]
+	* @param [in] axisType Extended axis type; 0-translation, 1-rotation
+	* @param [in] axisDirection Axis direction; 0-forward; 1-reverse
+	* @param [in] axisMax The maximum position of the extension axis(mm)
+	* @param [in] axisMin Minimum position of the extension axis (mm)
+	* @param [in] axisVel Speed mm/s
+	* @param [in] axisAcc Acceleration mm/s2
+	* @param [in] axisLead Lead mm
+	* @param [in] encResolution Encoder resolution
+	* @param [in] axisOffect The start point of the weld extension axis offset
+	* @param [in] axisCompany Driver manufacturer 1-Hechuan; 2- Huichuan; 3- Panasonic
+	* @param [in] axisModel Driver models 1-Hechuan SV-XD3EA040L-E, 2-Hechuan SV-X2EA150A-A, 1-Huichuan SV620PT5R4I, 1-Matsushita MADLN15SG, 2-Matsushita MSDLN25SG, 3-Matsushita MCDLN35SG
+	* @param [in] axisEncType Encoder type 0-increments; 1- absolute value
+	* @return error code
+	*/
+	errno_t ExtAxisParamConfig(int axisID, int axisType, int axisDirection, double axisMax, double axisMin, double axisVel, double axisAcc, double axisLead, int encResolution, double axisOffect, int axisCompany, int axisModel, int axisEncType);
+
+	/**
+	* @brief Set the installation position of the expansion shaft
+	* @param [in] installType  0-The robot is installed on the external axis, 1-the robot is installed outside the external axis
+	* @return error code
+	*/
+	errno_t SetRobotPosToAxis(int installType);
+
+	/**
+	* @brief Set the extended shaft system DH parameters
+	* @param [in] axisConfig 0-single DOF linear slide, 1-2 DOF L-type positioner, 2-3 DOF, 3-4 DOF, 4-single DOF positioner
+	* @param [in] axisDHd1 External axisDH parameter d1 mm
+	* @param [in] axisDHd2 External axisDH parameter d2 mm
+	* @param [in] axisDHd3 External axisDH parameter d3 mm
+	* @param [in] axisDHd4 External axisDH parameter d4 mm
+	* @param [in] axisDHa1 External axisDH parameter 11 mm
+	* @param [in] axisDHa2 External axisDH parameter a2 mm
+	* @param [in] axisDHa3 External axisDH parameter a3 mm
+	* @param [in] axisDHa4 External axisDH parameter a4 mm
+	* @return error code
+	*/
+	errno_t SetAxisDHParaConfig(int axisConfig, double axisDHd1, double axisDHd2, double axisDHd3, double axisDHd4, double axisDHa1, double axisDHa2, double axisDHa3, double axisDHa4);
+
+	/**
+	* @brief Set the reference point of the extended axis coordinate system - four-point method
+	* @param [in] pointNum Point number [1-4]
+	* @return error code
+	*/
+	errno_t ExtAxisSetRefPoint(int pointNum);
+
+	/**
+	* @brief Calculation of extended axis coordinate system - four-point method
+	* @param [out] coord coordinate values
+	* @return error code
+	*/
+	errno_t ExtAxisComputeECoordSys(DescPose& coord);
+
+	/**
+	* @brief Apply the extended axis coordinate system
+	* @param [in]  axisCoordNum coordinate system number
+	* @param [in]  toolNum tool number
+	* @param [in]  coord coordinate values
+	* @param [in]  calibFlag calibflag 0-No, 1-yes
+	* @return error code
+	*/
+	errno_t ExtAxisActiveECoordSys(int axisCoordNum, int toolNum, DescPose coord, int calibFlag);
+
+	/**
+	* @brief Set the pose of the calibration reference point in the end coordinate system of the positioner
+	* @param [in] pos Position value
+	* @return error code
+	*/
+	errno_t SetRefPointInExAxisEnd(DescPose pos);
+
+	/**
+	* @brief Positioner coordinate system reference point setting - four-point method
+	* @param [in] pointNum Point number[1-4]
+	* @return error code
+	*/
+	errno_t PositionorSetRefPoint(int pointNum);
+
+	/**
+	* @brief Coordinate system calculation of positioner - four-point method
+	* @param [out] coord coordinate values
+	* @return error code
+	*/
+	errno_t PositionorComputeECoordSys(DescPose& coord);
+
+	/**
+	* @brief The UDP expansion axis moves synchronously with the robot joint movement
+	* @param [in] joint_pos Position of the target joint, unit[°]
+	* @param [in] desc_pos target Cartesian pose, unit[mm]
+	* @param [in] tool Tool number [0~14]
+	* @param [in] user workpiece number [0~14]
+	* @param [in] vel Speed percentage [0~100]
+	* @param [in] acc Acceleration percentage[0~100]
+	* @param [in] ovl Speed scaling factor[0~100]
+	* @param [in] epos the external axis position[mm]
+	* @param [in] blendT [1.0] - movement in place (block), [0 ~ 500.0]-smooth time (non-blocking), unit[ms]
+	* @param [in] offset_flag 0-No offset, 1-Offset in the job/base coordinate system, 2-Offset in the tool coordinate system, defaults to 0
+	* @param [in] offset_pos position offset
+	* @return error code
+	*/
+	errno_t ExtAxisSyncMoveJ(JointPos joint_pos, DescPose desc_pos, int tool, int user, float vel, float acc, float ovl, ExaxisPos epos, float blendT, uint8_t offset_flag, DescPose offset_pos);
+
+	/**
+	* @brief  The UDP extension axis moves synchronously with the robot’s linear motion
+	* @param [in] joint_pos Position of the target joint, unit[°]
+	* @param [in] desc_pos target Cartesian pose, unit[mm]
+	* @param [in] tool Tool number [0~14]
+	* @param [in] user workpiece number [0~14]
+	* @param [in] vel Speed percentage [0~100]
+	* @param [in] acc Acceleration percentage[0~100]
+	* @param [in] ovl Speed scaling factor[0~100]
+	* @param [in] blendR 1.0-movement in place (block), [0 ~ 1000] - smooth radius (non-blocking), unit (mm) 1.0 by default
+	* @param [in] epos the external axis position[mm]
+	* @param [in] offset_flag  0-No offset, 1-Offset in the job/base coordinate system, 2-Offset in the tool coordinate system, defaults to 0
+	* @param [in] offset_pos position offset
+	* @return error code
+	*/
+	errno_t ExtAxisSyncMoveL(JointPos joint_pos, DescPose desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos epos, uint8_t offset_flag, DescPose offset_pos);
+
+	/**
+	* @brief The UDP extension axis moves synchronously with the robot arc motion
+	* @param [in] joint_pos_p joint position of a pathpoint [°]
+	* @param [in] desc_pos_p path point Cartesian pose[mm]
+	* @param [in] ptool  path point tool number[0~14]
+	* @param [in] puser  path point workpiece number[0~14]
+	* @param [in] pvel  Speed percentage [0~100]
+	* @param [in] pacc  Acceleration percentage[0~100]
+	* @param [in] epos_p Pathpoint external axis position mm
+	* @param [in] poffset_flag 0-No offset, 1-Offset in the job/base coordinate system, 2-Offset in the tool coordinate system, defaults to 0
+	* @param [in] offset_pos_p  path point position offset
+	* @param [in] joint_pos_t joint position of the target point[°]
+	* @param [in] desc_pos_t Cartesian position of the target point[mm]
+	* @param [in] ttool  target point tool number[0~14]
+	* @param [in] tuser  target point workpiece number[0~14]
+	* @param [in] tvel  Speed percentage[0~100]
+	* @param [in] tacc  Acceleration percentage[0~100]
+	* @param [in] epos_t target point external axis position mm
+	* @param [in] toffset_flag 0-No offset, 1-Offset in the job/base coordinate system, 2-Offset in the tool coordinate system, defaults to 0
+	* @param [in] offset_pos_t target point position offset
+	* @param [in] ovl Speed scaling factor [0~100]
+	* @param [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm
+	* @return error code
+	*/
+	errno_t ExtAxisSyncMoveC(JointPos joint_pos_p, DescPose desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos epos_p, uint8_t poffset_flag, DescPose offset_pos_p, JointPos joint_pos_t, DescPose desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos epos_t, uint8_t toffset_flag, DescPose offset_pos_t, float ovl, float blendR);
+	/**
+	* @brief  Wire search begins
+	* @param  [in] refPos  1- Reference point 2- contact point
+	* @param  [in] searchVel   Search speed %
+	* @param  [in] searchDis  Seeking distance mm
+	* @param  [in] autoBackFlag Automatic return flag, 0- not automatic; - Auto
+	* @param  [in] autoBackVel  Automatic return speed %
+	* @param  [in] autoBackDis  Automatic return distance mm
+	* @param  [in] offectFlag  1- Find with offset; 2- Find the teaching point
+	* @return  error code
+	*/
+	 errno_t WireSearchStart(int refPos, float searchVel, int searchDis, int autoBackFlag, float autoBackVel, int autoBackDis, int offectFlag);
+
+	 /**
+	  * @brief  Wire locating is complete
+	  * @param  [in] refPos  1- Reference point 2- contact point
+	  * @param  [in] searchVel   Search speed %
+	  * @param  [in] searchDis  Seeking distance mm
+	  * @param  [in] autoBackFlag Automatic return flag, 0- not automatic; - Auto
+	  * @param  [in] autoBackVel  Automatic return speed %
+	  * @param  [in] autoBackDis  Automatic return distance mm
+	  * @param  [in] offectFlag  1- Find with offset; 2- Find the teaching point
+	  * @return  error code
+	  */
+	 errno_t WireSearchEnd(int refPos, float searchVel, int searchDis, int autoBackFlag, float autoBackVel, int autoBackDis, int offectFlag);
+
+	 /**
+	  * @brief  Calculate the seeking offset of the welding wire
+	  * @param  [in] seamType  Weld type
+	  * @param  [in] method   Calculation method
+	  * @param  [in] varNameRef Reference points 1-6, "#" indicates no point variable
+	  * @param  [in] varNameRes Contact points 1-6, "#" indicates no point variable
+	  * @param  [out] offectFlag 0- offset is superimposed directly to the instruction point; 1- Offset requires a coordinate transformation of the instruction point
+	  * @param  [out] offect Offset pose[x, y, z, a, b, c]
+	  * @return  error code
+	  */
+	 errno_t GetWireSearchOffset(int seamType, int method, std::vector<std::string> varNameRef, std::vector<std::string> varNameRes, int& offectFlag, DescPose& offect);
+
+	 /**
+	  * @brief  Wait for wire locating to complete
+	  * @return  error code
+	  */
+	 errno_t WireSearchWait(std::string varName);
+
+	 /**
+	  * @brief  Wire seeking contact is written to the database
+	  * @param  [in] varName  Contact point name: RES0 ~ RES99
+	  * @param  [in] pos  Contact data[x, y, x, a, b, c]
+	  * @return  error code
+	  */
+	 errno_t SetPointToDatabase(std::string varName, DescPose pos);
+	
+	 /**
+	  * @brief  Arc tracking control
+	  * @param  [in] flag Switch, 0-off; 1-on
+	  * @param  [in] dalayTime Lag time, in ms
+	  * @param  [in] isLeftRight Left-right deviation compensation
+	  * @param  [in] klr Left-right adjustment coefficient (sensitivity);
+	  * @param  [in] tStartLr Left-right start compensation time around cyc
+	  * @param  [in] stepMaxLr Left-right the maximum compensation amount each time mm
+	  * @param  [in] sumMaxLr Left-right total maximum compensation mm
+	  * @param  [in] isUpLow Up-down compensation
+	  * @param  [in] kud Up-down adjustment factor;
+	  * @param  [in] tStartUd Start Up-down compensation time cyc
+	  * @param  [in] stepMaxUd Maximum compensation amount Up-down each time mm
+	  * @param  [in] sumMaxUd Total maximum compensation Up-down
+	  * @param  [in] axisSelect Up-down coordinate system selection, 0-swing; 1- Tools; 2- Base
+	  * @param  [in] referenceType Up-down reference current setting mode, 0-feedback; 1-constant
+	  * @param  [in] referSampleStartUd Up-down reference current sampling start count (feedback);cyc
+	  * @param  [in] referSampleCountUd Up-down reference current sampling cycle count;cyc
+	  * @param  [in] referenceCurrent Up-down reference current mA
+	  * @return  error code
+	  */
+	 errno_t ArcWeldTraceControl(int flag, double delaytime, int isLeftRight, double klr, double tStartLr, double stepMaxLr, double sumMaxLr, int isUpLow, double kud, double tStartUd, double stepMaxUd, double sumMaxUd, int axisSelect, int referenceType, double referSampleStartUd, double referSampleCountUd, double referenceCurrent);
+
+
+	 /**
+	  * @brief  Wire seeking contact is written to the database
+	  * @param  [in] channel Arc tracking AI passband selection,[0-3]
+	  * @return  error code
+	  */
+	 errno_t ArcWeldTraceExtAIChannelConfig(int channel);
+
+
+	 /**
+	  * @brief  Force sensor assists drag
+	  * @param  [in] status Control status, 0- off; 1- On
+	  * @param  [in] asaptiveFlag Adaptive on flag, 0- off; 1- On
+	  * @param  [in] interfereDragFlag Interference drag flag, 0- off; 1- On
+	  * @param  [in] M Inertia coefficient
+	  * @param  [in] B Damping coefficient
+	  * @param  [in] K Stiffness coefficient
+	  * @param  [in] F Drag the six-dimensional force threshold
+	  * @param  [in] Fmax Maximum towing power limit
+	  * @param  [in] Vmax Maximum joint speed limit
+	  * @return  error code
+	  */
+	 errno_t EndForceDragControl(int status, int asaptiveFlag, int interfereDragFlag, std::vector<double> M, std::vector<double> B, std::vector<double> K, std::vector<double> F, double Fmax, double Vmax);
+
+
+	 /**
+	  * @brief  The force sensor automatically On after the error is cleared
+	  * @param  [in] status Control status, 0- off; 1- On
+	  * @return  error code
+	  */
+	 errno_t SetForceSensorDragAutoFlag(int status);
+
+
+	/**
+	* @brief sets the hybrid drag switch and parameters of six-dimensional force and joint impedance
+	* @param [in] status Control status, 0- off; 1- Open
+	* @param [in] impedanceFlag Impedanceflag, 0-off; 1- Open
+	* @param [in] lamdeDain Drag gain
+	* @param [in] KGain Stiffness gain
+	* @param [in] BGain Damping gain
+	* @param [in] dragMaxTcpVel Drag the end maximum line speed limit
+	* @param [in] dragMaxTcpOriVel Drag end maximum angular speed limit
+	* @return  error code
+	*/
+	errno_t ForceAndJointImpedanceStartStop(int status, int impedanceFlag, std::vector<double> lamdeDain, std::vector<double> KGain, std::vector<double> BGain, double dragMaxTcpVel, double dragMaxTcpOriVel);
+
+	/**
+	* @brief to obtain the drag switch status of the force sensor
+	* @param [out] dragState Force sensor auxiliary drag control status, 0-off; 1- Open
+	* @param [out] sixDimensionalDragState Control state, 0- off; 1- Open
+	* @return  error code
+	*/
+	errno_t GetForceAndTorqueDragState(int& dragState, int& sixDimensionalDragState);
+
+	/**
+	* @brief Sets the load weight under the force sensor
+	* @param [in] weight Load weight kg
+	* @return  error code
+	*/
+	 errno_t SetForceSensorPayload(double weight);
+
+	 /**
+	  * @brief sets the load center of mass under the force sensor
+	  * @param [in] x Load centroid x mm
+	  * @param [in] y Load centroid y mm
+	  * @param [in] z Load centroid z mm
+	  * @return  error code
+	  */
+	 errno_t SetForceSensorPayloadCog(double x, double y, double z);
+
+	 /**
+	  * @brief obtains the load weight under the force sensor
+	  * @param [in] weight Load weight kg
+	  * @return  error code
+	  */
+	 errno_t GetForceSensorPayload(double& weight);
+
+	 /**
+	  * @brief obtains the load center of mass under the force sensor
+	  * @param [out] x Load centroid x mm
+	  * @param [out] y Load centroid y mm
+	  * @param [out] z Load centroid z mm
+	  * @return  error code
+	  */
+	 errno_t GetForceSensorPayloadCog(double& x, double& y, double& z);
+
+	 /**
+	  * @brief force sensor automatically adjusts to zero
+	  * @param [out] weight Weight of the sensor kg
+	  * @param [out] pos sensor centroid mm
+	  * @return  error code
+	  */
+	 errno_t ForceSensorAutoComputeLoad(double& weight, DescTran& pos);
+	
+	 /**
+	  * @brief sensor automatically zero data recording
+	  * @param [in] recordCount Number of recorded data 1-3
+	  * @return  error code
+	  */
+	 errno_t ForceSensorSetSaveDataFlag(int recordCount);
+
+	/**
+	* @brief sensor automatic zero correction calculation
+	* @param [out] weight Weight of the sensor kg
+	* @param [out] pos sensor centroid [x, y, z]
+	* @return  error code
+	*/
+	errno_t ForceSensorComputeLoad(double& weight, DescTran& pos);
+	
+	/**
+	* Position and attitude obtained by @brief segment welding
+	* @param [in] startPos Coordinates of the start point
+	* @param [in] endPos end point coordinates
+	* @param [in] startDistance Length from welding point to starting point
+	* @param [out] weldPointDesc Cartesian coordinate information of the weld point
+	* @param [out] weldPointJoint Cartesian coordinate information of weldpointjoint
+	* @param [out] tool Indicates the tool number
+	* @param [out] user Job ID
+	* @return  error code
+	*/
+	errno_t GetSegmentWeldPoint(DescPose startPos, DescPose endPos, double startDistance, DescPose& weldPointDesc, JointPos& weldPointJoint, int& tool, int& user);
+
+	/**
+	* @brief Set welding process curve parameters
+	* @param [in] id Welding process number (1-99)
+	* @param [in] startCurrent Arcing current (A)
+	* @param [in] startVoltage Arc voltage (V)
+	* @param [in] startTime Arc starting time (ms)
+	* @param [in] weldCurrent Welding current (A)
+	* @param [in] weldVoltage Welding voltage (V)
+	* @param [in] endCurrent (A)
+	* @param [in] endVoltage (V)
+	* @param [in] endTime Arc recovery time (ms)
+	* @return  error code
+	*/
+	errno_t WeldingSetProcessParam(int id, double startCurrent, double startVoltage, double startTime, double weldCurrent, double weldVoltage, double endCurrent, double endVoltage, double endTime);
+
+	/**
+	* @brief Obtain welding process curve parameters
+	* @param [in] id Welding process number (1-99)
+	* @param [out] startCurrent Arcing current (A)
+	* @param [out] startVoltage Arc voltage (V)
+	* @param [out] startTime Arc starting time (ms)
+	* @param [out] weldCurrent Welding current (A)
+	* @param [out] weldVoltage Welding voltage (V)
+	* @param [out] endCurrent (A)
+	* @param [out] endVoltage Return voltage (V)
+	* @param [out] endTime Arc recovery time (ms)
+	* @return  error code
+	*/
+	errno_t WeldingGetProcessParam(int id, double& startCurrent, double& startVoltage, double& startTime, double& weldCurrent, double& weldVoltage, double& endCurrent, double& endVoltage, double& endTime);
+
+	/**
+	* @brief end sensor configuration
+	* @param [in] idCompany, 18-JUNKONG; 25-HUIDE
+	* @param [in] idDevice type, 0-JUNKONG/RYR6T.V1.0
+	* @param [in] idSoftware Software version, 0-J1.0/HuiDe1.0(not yet available)
+	* @param [in] idBus mount position, 1- end port 1; 2- Terminal port 2... 8- Terminal Port 8 (not yet open)
+	* @return  error code
+	*/
+	errno_t AxleSensorConfig(int idCompany, int idDevice, int idSoftware, int idBus);
+
+	/**
+	* @brief gets the end sensor configuration
+	* @param [out] idCompany, 18-JUNKONG; 25-HUIDE
+	* @param [out] idDevice type, 0-JUNKONG/RYR6T.V1.0
+	* @return  error code
+	*/
+	errno_t AxleSensorConfigGet(int& idCompany, int& idDevice);
+
+	/**
+	* @brief end sensor activation
+	* @param [in] actFlag 0- Reset; 1- Activation
+	* @return  error code
+	*/
+	errno_t AxleSensorActivate(int actFlag);
+
+	/**
+	* @brief end sensor register write
+	* @param [in] devAddr Indicates the device address number 0-255
+	* @param [in] regHAddr register address high 8 bits
+	* @param [in] regLAddr Lower 8 bits of the register address
+	* @param [in] regNum Number of registers 0-255
+	* @param [in] data1 writes the register value 1
+	* @param [in] data2 writes the register value 2
+	* @param [in] isNoBlock 0- Block; 1- Non-blocking
+	* @return  error code
+	*/
+	errno_t AxleSensorRegWrite(int devAddr, int regHAddr, int regLAddr, int regNum, int data1, int data2, int isNoBlock);
+
+	/**
+	* @brief sets whether the output is reset after the DO stop/pause of the control box
+	* @param [in] resetFlag 0- no more bits; 1- Reset
+	* @return  error code
+	*/
+	errno_t SetOutputResetCtlBoxDO(int resetFlag);
+
+	 /**
+	  * @brief sets whether the output is reset after the control box AO is stopped/paused
+	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @return  error code
+	  */
+		errno_t SetOutputResetCtlBoxAO(int resetFlag);
+
+	 /**
+	  * @brief Sets whether the output is reset after the end tool DO is stopped/paused
+	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @return  error code
+	  */
+		errno_t SetOutputResetAxleDO(int resetFlag);
+	 
+	 /**
+	  * @brief sets whether the output is reset after the end tool AO is stopped/paused
+	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @return  error code
+	  */
+		errno_t SetOutputResetAxleAO(int resetFlag);
+	
+	 /**
+	  * @brief Sets whether the output is reset after the extension DO is stopped/paused
+	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @return  error code
+	  */
+		errno_t SetOutputResetExtDO(int resetFlag);
+
+	 /**
+	  * @brief sets whether the output is reset after the extended AO is stopped/paused
+	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @return  error code
+	  */
+		errno_t SetOutputResetExtAO(int resetFlag);
+
+	 /**
+	  * @brief sets whether the output is reset after SmartTool stops/pauses
+	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @return  error code
+	  */
+		errno_t SetOutputResetSmartToolDO(int resetFlag);
+	
+	 /**
+	  * @brief simulation swing starts
+	  * @param [in] weaveNum Swing parameter number
+	  * @return  error code
+	  */
+		errno_t WeaveStartSim(int weaveNum);
+
+	 /**
+	  * @brief simulation swing is over
+	  * @param [in] weaveNum Swing parameter number
+	  * @return  error code
+	  */
+		errno_t WeaveEndSim(int weaveNum);
+
+	 /**
+	  * @brief start trajectory detection warning (no movement)
+	  * @param [in] weaveNum Swing parameter number
+	  * @return  error code
+	  */
+		errno_t WeaveInspectStart(int weaveNum);
+
+	 /**
+	  * @brief end track detection warning (no movement)
+	  * @param [in] weaveNum Swing parameter number
+	  * @return  error code
+	  */
+		errno_t WeaveInspectEnd(int weaveNum);
+
+	 /**
+	  * @brief Extension IO- Configure welder gas detection signal
+	  * @param [in] DONum Gas detection signal extension DO number
+	  * @return  error code
+	  */
+		errno_t SetAirControlExtDoNum(int DONum);
+	
+	 /**
+	  * @brief extension IO- Configs the arc signal of the welder
+	  * @param [in] DONum welding machine arc signal extension DO number
+	  * @return  error code
+	  */
+		errno_t SetArcStartExtDoNum(int DONum);
+
+	 /**
+	  * @brief extension IO- Configure the welder reverse wire feed signal
+	  * @param [in] DONum reverse feed signal extension DO number
+	  * @return  error code
+	  */
+		errno_t SetWireReverseFeedExtDoNum(int DONum);
+
+	 /**
+	  * @brief Extension IO- Configure the welder forward wire feed signal
+	  * @param [in] DONum extends the DO number to the forward wire feed signal
+	  * @return  error code
+	  */
+		errno_t SetWireForwardFeedExtDoNum(int DONum);
+
+	 /**
+	  * @brief extension IO- Configure the welder arc success signal
+	  * @param [in] DINum Indicates the extension DI number of the arc-starting successful signal
+	  * @return  error code
+	  */
+		errno_t SetArcDoneExtDiNum(int DINum);
+
+	 /**
+	  * @brief Extension IO- Configure the welder ready signal
+	  * @param [in] DINum welder ready signal extension DI number
+	  * @return  error code
+	  */
+		errno_t SetWeldReadyExtDiNum(int DINum);
+
+	 /**
+	  * @brief Extension IO- Configs the welding interrupt recovery signal
+	  * @param [in] reWeldDINum Resume welding signal extension DI number after welding interruption
+	  * @param [in] abortWeldDINum Indicates the DI number of a welding signal that exits after a welding failure
+	  * @return  error code
+	  */
+	    errno_t SetExtDIWeldBreakOffRecover(int reWeldDINum, int abortWeldDINum);
+
+	 /**
+	  * @brief sets the collision detection method of the robot
+	  * @param [in] method Collision detection method: 0- current mode; 1- Dual encoder; 2- Current and dual encoder turn on simultaneously
+	  * @return  error code
+	  */
+		errno_t SetCollisionDetectionMethod(int method);
+
+	 /**
+	  * @brief Indicates that collision detection is disabled in static mode
+	  * @param [in] status 0- Off; 1- Open
+	  * @return  error code
+	  */
+		errno_t SetStaticCollisionOnOff(int status);
+
+	 /**
+	* @brief joint torque power detection
+	* @param [in] status 0- Off; 1- Open
+	* @param [in] power Set maximum power (W);
+	  * @return  error code
+	  */
+	 errno_t SetPowerLimit(int status, double power);
+	
+	/**
+	* @brief Joint torque control starts
+	* @return  error code
+	*/
+	errno_t ServoJTStart();
+
+	/**
+	* @brief joint torque control
+	* @param [in] torque j1 to j6 Joint torque, unit: Nm
+	* @param [in] interval Instruction period, unit s, range [0.001~0.008]
+	* @return  error code
+	*/
+	errno_t ServoJT(float torque[], double interval);
+
+	/**
+	* @brief Joint torque control end
+	* @return  error code
+	*/
+	errno_t ServoJTEnd();
+
+	/**
+	* @brief sets communication reconnection parameters with the robot
+	* @param [in] enable Enable reconnection when the network is faulty true- enabled false- disabled
+	* @param [in] reconnectTime Reconnection time, unit: ms
+	* @param [in] period Reconnection period, expressed in ms
+	* @return  error code
+	*/
+	errno_t SetReConnectParam(bool enable, int reconnectTime = 30000, int period = 50);
+
+	errno_t Sleep(int ms);
+
+
+	/**
 	 *@brief  Robot interface class destructor
 	 */
 	~FRRobot();
 
 private:
-	static void RobotStateRoutineThread();
-	static void RobotInstCmdSendRoutineThread();
-	static void RobotInstCmdRecvRoutineThread();
-	static void RobotTaskRoutineThread();
+	void RobotStateRoutineThread();
+	void RobotInstCmdSendRoutineThread();
+	void RobotInstCmdRecvRoutineThread();
+	void RobotTaskRoutineThread();
 	char serverUrl[64];
+
 	bool rpc_done = false;
+
+	/**
+* @brief download file
+* @param [in] fileType File type 0-lua file
+* @param [in] fileName File name "test.lua"
+* @param [in] saveFilePath Save file path C: //test/
+* @return error code
+	 */
 	errno_t FileDownLoad(int fileType, std::string fileName, std::string saveFilePath);
 
+	/**
+* @brief Upload file
+* @param [in] fileType File type 0-lua file
+* @param [in] fileName File name "test.lua"
+* @param [in] upLoadFilePath Save file C: //test/
+* @return error code
+	 */
 	errno_t FileUpLoad(int fileType, std::string filePath);
 
+	/**
+* @brief Upload file
+* @param [in] fileType File type 0-lua file
+* @param [in] fileName File name "test.lua"
+	 * @return error code
+	 */
 	errno_t FileDelete(int fileType, std::string fileName);
 
 	std::vector<std::string> split(const std::string& s, char delim);
 
 	std::vector<std::string> split(std::string s, std::string delimiter);
+
+	bool IsSockError();
+
+private:
+	uint8_t robot_realstate_exit = 0;
+	uint8_t robot_instcmd_send_exit = 0;
+	uint8_t robot_instcmd_recv_exit = 0;
+	uint8_t robot_task_exit = 0;
+	bool is_sendcmd = false;
+	char g_sendbuf[1024 * 4] = { 0 };
+	char g_recvbuf[1024 * 4] = { 0 };
+	int g_sock_com_err;
+
+	char robot_ip[64];
+	ROBOT_STATE_PKG robot_state_pkg;
+
+	FRTcpClient* rtClient = nullptr;
+	FRTcpClient* cmdClient = nullptr;
+
 };
 
 #endif
