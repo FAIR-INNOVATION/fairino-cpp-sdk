@@ -12,75 +12,75 @@ typedef  unsigned short int  uint16_t;
 typedef  unsigned int uint32_t;
 
 /**
- * @brief 关节位置数据类型
- */
+* @brief Joint position data type
+*/
 typedef  struct
 {
-	double jPos[6];   /* 六个关节位置，单位deg */
+	double jPos[6];   /* Six joint positions, unit: deg */
 }JointPos;
 
 /**
-* @brief 笛卡尔空间位置数据类型
+* @brief Cartesian spatial location data type
 */
 typedef struct
 {
-	double x;    /* x轴坐标，单位mm  */
-	double y;    /* y轴坐标，单位mm  */
-	double z;    /* z轴坐标，单位mm  */
+	double x;    /* X-axis coordinate, unit: mm  */
+	double y;    /* Y-axis coordinate, unit: mm  */
+	double z;    /* Z-axis coordinate, unit: mm  */
 } DescTran;
 
 /**
-* @brief 欧拉角姿态数据类型
+* @brief Euler Angle attitude data type
 */
 typedef struct
 {
-	double rx;   /* 绕固定轴X旋转角度，单位：deg  */
-	double ry;   /* 绕固定轴Y旋转角度，单位：deg  */
-	double rz;   /* 绕固定轴Z旋转角度，单位：deg  */
+	double rx;   /* Rotation Angle about fixed axis X, unit: deg  */
+	double ry;   /* Rotation Angle about fixed axis y, unit: deg  */
+	double rz;   /* Rotation Angle about fixed axis Z, unit: deg  */
 } Rpy;
 
 /**
- *@brief 笛卡尔空间位姿类型
- */
+*@brief Cartesian space pose type
+*/
 typedef struct
 {
-	DescTran tran;      /* 笛卡尔空间位置  */
-	Rpy rpy;			/* 笛卡尔空间姿态  */
+	DescTran tran;      /* Cartesian position  */
+	Rpy rpy;            /* Cartesian space attitude  */
 } DescPose;
 
 /**
- * @brief 扩展轴位置数据类型
- */
+* @brief Extension axis position data type
+*/
 typedef  struct
 {
-	double ePos[4];   /* 四个扩展轴位置，单位mm */
+	double ePos[4];   /* Position of four expansion shafts, unit: mm */
 }ExaxisPos;
 
 /**
- * @brief 力传感器的受力分量和力矩分量
- */
+* @brief The force component and torque component of the force sensor
+*/
 typedef struct
 {
-	double fx;  /* 沿x轴受力分量，单位N  */
-	double fy;  /* 沿y轴受力分量，单位N  */
-	double fz;  /* 沿z轴受力分量，单位N  */
-	double tx;  /* 绕x轴力矩分量，单位Nm */
-	double ty;  /* 绕y轴力矩分量，单位Nm */
-	double tz;  /* 绕z轴力矩分量，单位Nm */
+	double fx;  /* Component of force along the x axis, unit: N  */
+	double fy;  /* Component of force along the y axis, unit: N  */
+	double fz;  /* Component of force along the z axis, unit: N  */
+	double tx;  /* Component of torque about the X-axis, unit: Nm */
+	double ty;  /* Component of torque about the Y-axis, unit: Nm */
+	double tz;  /* Component of torque about the Z-axis, unit: Nm */
 } ForceTorque;
 
 
 /**
- * @brief  螺旋参数数据类型
- */
+* @brief  Spiral parameter data type
+*/
 typedef  struct
 {
-	int    circle_num;           /* 螺旋圈数  */
-	float  circle_angle;         /* 螺旋倾角  */
-	float  rad_init;             /* 螺旋初始半径，单位mm  */
-	float  rad_add;              /* 半径增量  */
-	float  rotaxis_add;          /* 转轴方向增量  */
-	unsigned int rot_direction;  /* 旋转方向，0-顺时针，1-逆时针  */
+	int    circle_num;           /* Coil number  */
+	float  circle_angle;         /* Spiral Angle  */
+	float  rad_init;             /* Initial radius of spiral, unit: mm  */
+	float  rad_add;              /* Radius increment  */
+	float  rotaxis_add;          /* Increment in the direction of the axis of rotation  */
+	unsigned int rot_direction;  /* Rotation direction, 0- clockwise, 1- counterclockwise  */
 }SpiralParam;
 
 #pragma pack(push)
@@ -101,18 +101,18 @@ typedef struct ROBOT_AUX_STATE
 #pragma pack(1)
 typedef struct _EXT_AXIS_STATUS
 {
-	double pos;           //扩展轴位置
-	double vel;           //扩展轴速度
-	int errorCode;        //扩展轴故障码
-	uint8_t ready;        //伺服准备好
-	uint8_t inPos;        //伺服到位
-	uint8_t alarm;        //伺服报警
-	uint8_t flerr;        //跟随误差
-	uint8_t nlimit;       //到负限位
-	uint8_t pLimit;       //到正限位
-	uint8_t mdbsOffLine;  //驱动器485总线掉线
-	uint8_t mdbsTimeout;  //控制卡与控制箱485通信超时
-	uint8_t homingStatus; //扩展轴回零状态
+	double pos;           //Expansion axis position
+	double vel;           //Spread axis velocity
+	int errorCode;        //Expansion axis error code
+	uint8_t ready;        //Servo ready
+	uint8_t inPos;        //Servo in place
+	uint8_t alarm;        //Servo alarm
+	uint8_t flerr;        //Following error
+	uint8_t nlimit;       //Negative limit
+	uint8_t pLimit;       //Positive limit
+	uint8_t mdbsOffLine;  //The drive 485 bus is offline
+	uint8_t mdbsTimeout;  //The communication between the controller card and the control box 485 times out
+	uint8_t homingStatus; //The expansion axis homing state
 }EXT_AXIS_STATUS;
 #pragma pack(pop)
 
@@ -160,24 +160,24 @@ typedef struct _ROBOT_STATE_PKG
 	int      mc_queue_len; //Motion queue length
 	uint8_t  collisionState;//Collision detection, 1- collision; 0- No collision
 	int      trajectory_pnum; //Track point number
-    uint8_t  safety_stop0_state;  /* 安全停止信号SI0 *//* Safety stop signal SI0 */
-    uint8_t  safety_stop1_state;  /* 安全停止信号SI1 *//* Safety stop signal SI1 */
-    uint8_t  gripper_fault_id;    /* 错误夹爪号 */ /* gripper error number */
-    uint16_t gripper_fault;       /* 夹爪故障 *//* Gripper fault */
-    uint16_t gripper_active;      /* 夹爪激活状态 *//* Gripper active status */
-    uint8_t  gripper_position;    /* 夹爪位置 */ /* Gripper position */
-    int8_t   gripper_speed;       /* 夹爪速度 */ /* Gripper speed */
-    int8_t   gripper_current;     /* 夹爪电流 *//* Gripper current */
-    int      gripper_temp;        /* 夹爪温度 *//* Gripper temperature */
-    int      gripper_voltage;     /* 夹爪电压 *//* Gripper voltage */
+	uint8_t  safety_stop0_state;  /* Safety stop signal SI0 */
+	uint8_t  safety_stop1_state;  /* Safety stop signal SI1 */
+	uint8_t  gripper_fault_id;     /* gripper error number */
+	uint16_t gripper_fault;       /* Gripper fault */
+	uint16_t gripper_active;      /* Gripper active status */
+	uint8_t  gripper_position;    /* Gripper position */
+	int8_t   gripper_speed;        /* Gripper speed */
+	int8_t   gripper_current;     /* Gripper current */
+	int      gripper_temp;        /* Gripper temperature */
+	int      gripper_voltage;     /* Gripper voltage */
 	robot_aux_state aux_state;/* 485Extended axis state */
-	EXT_AXIS_STATUS extAxisStatus[4];  /* UDP扩展轴状态 */
-	uint16_t extDIState[8];        //扩展DI输入
-	uint16_t extDOState[8];        //扩展DO输出
-	uint16_t extAIState[4];        //扩展AI输入
-	uint16_t extAOState[4];        //扩展AO输出
-	int rbtEnableState;            //机器人使能状态--robot enable state
-	uint16_t check_sum;            /* 和校验 */
+	EXT_AXIS_STATUS extAxisStatus[4];  /* UDPExtended axis state */
+	uint16_t extDIState[8];        //Extended DI
+	uint16_t extDOState[8];        //Extended DO
+	uint16_t extAIState[4];        //Extended AI
+	uint16_t extAOState[4];        //Extended AO
+	int rbtEnableState;            //robot enable state
+	uint16_t check_sum;            /* Sum check */
 }ROBOT_STATE_PKG;
 
 #pragma pack(pop)
