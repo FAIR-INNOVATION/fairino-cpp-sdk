@@ -2,7 +2,7 @@
 
 Introduction
 -------------
-C++ SDK for FAIRINO collaborative robots for Linux operating systems. Please decompress and use the Linux version of the SDK lib library under the Linux system.
+The libfairino directory contains the C++ SDK source files. Under the linux directory is the C++ SDK library file and header file of FAIRINO cooperative robot for Linux operating system. Under the windows directory is the C++ SDK library file and header file of FAIRINO cooperative robot for windows operating system.
 
 Documentation
 ----------------
