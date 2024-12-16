@@ -2,6 +2,12 @@
 #define    ROBOTTYPES_H_
 
 #include <stdio.h>
+#include <iostream>
+#include <list>
+#include <vector>
+#include <string>
+#include <string.h>
+#include <sstream>
 
 typedef  int errno_t;
 typedef  unsigned char uint8_t;
@@ -14,9 +20,23 @@ typedef  unsigned int uint32_t;
 /**
 * @brief Joint position data type
 */
-typedef  struct
+typedef struct JointPos
 {
 	double jPos[6];   /* Six joint positions, unit: deg */
+	JointPos(double J1, double J2, double J3, double J4, double J5, double J6)
+	{
+		jPos[0] = J1;
+		jPos[1] = J2;
+		jPos[2] = J3;
+		jPos[3] = J4;
+		jPos[4] = J5;
+		jPos[5] = J6;
+	}
+
+	JointPos()
+	{
+
+	}
 }JointPos;
 
 /**
@@ -42,18 +62,46 @@ typedef struct
 /**
 *@brief Cartesian space pose type
 */
-typedef struct
+typedef struct DescPose
 {
 	DescTran tran;      /* Cartesian position  */
 	Rpy rpy;            /* Cartesian space attitude  */
+	DescPose(double x, double y, double z, double rx, double ry, double rz)
+	{
+		tran.x = x;
+		tran.y = y;
+		tran.z = z;
+
+		rpy.rx = rx;
+		rpy.ry = ry;
+		rpy.rz = rz;
+	}
+
+	DescPose()
+	{
+
+	}
 } DescPose;
 
 /**
 * @brief Extension axis position data type
 */
-typedef  struct
+typedef  struct ExaxisPos
 {
 	double ePos[4];   /* Position of four expansion shafts, unit: mm */
+	ExaxisPos(double axis1, double axis2, double axis3, double axis4)
+	{
+		ePos[0] = axis1;
+		ePos[1] = axis2;
+		ePos[2] = axis3;
+		ePos[3] = axis4;
+	}
+
+	ExaxisPos()
+	{
+
+	}
+
 }ExaxisPos;
 
 /**
@@ -82,6 +130,63 @@ typedef  struct
 	float  rotaxis_add;          /* Increment in the direction of the axis of rotation  */
 	unsigned int rot_direction;  /* Rotation direction, 0- clockwise, 1- counterclockwise  */
 }SpiralParam;
+
+typedef struct AxleComParam
+{
+	int baudRate;    // Baud rate: 1-9600, 2-14400, 3-19200, 4-38400, 5-56000, 6-67600, 7-115200, 8-128000.
+	int dataBit;     // Data bit: Data bit support (8,9), currently commonly used 8
+	int stopBit;     // Stop bits: 1-1, 2-0.5, 3-2, 4-1.5, usually 1
+	int verify;      // Parity bits: 0-none, 1-Odd, 2-Even, usually 0.
+	int timeout;     // Timeout period: 1 to 1000ms. Set a proper time parameter based on the peripherals
+	int timeoutTimes;   // Number of timeout times: 1 to 10. The system mainly resends timeout to reduce occasional exceptions and improve user experience
+	int period;      // Periodic command interval: 1 to 1000ms. This parameter is used to specify the interval for sending periodic commands
+
+	AxleComParam()
+	{
+
+	}
+
+	AxleComParam(int _baudRate, int _dataBit, int _stopBit, int _verify, int _timeout, int _timeoutTimes, int _period)
+	{
+		baudRate = _baudRate;
+		dataBit = _dataBit;
+		stopBit = _stopBit;
+		verify = _verify;
+		timeout = _timeout;
+		timeoutTimes = _timeoutTimes;
+		period = _period;
+	}
+}AxleComParam;
+
+/**
+ * @brief robot time
+ */
+#pragma pack(push)
+#pragma pack(1)
+typedef struct RobotTime
+{
+	uint16_t year = 0;
+	uint8_t mouth = 0;
+	uint8_t day = 0;
+	uint8_t hour = 0;
+	uint8_t minute = 0;
+	uint8_t second = 0;
+	uint16_t millisecond = 0;
+
+	RobotTime()
+	{
+
+	}
+
+	std::string ToString()
+	{
+		std::string rtn = std::to_string(year) + "-" + std::to_string(mouth) + "-" + std::to_string(day) + " " + std::to_string(hour) + ":" + std::to_string(minute) + ":" + std::to_string(second) + "." + std::to_string(millisecond);
+		
+		return rtn;
+	}
+
+}RobotTime;
+#pragma pack(pop)
 
 #pragma pack(push)
 #pragma pack(1)
@@ -177,7 +282,12 @@ typedef struct _ROBOT_STATE_PKG
 	uint16_t extAIState[4];        //Extended AI
 	uint16_t extAOState[4];        //Extended AO
 	int rbtEnableState;            //robot enable state
-	uint16_t check_sum;            /* Sum check */
+	double   jointDriverTorque[6];        //机器人关节驱动器扭矩    Robot joint drive torque
+	double   jointDriverTemperature[6];   //机器人关节驱动器温度    Robot joint drive temperature
+	RobotTime robotTime;           //机器人系统时间                 Robot System time
+	int softwareUpgradeState;  //机器人软件升级状态                 Robot Software Upgrade State
+	uint16_t endLuaErrCode;    //末端LUA运行状态                    Robot axle lua state
+	uint16_t check_sum;            /* 和校验 */
 }ROBOT_STATE_PKG;
 
 #pragma pack(pop)

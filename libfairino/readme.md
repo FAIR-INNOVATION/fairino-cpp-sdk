@@ -1,6 +1,21 @@
-1. In Windows, create a build folder with the same level as cmakelist and run the following command in the build folder
-cmake / cmake .. -A x64
-make / cmake --build . --config debug
-Or open CmakeList.txt in the libfairino folder through an IDE such as VisualStudio, Clion, etc
-2. libfairino on linux supports compilation on x86 or Arm. Find the corresponding environment in the LinuxBuild folder
-The script file is compiled by executing it with the sh command.
+windows 下的编译方法：
+1,win32
+    cd build
+    cmake .. -A win32
+    # 编译release版本
+    cmake --build . --config Release
+    # 编译debug版本
+    cmake --build .
+
+1, x64
+    cd build
+    cmake .. -A x64
+    # 编译release版本
+    cmake --build . --config Release
+    # 编译debug版本
+    cmake --build .
+
+linux 下的编译方法
+    cd build
+    cmake ..
+    make

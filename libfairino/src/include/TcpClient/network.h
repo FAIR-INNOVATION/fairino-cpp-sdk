@@ -5,6 +5,9 @@
     #include <winsock2.h>
     #include <windows.h>
     #pragma comment(lib, "ws2_32.lib")
+#elif __MINGW32__
+#include <winsock2.h>
+#include <windows.h>
 #else
     #include <sys/socket.h>
     #include <sys/types.h>  

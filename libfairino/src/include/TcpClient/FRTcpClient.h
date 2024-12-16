@@ -4,6 +4,9 @@
 #ifdef WIN32
     #include <winsock2.h>
     #include <windows.h>
+#elif __MINGW32__
+#include <winsock2.h>
+#include <windows.h>
 //#pragma comment(lib, "ws2_32.lib")
 #else
     #include <sys/socket.h>
@@ -14,6 +17,13 @@
     #include <netinet/tcp.h>
     #include <unistd.h>
     #include <fcntl.h>
+#endif
+
+#ifdef __MINGW32__
+    #define TCP_MAXRT 5
+    #include <mingw.thread.h>
+#else
+    #include <thread>
 #endif
 
 #include <iostream>
@@ -65,9 +75,9 @@ private:
     socket_fd fd;
 
     int reConnTime = 30000;        //30000 ms
-    bool reconnEnable = false;  //重连使能
+    bool reconnEnable = true;  //重连使能
 
-    int timeOut = 1000;  // 默认1s
+    int timeOut = 500;  // 默认1s
 
     bool reconnFlag = false;
 };

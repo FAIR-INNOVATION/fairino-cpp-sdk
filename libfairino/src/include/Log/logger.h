@@ -10,6 +10,10 @@
 #define ELOG_LVL_INFO 3
 #define ELOG_LVL_DEBUG 4
 
+#ifdef WIN32
+    #define _WINDOWS
+#endif
+
 /* 日志入口；
  * 不要直接调用elog系列函数的入口：该模块耦合性强，不适宜直接嵌入C++工程中
  */

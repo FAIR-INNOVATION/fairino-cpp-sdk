@@ -19,7 +19,6 @@
 #include <iostream>
 #include "XmlRpc.h"
 #include "logger.h"
-#include <thread>
 
 using namespace std;
 
@@ -181,11 +180,10 @@ int FRTcpClient::RecvPkg(char* recvBuf, int recvSize)
         tmpRecvSize = Recv(tmpRecvBuf, recvSize - curRecvTotalSize);
         if (tmpRecvSize < 0)
         {
-            logger_error("fr TCP client recv failed");
+            logger_error("robot get realtime pkg failed");
             Close();
             if (reconnEnable == false)  //没有使能重连
             {
-                logger_error("do not enable reconnect!");
                 return -1;
             }
 
@@ -204,7 +202,6 @@ int FRTcpClient::RecvPkg(char* recvBuf, int recvSize)
             }
             else
             {
-                logger_error("reconnect failed!");
                 return -1;
             }
         }

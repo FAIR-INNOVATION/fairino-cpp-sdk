@@ -28,6 +28,7 @@
 
 #include <elog.h>
 #include <string.h>
+#include <stdio.h>
 
 #ifdef ELOG_ASYNC_OUTPUT_ENABLE
 
@@ -372,6 +373,7 @@ void elog_async_enabled(bool enabled) {
 
 #ifdef ELOG_ASYNC_OUTPUT_USING_WINTHREAD
 static DWORD WINAPI async_output(LPVOID v);
+void elog_async_output_notice(void);
 #endif
 /**
  * asynchronous output mode initialize
@@ -489,7 +491,7 @@ static DWORD WINAPI async_output(LPVOID v)
             }
         }
     }
-    return NULL;
+    return 0;
 }
 #endif /* ELOG_ASYNC_OUTPUT_USING_WINTHREAD */
 

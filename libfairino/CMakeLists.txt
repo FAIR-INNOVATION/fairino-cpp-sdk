@@ -22,8 +22,7 @@ endif()
 
 set(BASE_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/Base)
 set(LOG_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/Log)
-set(ROBOT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/Robot)
-#set(ROBOT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/EnInclude)
+set(ROBOT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/Robot-EN)
 set(TCP_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/TcpClient)
 set(XMLRPC_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/XmlRpc)
 
@@ -66,11 +65,13 @@ if(WIN32)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build/bin)
 
     add_library(fairino SHARED ${ALL_INCLUDE} ${ALL_SRC})
-    #add_library(fairinod STATIC ${ALL_INCLUDE} ${ALL_SRC})
+    add_library(fairinod STATIC ${ALL_INCLUDE} ${ALL_SRC})
     target_link_libraries(fairino ws2_32)
     target_link_libraries(fairino Shlwapi)
         
     add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+    target_link_libraries(test_fairino ws2_32)
+    target_link_libraries(test_fairino Shlwapi)
     target_link_libraries(test_fairino ${CMAKE_CURRENT_SOURCE_DIR}/build/bin/Release/fairino.lib)
 elseif(UNIX)
     # 静态库路径
@@ -89,7 +90,6 @@ elseif(UNIX)
     set_target_properties(fairino PROPERTIES VERSION 2.1.4 SOVERSION 2)
 
     add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-    target_link_libraries(test_fairino pthread)
     SET(CMAKE_BUILD_TYPE "Release")
     # 添加调试信息
     target_compile_options(test_fairino PRIVATE -g)
