@@ -14,5 +14,5 @@ cmake -DCMAKE_TOOLCHAIN_FILE=cc_rk3568.cmake ..
 make
 
 cp -r bin lib
-cp -r ../src/include/Robot include
+cp -r ../src/include/Robot-CN include
 

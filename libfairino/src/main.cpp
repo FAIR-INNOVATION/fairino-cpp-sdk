@@ -1215,101 +1215,360 @@ void AxleSensorConfig(FRRobot* robot)
 
  void TestSingularAvoidEArc(FRRobot* robot)
  {
-     DescPose startdescPose(-352.437, -88.350, 226.471, 177.222, 4.924, 86.631);
-     JointPos startjointPos(-3.463, -84.308, 105.579, -108.475, -85.087, -0.334);
+     DescPose startdescPose(-57.170, -690.147, 370.969, 176.438, -8.320, 169.881);
+     JointPos startjointPos(78.017, -62.036, 69.561, -94.199, -98.416, -1.360);
 
-     DescPose middescPose(-518.339, -23.706, 207.899, -178.420, 0.171, 71.697);
-     JointPos midjointPos(-8.587, -51.805, 64.914, -104.695, -90.099, 9.718);
+     DescPose middescPose(-71.044, -743.395, 375.996, -179.499, -5.398, 168.739);
+     JointPos midjointPos(77.417, -55.000, 58.732, -94.360, -95.385, -1.376);
 
-     DescPose enddescPose(-273.934, 323.003, 227.224, 176.398, 2.783, 66.064);
-     JointPos endjointPos(-63.460, -71.228, 88.068, -102.291, -90.149, -39.605);
+     DescPose enddescPose(-439.979, -512.743, 396.472, 178.112, 3.625, 146.576);
+     JointPos endjointPos(40.243, -65.402, 70.802, -92.565, -87.055, -16.465);
 
 
      ExaxisPos exaxisPos(0, 0, 0, 0);
      DescPose offdese(0, 0, 0, 0, 0, 0);
 
      robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-     robot->SingularAvoidStart(1, 100, 50, 10);
+     robot->SingularAvoidStart(2, 10, 5, 5);
      robot->MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
      robot->SingularAvoidEnd();
  }
 
  void TestSingularAvoidSArc(FRRobot* robot)
  {
-     DescPose startdescPose(-379.749, -113.569, 262.288, -178.716, 2.620, 91.597);
-     JointPos startjointPos(1.208, -80.436, 93.788, -104.620, -87.372, -0.331);
+     int rtn = 0;
+     DescPose startdescPose(299.993, -168.982, 299.998, 179.999, -0.002, -166.415);
+     JointPos startjointPos(-12.160, -71.236, -131.775, -66.992, 90.000, 64.255);
 
-     DescPose middescPose(-151.941, -155.742, 262.756, 177.693, 2.571, 106.941);
-     JointPos midjointPos(16.727, -121.385, 124.147, -90.442, -87.440, -0.318);
+     DescPose middescPose(249.985, -140.988, 299.929, 179.996, -0.013, -166.417);
+     JointPos midjointPos(-8.604, -60.474, -137.494, -72.046, 89.999, 67.813);
 
-     DescPose enddescPose(-211.982, 218.852, 280.712, 176.819, -4.408, 26.857);
-     JointPos endjointPos(-63.754, -98.766, 105.961, -94.052, -94.435, -0.366);
+     DescPose enddescPose(-249.991, -168.980, 299.981, 179.999, 0.004, -107.386);
+     JointPos endjointPos(-126.186, -63.401, -136.126, -70.477, 89.998, -108.800);
 
      ExaxisPos exaxisPos(0, 0, 0, 0);
      DescPose offdese(0, 0, 0, 0, 0, 0);
 
-     robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-     robot->SingularAvoidStart(0, 150, 50, 20);
-     robot->MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
-     robot->SingularAvoidEnd();
+     rtn = robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+     //rtn = robot->SingularAvoidStart(2, 30, 5, 5);
+     rtn = robot->MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+     //rtn = robot->SingularAvoidEnd();
+     printf("robot moving rtn is %d\n", rtn);
  }
 
  void TestSingularAvoidWArc(FRRobot* robot)
  {
-     DescPose startdescPose(-352.794, -164.582, 132.122, 176.136, 50.177, 85.343);
-     JointPos startjointPos(-2.048, -66.683, 121.240, -141.651, -39.776, -0.564);
+     DescPose startdescPose(-352.575, -685.604, 479.380, -15.933, -54.906, 130.699);
+     JointPos startjointPos(49.630, -56.597, 60.017, -57.989, 42.725, 146.834);
 
-     DescPose middescPose(-352.353, -3.338, 299.600, -1.730, 58.744, -136.276);
-     JointPos midjointPos(-30.807, -92.341, 126.259, -102.944, 33.740, -25.798);
+     DescPose middescPose(-437.302, -372.046, 366.764, -133.489, -62.309, -94.994);
+     JointPos midjointPos(21.202, -72.442, 84.164, -51.660, -29.880, 146.823);
 
-     DescPose enddescPose(-352.353, -3.337, 353.164, -1.729, 58.744, -136.276);
-     JointPos endjointPos(-30.807, -98.084, 116.943, -87.886, 33.740, -25.798);
+     DescPose enddescPose(-653.649, -235.926, 434.525, -176.386, -54.515, -66.734);
+     JointPos endjointPos(5.070, -58.920, 55.287, -57.937, -41.207, 146.834);
 
-     DescPose descPose(-402.473, -185.876, 103.985, -175.367, 59.682, 94.221);
-     JointPos jointPos(-0.095, -50.828, 109.737, -150.708, -30.225, -0.623);
+     //DescPose descPose(-402.473, -185.876, 103.985, -175.367, 59.682, 94.221);
+     //JointPos jointPos(-0.095, -50.828, 109.737, -150.708, -30.225, -0.623);
 
      ExaxisPos exaxisPos(0, 0, 0, 0);
      DescPose offdese(0, 0, 0, 0, 0, 0);
 
      robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-     robot->SingularAvoidStart(0, 150, 50, 20);
+     //robot->SingularAvoidStart(2, 10, 5, 4);
      robot->MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
-     robot->MoveL(&jointPos, &descPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-     robot->SingularAvoidEnd();
+     //robot->MoveL(&jointPos, &descPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+     //robot->SingularAvoidEnd();
  }
 
  void TestSingularAvoidSLin(FRRobot* robot)
  {
-     DescPose startdescPose(-379.749, -113.569, 262.293, -178.715, 2.620, 91.597);
-     JointPos startjointPos(1.208, -80.436, 93.788, -104.620, -87.372, -0.331);
+     DescPose startdescPose(300.002, -102.991, 299.994, 180.000, -0.001, -166.416);
+     JointPos startjointPos(-0.189, -66.345, -134.615, -69.042, 90.000, 76.227);
 
-     DescPose enddescPose(252.972, -74.287, 316.795, -177.588, 2.451, 97.588);
-     JointPos endjointPos(7.165, -170.868, 63.507, 14.965, -87.534, -0.319);
+     DescPose enddescPose(-300.000, -103.001, 299.994, 179.998, 0.003, -107.384);
+     JointPos endjointPos(-142.292, -66.345, -134.615, -69.042, 89.997, -124.908);
 
      ExaxisPos exaxisPos(0, 0, 0, 0);
      DescPose offdese(0, 0, 0, 0, 0, 0);
 
      robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-     robot->SingularAvoidStart(0, 150, 50, 20);
+     //robot->SingularAvoidStart(2, 30, 10, 3);
      robot->MoveL(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-     robot->SingularAvoidEnd();
+     //robot->SingularAvoidEnd();
  }
 
  void TestSingularAvoidWLin(FRRobot* robot)
  {
-     DescPose startdescPose(-402.473, -185.876, 103.985, -175.367, 59.682, 94.221);
-     JointPos startjointPos(-0.095, -50.828, 109.737, -150.708, -30.225, -0.623);
+     DescPose startdescPose(-352.574, -685.606, 479.415, -15.926, -54.905, 130.693);
+     JointPos startjointPos(49.630, -56.597, 60.013, -57.990, 42.725, 146.834);
 
-     DescPose enddescPose(-399.264, -184.434, 296.022, -4.402, 58.061, -94.161);
-     JointPos endjointPos(-0.095, -65.547, 105.145, -131.397, 31.851, -0.622);
+     DescPose enddescPose(-653.655, -235.943, 434.585, -176.403, -54.513, -66.719);
+     JointPos endjointPos(5.072, -58.920, 55.280, -57.939, -41.207, 146.834);
 
      ExaxisPos exaxisPos(0, 0, 0, 0);
      DescPose offdese(0, 0, 0, 0, 0, 0);
 
      robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-     robot->SingularAvoidStart(0, 150, 50, 20);
+     robot->SingularAvoidStart(2, 30, 10, 3);
      robot->MoveL(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
      robot->SingularAvoidEnd();
+ }
+
+ int UploadTrajectoryJ(FRRobot* robot)
+ {
+     robot->TrajectoryJDelete("testA.txt");
+     robot->TrajectoryJUpLoad("D://zUP/testA.txt");
+
+     int retval = 0;
+     char traj_file_name[30] = "/fruser/traj/testA.txt";
+     retval = robot->LoadTrajectoryJ(traj_file_name, 100, 1);
+     printf("LoadTrajectoryJ %s, retval is: %d\n", traj_file_name, retval);
+
+     DescPose traj_start_pose;
+     memset(&traj_start_pose, 0, sizeof(DescPose));
+     retval = robot->GetTrajectoryStartPose(traj_file_name, &traj_start_pose);
+     printf("GetTrajectoryStartPose is: %d\n", retval);
+     printf("desc_pos:%f,%f,%f,%f,%f,%f\n", traj_start_pose.tran.x, traj_start_pose.tran.y, traj_start_pose.tran.z, traj_start_pose.rpy.rx, traj_start_pose.rpy.ry, traj_start_pose.rpy.rz);
+
+     robot->SetSpeed(20);
+     robot->MoveCart(&traj_start_pose, 1, 0, 100, 100, 100, -1, -1);
+
+     robot->Sleep(5000);
+
+     int traj_num = 0;
+     retval = robot->GetTrajectoryPointNum(&traj_num);
+     printf("GetTrajectoryStartPose retval is: %d, traj num is: %d\n", retval, traj_num);
+
+     retval = robot->MoveTrajectoryJ();
+     printf("MoveTrajectoryJ retval is: %d\n", retval);
+ }
+
+ int UploadTrajectoryB(FRRobot* robot)
+ {
+     robot->TrajectoryJDelete("testB.txt");
+     robot->TrajectoryJUpLoad("D://zUP/testB.txt");
+
+     int retval = 0;
+     char traj_file_name[30] = "/fruser/traj/testB.txt";
+     retval = robot->LoadTrajectoryJ(traj_file_name, 100, 1);
+     printf("LoadTrajectoryJ %s, retval is: %d\n", traj_file_name, retval);
+
+     DescPose traj_start_pose;
+     memset(&traj_start_pose, 0, sizeof(DescPose));
+     retval = robot->GetTrajectoryStartPose(traj_file_name, &traj_start_pose);
+     printf("GetTrajectoryStartPose is: %d\n", retval);
+     printf("desc_pos:%f,%f,%f,%f,%f,%f\n", traj_start_pose.tran.x, traj_start_pose.tran.y, traj_start_pose.tran.z, traj_start_pose.rpy.rx, traj_start_pose.rpy.ry, traj_start_pose.rpy.rz);
+
+     robot->SetSpeed(20);
+     robot->MoveCart(&traj_start_pose, 1, 0, 100, 100, 100, -1, -1);
+
+     robot->Sleep(5000);
+
+     int traj_num = 0;
+     retval = robot->GetTrajectoryPointNum(&traj_num);
+     printf("GetTrajectoryStartPose retval is: %d, traj num is: %d\n", retval, traj_num);
+
+     retval = robot->MoveTrajectoryJ();
+     printf("MoveTrajectoryJ retval is: %d\n", retval);
+ }
+
+ int MoveRotGripper(FRRobot* robot, int pos, double rotPos)
+ {
+     robot->ResetAllError();
+     robot->ActGripper(1, 1);
+     robot->Sleep(1000);
+     int rtn = robot->MoveGripper(1, pos, 50, 50, 5000, 1, 1, rotPos, 50, 100);
+     printf("move gripper rtn is %d\n", rtn);
+     uint16_t fault = 0;
+     double rotNum = 0.0;
+     int rotSpeed = 0;
+     int rotTorque = 0;
+     robot->GetGripperRotNum(&fault, &rotNum);
+     robot->GetGripperRotSpeed (&fault, &rotSpeed);
+     robot->GetGripperRotTorque(&fault, &rotTorque);
+     printf("gripper rot num : %lf, gripper rotSpeed : %d, gripper rotTorque : %d\n", rotNum, rotSpeed, rotTorque);
+
+     return 0;
+ }
+
+ int SetAO(FRRobot* robot, float value)
+ {
+     robot->SetAO(0, value, 0);
+     robot->SetAO(1, value, 0);
+     robot->SetToolAO(0, value, 0);
+     while (true)
+     {
+         ROBOT_STATE_PKG pkg = {};
+         robot->GetRobotRealTimeState(&pkg);
+         if (abs(pkg.cl_analog_output[0] - value) < 0.5)
+         {
+             break;
+         }
+         else
+         {
+             printf("cur AO value is %f\n", pkg.cl_analog_output[0]);
+             robot->Sleep(1);
+         }
+     }
+     printf("setAO Done  %f\n", value);
+     return 0;
+ }
+
+ void TrajectoryJUpload(FRRobot* robot)
+ {
+     int rtn = -1;
+     rtn = robot->TrajectoryJUpLoad("D://zUP/testA.txt");
+     printf("Upload TrajectoryJ A %d\n", rtn);
+     rtn = robot->TrajectoryJUpLoad("D://zUP/testB.txt");
+     printf("Upload TrajectoryJ B %d\n", rtn);
+
+     rtn = robot->TrajectoryJDelete("testA.txt");
+     printf("Delete TrajectoryJ A %d\n", rtn);
+     rtn = robot->TrajectoryJDelete("testB.txt");
+     printf("Delete TrajectoryJ B %d\n", rtn);
+ }
+
+ void TrajectoryJDelete(FRRobot* robot)
+ {
+     int rtn = -1;
+     rtn = robot->TrajectoryJDelete("testA.txt");
+     printf("Delete TrajectoryJ A %d\n", rtn);
+     rtn = robot->TrajectoryJDelete("testB.txt");
+     printf("Delete TrajectoryJ B %d\n", rtn);
+ }
+
+ void FIRArc(FRRobot* robot, bool enable)
+ {
+     DescPose startdescPose(-366.397, -572.427, 418.339, -178.972, 1.829, -142.970);
+     JointPos startjointPos(43.651, -70.284, 91.057, -109.075, -88.768, -83.382);
+
+     DescPose middescPose(-569.710, -132.595, 395.147, 178.418, -1.893, 171.051);
+     JointPos midjointPos(-2.334, -79.300, 108.196, -120.594, -91.790, -83.386);
+
+     DescPose enddescPose(-608.420, 610.692, 314.930, -176.438, -1.756, 117.333);
+     JointPos endjointPos(-56.153, -46.964, 68.015, -113.200, -86.661, -83.479);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+     
+     if (enable)
+     {
+         robot->LinArcFIRPlanningStart(1000, 1000, 1000, 1000);
+         robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         robot->MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+         robot->LinArcFIRPlanningEnd();
+     }
+     else
+     {
+         robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         robot->MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+     }
+ }
+
+ void FIRLin(FRRobot* robot, bool enable)
+ {
+     DescPose startdescPose(-569.710, -132.595, 395.147, 178.418, -1.893, 171.051);
+     JointPos startjointPos(-2.334, -79.300, 108.196, -120.594, -91.790, -83.386);
+
+     DescPose enddescPose(-366.397, -572.427, 418.339, -178.972, 1.829, -142.970);
+     JointPos endjointPos(43.651, -70.284, 91.057, -109.075, -88.768, -83.382);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+
+     if (enable)
+     {
+         robot->LinArcFIRPlanningStart(5000, 5000, 5000, 5000);
+         robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         robot->MoveL(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         robot->LinArcFIRPlanningEnd();
+     }
+     else
+     {
+         robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         robot->MoveL(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+     }
+ }
+
+ void FIRLinL(FRRobot* robot, bool enable)
+ {
+     DescPose startdescPose(-194.554, -422.428, 373.689, -173.424, 13.610, -129.644);
+     JointPos startjointPos(47.705, -92.449, 104.413, -88.071, -84.054, -92.590);
+
+     DescPose enddescPose(-454.672, -221.547, 310.489, -179.596, 11.618, -166.234);
+     JointPos endjointPos(11.111, -84.325, 106.005, -100.056, -90.131, -92.600);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+     int rtn = 0;
+
+     if (enable)
+     {
+         robot->LinArcFIRPlanningStart(5000, 5000, 5000, 5000);
+         robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         robot->MoveL(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         robot->LinArcFIRPlanningEnd();
+     }
+     else
+     {
+         rtn = robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         printf("robot moveL rtn is %d\n", rtn);
+         rtn = robot->MoveL(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+         printf("robot moveL rtn is %d\n", rtn);
+     }
+ }
+
+ void FIRPTP(FRRobot* robot, bool enable)
+ {
+     DescPose startdescPose(-118.215, -418.107, 558.397, 176.412, 3.477, 49.873);
+     JointPos startjointPos(59.942, -100.088, 88.346, -82.308, -87.075, 0.063);
+
+     DescPose enddescPose(-229.648, -488.934, 363.843, 173.340, 3.954, 42.816);
+     JointPos endjointPos(52.850, -84.328, 102.162, -112.890, -84.130, 0.063);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+
+     if (enable)
+     {
+         robot->PtpFIRPlanningStart(1000);
+         robot->MoveJ(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+         robot->MoveJ(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+         robot->PtpFIRPlanningEnd();
+     }
+     else
+     {
+         robot->MoveJ(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+         robot->MoveJ(&endjointPos, &enddescPose, 1, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     }
+ }
+
+ void TRSF(FRRobot* robot, bool enable)
+ {
+     int rtn = 0;
+     DescPose startdescPose(-226.699, -501.969, 264.638, -174.973, 5.852, 143.301);
+     JointPos startjointPos(52.850, -84.327, 102.163, -112.843, -84.131, 0.063);
+
+     DescPose enddescPose(-226.702, -501.973, 155.833, -174.973, 5.852, 143.301);
+     JointPos endjointPos(52.850, -77.596, 111.785, -129.196, -84.131, 0.062);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+
+     if (enable)
+     {
+         robot->ToolTrsfStart(1);
+         robot->MoveJ(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+         robot->MoveJ(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+         robot->ToolTrsfEnd();
+     }
+     else
+     {
+         rtn = robot->MoveJ(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+         printf("rtn is %d\n", rtn);
+         rtn = robot->MoveJ(&endjointPos, &enddescPose, 1, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+         printf("rtn is %d\n", rtn);
+     }
  }
 
  int main(void)
@@ -1318,19 +1577,100 @@ void AxleSensorConfig(FRRobot* robot)
      FRRobot robot;
 
      robot.LoggerInit();
-     robot.SetLoggerLevel(3);
+     robot.SetLoggerLevel(1);
      int rtn = robot.RPC("192.168.58.2");
      robot.SetReConnectParam(true, 30000, 500);
 
+     /*robot.ResetAllError();
+     robot.RobotEnable(1);*/
+    
+     robot.ProgramLoad("/fruser/ccc.lua");
+     robot.ProgramRun();
+     bool slag = false;
      while (true)
      {
-         robot.Mode(0);
-         robot.Sleep(1000);
-         robot.Mode(1);
-         int rtn = robot.GetRobotRealTimeState(&pkg);
-         printf("the robot state is %d, di is %d\n", pkg.robot_state, pkg.cl_dgt_input_l);
-         robot.Sleep(200);
+         robot.GetRobotRealTimeState(&pkg);
+         printf("main err code %d  sub err code %d\n", pkg.main_code, pkg.sub_code);
+         robot.Sleep(10);
+         if (pkg.rbtEnableState == 0 && !slag)
+         {
+             rtn = robot.ResetAllError();
+             printf("ResetAllError rtn is %d\n", rtn);
+             if (rtn != 0)
+             {
+                 robot.ResetAllError();
+             }
+             robot.RobotEnable(1);
+             slag = true;
+         }
      }
+
+
+
+ //    while (true )
+ //    {
+ //        //DescPose posCprd(0, 0, 0, 0, 0, 100);
+ //        //robot.SetToolCoord(1, &posCprd, 0, 0, 1, 0);
+ //        JointPos pos = {};
+ //        robot.GetActualJointPosDegree(1, &pos);
+ //        printf("pos is %lf %lf\n", pos.jPos[0], pos.jPos[1]);
+ //        robot.Sleep(100);
+
+ //    }
+ //    //FIRLinL(&robot, false);
+ //    //FIRLinL(&robot, true);
+
+ //    //FIRArc(&robot, false);
+ //    //FIRArc(&robot, true);
+ //    int i = 0;
+ ////    while (true)
+ ////    {
+ ////        i++;
+ ////        int rtn = robot.LuaDelete("wand888.lua");
+ ////        printf("LuaDelete rtn is %d\n", i);
+ ////        rtn = robot.LuaUpload("D://zUP/wand888.lua");
+ //        printf("LuaUpload rtn is %d\n", rtn);
+ //        robot.Sleep(300);
+ ///*        if (rtn != 0)
+ //        {
+ //            break;
+ //        }*/
+ //    }
+
+     //TrajectoryJUpload(&robot);
+     //TrajectoryJDelete(&robot);
+
+     //TestSingularAvoidSArc(&robot);
+     //TestSingularAvoidEArc(&robot);
+     //TestSingularAvoidSLin(&robot);
+     //TestSingularAvoidWArc(&robot);
+     //TestSingularAvoidWLin(&robot);
+
+     //while (true)
+     //{
+     //    MoveRotGripper(&robot, 30, 0);
+     //    MoveRotGripper(&robot, 90, 0);
+     //    UploadTrajectoryJ(&robot);
+     //    robot.Sleep(5000);
+     //    MoveRotGripper(&robot, 30, 0);
+     //    robot.Sleep(1000);
+     //    MoveRotGripper(&robot, 90, 0);
+     //    UploadTrajectoryB(&robot);
+     //    robot.Sleep(5000);
+     //    MoveRotGripper(&robot, 30, 0);
+     //    int rtn = robot.GetRobotRealTimeState(&pkg);
+     //    printf("the robot AO0 %d, AO1 %d, tool AO0  %d\n", pkg.cl_analog_output[0], pkg.cl_analog_output[1], pkg.tl_analog_output);
+     //    printf("gripper pos %d - vel %d - torque %d - rotPos %f - rotvel - %d rotTor - %d\n", pkg.gripper_position, pkg.gripper_speed, pkg.gripper_current, pkg.gripperRotNum, pkg.gripperRotSpeed, pkg.gripperRotTorque);
+     //}
+
+     //while (true)
+     //{
+     //    rtn = robot.GetRobotRealTimeState(&pkg);
+     //    //printf("the robot AO0 %d, AO1 %d, tool AO0  %d\n", pkg.cl_analog_output[0], pkg.cl_analog_output[1], pkg.tl_analog_output);
+     //    //printf("gripper pos %d - vel %d - torque %d - rotPos %f - rotvel - %d rotTor - %d\n", pkg.gripper_position, pkg.gripper_speed, pkg.gripper_current, pkg.gripperRotNum, pkg.gripperRotSpeed, pkg.gripperRotTorque);
+     //    printf("main error code %d;  sub error code %d\n", pkg.safety_stop0_state, pkg.safety_stop1_state);
+     //    robot.Sleep(3);
+     //}
      robot.CloseRPC();
      return 0;
 }

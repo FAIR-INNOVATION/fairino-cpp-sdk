@@ -15,8 +15,8 @@
 using namespace std;
 int main(void)
 {
-	FRRobot robot;			   
-	robot.RPC("192.168.58.2"); // Establish a communication connection with the robot controller
+	FRRobot robot;			   // 实例化机器人对象
+	robot.RPC("192.168.58.2"); // 与机器人控制器建立通信连接
 
 	int i;
 	float value;
@@ -44,9 +44,9 @@ int main(void)
 		{
 			retval = robot.SetToolPoint(i);
 			printf("SetToolPoint retval is: %d\n", retval);
-			std::this_thread::sleep_for(std::chrono::seconds(3));
+			// std::this_thread::sleep_for(std::chrono::seconds(3));
 		}
-		std::this_thread::sleep_for(std::chrono::seconds(3));
+		// std::this_thread::sleep_for(std::chrono::seconds(3));
 		printf("SetToolPoint end\n");
 		retval = robot.ComputeTool(&tool0_pose);
 		printf("ComputeTool retval is: %d\n", retval);
@@ -69,14 +69,14 @@ int main(void)
 		DescPose extcp_0_pose;
 		memset(&extcp_0_pose, 0, sizeof(DescPose));
 		printf("SetExTCPPoint start\n");
-		std::this_thread::sleep_for(std::chrono::seconds(3));
+		// std::this_thread::sleep_for(std::chrono::seconds(3));
 		for (int i = 1; i < 7; i++)
 		{
 			retval = robot.SetExTCPPoint(i);
 			printf("SetExTCPPoint retval is: %d\n", retval);
-			std::this_thread::sleep_for(std::chrono::seconds(3));
+			//std::this_thread::sleep_for(std::chrono::seconds(3));
 		}
-		std::this_thread::sleep_for(std::chrono::seconds(3));
+		// std::this_thread::sleep_for(std::chrono::seconds(3));
 		printf("SetExTCPPoint end\n");
 		retval = robot.ComputeExTCF(&extcp_0_pose);
 		printf("ComputeExTCF retval is: %d\n", retval);

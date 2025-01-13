@@ -69,10 +69,10 @@ if(WIN32)
     target_link_libraries(fairino ws2_32)
     target_link_libraries(fairino Shlwapi)
         
-    add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-    target_link_libraries(test_fairino ws2_32)
-    target_link_libraries(test_fairino Shlwapi)
-    target_link_libraries(test_fairino ${CMAKE_CURRENT_SOURCE_DIR}/build/bin/Release/fairino.lib)
+    #add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+    #target_link_libraries(test_fairino ws2_32)
+    #target_link_libraries(test_fairino Shlwapi)
+    #target_link_libraries(test_fairino ${CMAKE_CURRENT_SOURCE_DIR}/build/bin/Release/fairino.lib)
 elseif(UNIX)
     # 静态库路径
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/LinuxBuild/bin)
@@ -87,13 +87,11 @@ elseif(UNIX)
     # 关闭优化选项
     target_compile_options(fairino PRIVATE -O0)
     # 为动态库生成版本信息
-    set_target_properties(fairino PROPERTIES VERSION 2.1.4 SOVERSION 2)
+    set_target_properties(fairino PROPERTIES VERSION 2.1.7 SOVERSION 2)
 
-    add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-    SET(CMAKE_BUILD_TYPE "Release")
-    # 添加调试信息
-    target_compile_options(test_fairino PRIVATE -g)
-    # 关闭优化选项
-    target_compile_options(test_fairino PRIVATE -O0)
-    target_link_libraries(test_fairino ${CMAKE_CURRENT_SOURCE_DIR}/LinuxBuild/bin/libfairino.so)
+    #add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+    #SET(CMAKE_BUILD_TYPE "Release")
+    #target_compile_options(test_fairino PRIVATE -g)
+    #target_compile_options(test_fairino PRIVATE -O0)
+    #target_link_libraries(test_fairino ${CMAKE_CURRENT_SOURCE_DIR}/LinuxBuild/bin/libfairino.so)
 endif()

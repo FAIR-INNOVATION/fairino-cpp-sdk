@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-	FRRobot robot;			  
-	robot.RPC("192.168.58.2"); 
+	FRRobot robot;			   // 实例化机器人对象
+	robot.RPC("192.168.58.2"); // 与机器人控制器建立通信连接
 
 	int company = 4;
 	int device = 0;
@@ -39,6 +39,7 @@ int main(void)
 
 	if (0)
 	{
+		// 操控机械臂
 		robot.SetGripperConfig(company, device, softversion, bus);
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		robot.GetGripperConfig(&company, &device, &softversion, &bus);
@@ -57,8 +58,9 @@ int main(void)
 		printf("gripper active fault is: %u, status is: %u\n", fault, active_status);
 		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 
-		// first move
+		// 第一次移动
 		robot.MoveGripper(index, 100, 10, 10, max_time, block);
+		// 获取当前位置、电流、电压、温度和速度
 		robot.GetGripperCurPosition(&fault, &current_pos);
 		printf("fault is:%u, current position is: %u\n", fault, current_pos);
 
@@ -81,7 +83,7 @@ int main(void)
 
 		printf("\n");
 
-		// secode move
+		// 第二次移动
 		block = 1;
 		robot.MoveGripper(index, 0, 10, 0, max_time, block);
 
@@ -115,6 +117,7 @@ int main(void)
 		printf("gripper active fault is: %u, status is: %u\n", fault, active_status);
 	}
 
+	// 机械臂
 	if (1)
 	{
 		int retval = 0;

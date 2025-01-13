@@ -4,6 +4,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <WS2tcpip.h>
+#include <Mstcpip.h>
 //#pragma comment(lib, "ws2_32.lib")
 #else
 #include <sys/socket.h>
@@ -115,6 +116,28 @@ int FRTcpClient::SetTimeOut(int timeout)
     setsockopt(fd, IPPROTO_TCP, TCP_MAXRT, (char*)&syncnt, sizeof(syncnt));  //win下连接超时1s，非常准
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeOut, sizeof(int));
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeOut, sizeof(int));
+    int bKeepAlive = TRUE;
+    int nRet = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&bKeepAlive, sizeof(bKeepAlive));
+    if (nRet == SOCKET_ERROR)
+    {
+        printf("set SDK socket keepalive failed\n ");
+        return FALSE;
+    }
+
+    // 设置KeepAlive参数
+    tcp_keepalive alive_in = { 0 };
+    tcp_keepalive alive_out = { 0 };
+    alive_in.keepalivetime = 500; // 开始首次KeepAlive探测前的TCP空闭时间 ms
+    alive_in.keepaliveinterval = 500; // 两次KeepAlive探测间的时间间隔 ms
+    alive_in.onoff = TRUE;
+    unsigned long ulBytesReturn = 0;
+    nRet = WSAIoctl(fd, SIO_KEEPALIVE_VALS, &alive_in, sizeof(alive_in),
+        &alive_out, sizeof(alive_out), &ulBytesReturn, NULL, NULL);
+    if (nRet == SOCKET_ERROR)
+    {
+        printf("set SDK socket keepalive param failed\n ");
+        return FALSE;
+    }
 #else
     //setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));        //这玩意不会用
     struct timeval tv;
@@ -122,6 +145,17 @@ int FRTcpClient::SetTimeOut(int timeout)
     tv.tv_usec = timeOut % 1000 * 1000;
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
+
+    int keepAlive = 1; // 开启keepalive属性
+    int keepIdle = 1; // 如该连接在60秒内没有任何数据往来,则进行探测 
+    int keepInterval = 1; // 探测时发包的时间间隔为5 秒
+    int keepCount = 1; // 探测尝试的次数.如果第1次探测包就收到响应了,则不再发.
+
+    setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepAlive, sizeof(keepAlive));
+    setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle));
+    setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval));
+    setsockopt(fd, SOL_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount));
+
 #endif
     return 0;
 }

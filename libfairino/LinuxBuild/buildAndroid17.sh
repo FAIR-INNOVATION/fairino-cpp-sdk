@@ -21,5 +21,5 @@ make
 
 
 cp -r bin lib
-cp -r ../src/include/Robot include
+cp -r ../src/include/Robot-CN include
 

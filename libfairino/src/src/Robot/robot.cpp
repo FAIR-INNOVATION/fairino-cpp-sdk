@@ -13,10 +13,10 @@
 #include <chrono>
 
 #ifdef __MINGW32__
-#define TCP_MAXRT 5
-#include <mingw.thread.h>
+    #define TCP_MAXRT 5
+    #include <mingw.thread.h>
 #else
-#include <thread>
+    #include <thread>
 #endif
 
 #include <fstream>
@@ -24,27 +24,29 @@
 #include <iomanip>
 #include <FRTcpClient.h>
 
-#ifdef WIN32
-#include <fileapi.h>
-#include <handleapi.h>
-#include <Shlwapi.h>
-#include <WS2tcpip.h>
 
-#define SDK_VERSION "SDK V2.1"
-#pragma comment(lib, "Shlwapi.lib")
+
+#ifdef WIN32
+    #include <fileapi.h>
+    #include <handleapi.h>
+    #include <Shlwapi.h>
+    #include <WS2tcpip.h>
+
+    #define SDK_VERSION "SDK V2.1"
+    #pragma comment(lib, "Shlwapi.lib")
 #else
-#include <stdlib.h>
-#include <unistd.h>
-#include <libgen.h>
-// #include <filesystem>
-// SDK版本号
-#define SDK_VERSION_MAJOR "2"
-#define SDK_VERSION_MINOR "1"
-#define SDK_VERSION_RELEASE "6"
-#define SDK_VERSION_RELEASE_NUM "0"
-#define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <libgen.h>
+    // #include <filesystem>
+    // SDK版本号
+    #define SDK_VERSION_MAJOR "2"
+    #define SDK_VERSION_MINOR "1"
+    #define SDK_VERSION_RELEASE "7"
+    #define SDK_VERSION_RELEASE_NUM "0"
+    #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.1.6.0-robot v3.7.6"
+#define SDK_RELEASE "SDK V2.1.7.0-robot v3.7.7"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -350,6 +352,10 @@ errno_t FRRobot::CloseRPC()
  */
 errno_t FRRobot::GetSDKVersion(char *version)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     strncpy(version, SDK_RELEASE, strlen(SDK_RELEASE));
@@ -363,6 +369,10 @@ errno_t FRRobot::GetSDKVersion(char *version)
  */
 errno_t FRRobot::GetControllerIP(char *ip)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -430,6 +440,10 @@ errno_t FRRobot::DragTeachSwitch(uint8_t state)
  */
 errno_t FRRobot::IsInDragTeach(uint8_t *state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -530,6 +544,12 @@ errno_t FRRobot::StartJOG(uint8_t ref, uint8_t nb, uint8_t dir, float vel, float
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -635,6 +655,12 @@ errno_t FRRobot::MoveJ(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -712,6 +738,12 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
 
     XmlRpcClient c(serverUrl, 20003);
@@ -839,6 +871,12 @@ errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, i
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -945,6 +983,12 @@ errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, 
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1033,6 +1077,12 @@ errno_t FRRobot::NewSpiral(JointPos *joint_pos, DescPose *desc_pos, int tool, in
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1096,6 +1146,12 @@ errno_t FRRobot::ServoMoveStart()
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1124,6 +1180,12 @@ errno_t FRRobot::ServoMoveEnd()
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1159,6 +1221,12 @@ errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, floa
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1211,6 +1279,11 @@ errno_t FRRobot::ServoCart(int mode, DescPose *desc_pose, float pos_gain[6], flo
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1266,6 +1339,11 @@ errno_t FRRobot::MoveCart(DescPose *desc_pos, int tool, int user, float vel, flo
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1308,6 +1386,10 @@ errno_t FRRobot::SplineStart()
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1342,6 +1424,10 @@ errno_t FRRobot::SplinePTP(JointPos *joint_pos, DescPose *desc_pos, int tool, in
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -1389,6 +1475,10 @@ errno_t FRRobot::SplineEnd()
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1417,6 +1507,10 @@ errno_t FRRobot::NewSplineStart(int type,  int averageTime)
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -1457,6 +1551,10 @@ errno_t FRRobot::NewSplinePoint(JointPos *joint_pos, DescPose *desc_pos, int too
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -1506,6 +1604,10 @@ errno_t FRRobot::NewSplineEnd()
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1534,6 +1636,7 @@ errno_t FRRobot::StopMotion()
     {
         return g_sock_com_err;
     }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1584,6 +1687,12 @@ errno_t FRRobot::ResumeMotion()
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     static int cnt = 0;
 
@@ -1608,6 +1717,11 @@ errno_t FRRobot::PointsOffsetEnable(int flag, DescPose *offset_pos)
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1644,6 +1758,7 @@ errno_t FRRobot::PointsOffsetDisable()
     {
         return g_sock_com_err;
     }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1676,6 +1791,7 @@ errno_t FRRobot::SetDO(int id, uint8_t status, uint8_t smooth, uint8_t block)
     {
         return g_sock_com_err;
     }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1717,6 +1833,7 @@ errno_t FRRobot::SetToolDO(int id, uint8_t status, uint8_t smooth, uint8_t block
     {
         return g_sock_com_err;
     }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -1831,6 +1948,10 @@ errno_t FRRobot::SetToolAO(int id, float value, uint8_t block)
  */
 errno_t FRRobot::GetDI(int id, uint8_t block, uint8_t *result)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -1869,6 +1990,10 @@ errno_t FRRobot::GetDI(int id, uint8_t block, uint8_t *result)
  */
 errno_t FRRobot::GetToolDI(int id, uint8_t block, uint8_t *result)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -2028,6 +2153,10 @@ errno_t FRRobot::WaitToolDI(int id, uint8_t status, int max_time, int opt)
  */
 errno_t FRRobot::GetAI(int id, uint8_t block, float *result)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -2064,6 +2193,10 @@ errno_t FRRobot::GetAI(int id, uint8_t block, float *result)
  */
 errno_t FRRobot::GetToolAI(int id, uint8_t block, float *result)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -2086,6 +2219,10 @@ errno_t FRRobot::GetToolAI(int id, uint8_t block, float *result)
  */
 errno_t FRRobot::GetAxlePointRecordBtnState(uint8_t *state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -2108,6 +2245,10 @@ errno_t FRRobot::GetAxlePointRecordBtnState(uint8_t *state)
  */
 errno_t FRRobot::GetToolDO(uint8_t *do_state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -2132,6 +2273,10 @@ errno_t FRRobot::GetToolDO(uint8_t *do_state)
  */
 errno_t FRRobot::GetDO(uint8_t *do_state_h, uint8_t *do_state_l)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -2542,6 +2687,10 @@ errno_t FRRobot::SetToolList(int id, DescPose *coord, int type, int install, int
  */
 errno_t FRRobot::SetExTCPPoint(int point_num)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2569,6 +2718,10 @@ errno_t FRRobot::SetExTCPPoint(int point_num)
  */
 errno_t FRRobot::ComputeExTCF(DescPose *tcp_pose)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2608,6 +2761,10 @@ errno_t FRRobot::ComputeExTCF(DescPose *tcp_pose)
  */
 errno_t FRRobot::SetExToolCoord(int id, DescPose *etcp, DescPose *etool)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2649,6 +2806,10 @@ errno_t FRRobot::SetExToolCoord(int id, DescPose *etcp, DescPose *etool)
  */
 errno_t FRRobot::SetExToolList(int id, DescPose *etcp, DescPose *etool)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2688,6 +2849,10 @@ errno_t FRRobot::SetExToolList(int id, DescPose *etcp, DescPose *etool)
  */
 errno_t FRRobot::SetWObjCoordPoint(int point_num)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2717,6 +2882,10 @@ errno_t FRRobot::SetWObjCoordPoint(int point_num)
  */
 errno_t FRRobot::ComputeWObjCoord(int method, int refFrame, DescPose *wobj_pose)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2759,6 +2928,10 @@ errno_t FRRobot::ComputeWObjCoord(int method, int refFrame, DescPose *wobj_pose)
  */
 errno_t FRRobot::SetWObjCoord(int id, DescPose *coord, int refFrame)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2795,6 +2968,10 @@ errno_t FRRobot::SetWObjCoord(int id, DescPose *coord, int refFrame)
  */
 errno_t FRRobot::SetWObjList(int id, DescPose *coord, int refFrame)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2829,6 +3006,10 @@ errno_t FRRobot::SetWObjList(int id, DescPose *coord, int refFrame)
  */
 errno_t FRRobot::SetLoadWeight(float weight)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2856,6 +3037,10 @@ errno_t FRRobot::SetLoadWeight(float weight)
  */
 errno_t FRRobot::SetLoadCoord(DescTran *coord)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2949,6 +3134,10 @@ errno_t FRRobot::SetRobotInstallAngle(double yangle, double zangle)
  */
 errno_t FRRobot::WaitMs(int t_ms)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -2978,6 +3167,10 @@ errno_t FRRobot::WaitMs(int t_ms)
  */
 errno_t FRRobot::SetAnticollision(int mode, float level[6], int config)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3015,6 +3208,10 @@ errno_t FRRobot::SetAnticollision(int mode, float level[6], int config)
  */
 errno_t FRRobot::SetCollisionStrategy(int strategy, int safeTime, int safeDistance, int safetyMargin[])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3050,6 +3247,10 @@ errno_t FRRobot::SetCollisionStrategy(int strategy, int safeTime, int safeDistan
  */
 errno_t FRRobot::SetLimitPositive(float limit[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3082,6 +3283,10 @@ errno_t FRRobot::SetLimitPositive(float limit[6])
  */
 errno_t FRRobot::SetLimitNegative(float limit[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3113,6 +3318,10 @@ errno_t FRRobot::SetLimitNegative(float limit[6])
  */
 errno_t FRRobot::ResetAllError()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3138,6 +3347,10 @@ errno_t FRRobot::ResetAllError()
  */
 errno_t FRRobot::FrictionCompensationOnOff(uint8_t state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3165,6 +3378,10 @@ errno_t FRRobot::FrictionCompensationOnOff(uint8_t state)
  */
 errno_t FRRobot::SetFrictionValue_level(float coeff[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3197,6 +3414,10 @@ errno_t FRRobot::SetFrictionValue_level(float coeff[6])
  */
 errno_t FRRobot::SetFrictionValue_wall(float coeff[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3229,6 +3450,10 @@ errno_t FRRobot::SetFrictionValue_wall(float coeff[6])
  */
 errno_t FRRobot::SetFrictionValue_ceiling(float coeff[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3261,6 +3486,10 @@ errno_t FRRobot::SetFrictionValue_ceiling(float coeff[6])
  */
 errno_t FRRobot::SetFrictionValue_freedom(float coeff[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3294,6 +3523,10 @@ errno_t FRRobot::SetFrictionValue_freedom(float coeff[6])
  */
 errno_t FRRobot::GetRobotInstallAngle(float *yangle, float *zangle)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3367,6 +3600,10 @@ errno_t FRRobot::GetSysVarValue(int id, float *value)
  */
 errno_t FRRobot::GetActualJointPosDegree(uint8_t flag, JointPos *jPos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int i;
     int errcode = 0;
 
@@ -3395,6 +3632,10 @@ errno_t FRRobot::GetActualJointPosDegree(uint8_t flag, JointPos *jPos)
  */
 errno_t FRRobot::GetActualJointSpeedsDegree(uint8_t flag, float speed[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     int i;
 
@@ -3426,6 +3667,10 @@ errno_t FRRobot::GetActualJointSpeedsDegree(uint8_t flag, float speed[6])
  */
 errno_t FRRobot::GetActualJointAccDegree(uint8_t flag, float acc[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     int i;
 
@@ -3458,6 +3703,10 @@ errno_t FRRobot::GetActualJointAccDegree(uint8_t flag, float acc[6])
  */
 errno_t FRRobot::GetTargetTCPCompositeSpeed(uint8_t flag, float *tcp_speed, float *ori_speed)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -3487,6 +3736,10 @@ errno_t FRRobot::GetTargetTCPCompositeSpeed(uint8_t flag, float *tcp_speed, floa
  */
 errno_t FRRobot::GetActualTCPCompositeSpeed(uint8_t flag, float *tcp_speed, float *ori_speed)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -3515,6 +3768,10 @@ errno_t FRRobot::GetActualTCPCompositeSpeed(uint8_t flag, float *tcp_speed, floa
  */
 errno_t FRRobot::GetTargetTCPSpeed(uint8_t flag, float speed[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     int i;
 
@@ -3546,6 +3803,10 @@ errno_t FRRobot::GetTargetTCPSpeed(uint8_t flag, float speed[6])
  */
 errno_t FRRobot::GetActualTCPSpeed(uint8_t flag, float speed[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     int i;
 
@@ -3577,6 +3838,10 @@ errno_t FRRobot::GetActualTCPSpeed(uint8_t flag, float speed[6])
  */
 errno_t FRRobot::GetActualTCPPose(uint8_t flag, DescPose *desc_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -3606,6 +3871,10 @@ errno_t FRRobot::GetActualTCPPose(uint8_t flag, DescPose *desc_pos)
  */
 errno_t FRRobot::GetActualTCPNum(uint8_t flag, int *id)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -3630,6 +3899,10 @@ errno_t FRRobot::GetActualTCPNum(uint8_t flag, int *id)
  */
 errno_t FRRobot::GetActualWObjNum(uint8_t flag, int *id)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -3654,6 +3927,10 @@ errno_t FRRobot::GetActualWObjNum(uint8_t flag, int *id)
  */
 errno_t FRRobot::GetActualToolFlangePose(uint8_t flag, DescPose *desc_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -3685,6 +3962,10 @@ errno_t FRRobot::GetActualToolFlangePose(uint8_t flag, DescPose *desc_pos)
  */
 errno_t FRRobot::GetInverseKin(int type, DescPose *desc_pos, int config, JointPos *joint_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3734,6 +4015,10 @@ errno_t FRRobot::GetInverseKin(int type, DescPose *desc_pos, int config, JointPo
  */
 errno_t FRRobot::GetInverseKinRef(int type, DescPose *desc_pos, JointPos *joint_pos_ref, JointPos *joint_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3788,6 +4073,10 @@ errno_t FRRobot::GetInverseKinRef(int type, DescPose *desc_pos, JointPos *joint_
  */
 errno_t FRRobot::GetInverseKinHasSolution(int type, DescPose *desc_pos, JointPos *joint_pos_ref, uint8_t *result)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, res;
@@ -3835,6 +4124,10 @@ errno_t FRRobot::GetInverseKinHasSolution(int type, DescPose *desc_pos, JointPos
  */
 errno_t FRRobot::GetForwardKin(JointPos *joint_pos, DescPose *desc_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3880,6 +4173,10 @@ errno_t FRRobot::GetForwardKin(JointPos *joint_pos, DescPose *desc_pos)
  */
 errno_t FRRobot::GetJointTorques(uint8_t flag, float torques[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     int i;
 
@@ -3911,6 +4208,10 @@ errno_t FRRobot::GetJointTorques(uint8_t flag, float torques[6])
  */
 errno_t FRRobot::GetTargetPayload(uint8_t flag, float *weight)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3946,6 +4247,10 @@ errno_t FRRobot::GetTargetPayload(uint8_t flag, float *weight)
  */
 errno_t FRRobot::GetTargetPayloadCog(uint8_t flag, DescTran *cog)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -3983,6 +4288,10 @@ errno_t FRRobot::GetTargetPayloadCog(uint8_t flag, DescTran *cog)
  */
 errno_t FRRobot::GetTCPOffset(uint8_t flag, DescPose *desc_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4023,6 +4332,10 @@ errno_t FRRobot::GetTCPOffset(uint8_t flag, DescPose *desc_pos)
  */
 errno_t FRRobot::GetWObjOffset(uint8_t flag, DescPose *desc_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4064,6 +4377,10 @@ errno_t FRRobot::GetWObjOffset(uint8_t flag, DescPose *desc_pos)
  */
 errno_t FRRobot::GetJointSoftLimitDeg(uint8_t flag, float negative[6], float positive[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4109,6 +4426,10 @@ errno_t FRRobot::GetJointSoftLimitDeg(uint8_t flag, float negative[6], float pos
  */
 errno_t FRRobot::GetSystemClock(float *t_ms)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4141,6 +4462,10 @@ errno_t FRRobot::GetSystemClock(float *t_ms)
  */
 errno_t FRRobot::GetRobotCurJointsConfig(int *config)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4173,6 +4498,10 @@ errno_t FRRobot::GetRobotCurJointsConfig(int *config)
  */
 errno_t FRRobot::GetDefaultTransVel(float *vel)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4205,6 +4534,10 @@ errno_t FRRobot::GetDefaultTransVel(float *vel)
  */
 errno_t FRRobot::GetRobotMotionDone(uint8_t *state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -4228,6 +4561,10 @@ errno_t FRRobot::GetRobotMotionDone(uint8_t *state)
  */
 errno_t FRRobot::GetRobotErrorCode(int *maincode, int *subcode)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -4252,6 +4589,10 @@ errno_t FRRobot::GetRobotErrorCode(int *maincode, int *subcode)
  */
 errno_t FRRobot::GetRobotTeachingPoint(char name[64], float data[20])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4296,6 +4637,10 @@ errno_t FRRobot::GetRobotTeachingPoint(char name[64], float data[20])
  */
 errno_t FRRobot::GetMotionQueueLength(int *len)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -4322,6 +4667,10 @@ errno_t FRRobot::GetMotionQueueLength(int *len)
  */
 errno_t FRRobot::SetTPDParam(int type, char name[30], int period_ms, uint16_t di_choose, uint16_t do_choose)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4357,6 +4706,10 @@ errno_t FRRobot::SetTPDParam(int type, char name[30], int period_ms, uint16_t di
  */
 errno_t FRRobot::SetTPDStart(int type, char name[30], int period_ms, uint16_t di_choose, uint16_t do_choose)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4387,6 +4740,10 @@ errno_t FRRobot::SetTPDStart(int type, char name[30], int period_ms, uint16_t di
  */
 errno_t FRRobot::SetWebTPDStop()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4412,6 +4769,10 @@ errno_t FRRobot::SetWebTPDStop()
  */
 errno_t FRRobot::SetTPDDelete(char name[30])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4439,6 +4800,10 @@ errno_t FRRobot::SetTPDDelete(char name[30])
  */
 errno_t FRRobot::LoadTPD(char name[30])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4466,6 +4831,10 @@ errno_t FRRobot::LoadTPD(char name[30])
  */
 errno_t FRRobot::GetTPDStartPose(char name[30], DescPose *desc_pose)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4511,6 +4880,10 @@ errno_t FRRobot::MoveTPD(char name[30], uint8_t blend, float ovl)
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4542,6 +4915,10 @@ errno_t FRRobot::MoveTPD(char name[30], uint8_t blend, float ovl)
  */
 errno_t FRRobot::LoadTrajectoryJ(char name[30], float ovl, int opt)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4574,6 +4951,10 @@ errno_t FRRobot::MoveTrajectoryJ()
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4599,6 +4980,10 @@ errno_t FRRobot::MoveTrajectoryJ()
  */
 errno_t FRRobot::GetTrajectoryStartPose(char name[30], DescPose *desc_pose)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4637,6 +5022,10 @@ errno_t FRRobot::GetTrajectoryStartPose(char name[30], DescPose *desc_pose)
  */
 errno_t FRRobot::GetTrajectoryPointNum(int *pnum)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -4659,6 +5048,10 @@ errno_t FRRobot::GetTrajectoryPointNum(int *pnum)
  */
 errno_t FRRobot::SetTrajectoryJSpeed(float ovl)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4686,6 +5079,10 @@ errno_t FRRobot::SetTrajectoryJSpeed(float ovl)
  */
 errno_t FRRobot::SetTrajectoryJForceTorque(ForceTorque *ft)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4718,6 +5115,10 @@ errno_t FRRobot::SetTrajectoryJForceTorque(ForceTorque *ft)
  */
 errno_t FRRobot::SetTrajectoryJForceFx(double fx)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4745,6 +5146,10 @@ errno_t FRRobot::SetTrajectoryJForceFx(double fx)
  */
 errno_t FRRobot::SetTrajectoryJForceFy(double fy)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4772,6 +5177,10 @@ errno_t FRRobot::SetTrajectoryJForceFy(double fy)
  */
 errno_t FRRobot::SetTrajectoryJForceFz(double fz)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4799,6 +5208,10 @@ errno_t FRRobot::SetTrajectoryJForceFz(double fz)
  */
 errno_t FRRobot::SetTrajectoryJTorqueTx(double tx)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4826,6 +5239,10 @@ errno_t FRRobot::SetTrajectoryJTorqueTx(double tx)
  */
 errno_t FRRobot::SetTrajectoryJTorqueTy(double ty)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4853,6 +5270,10 @@ errno_t FRRobot::SetTrajectoryJTorqueTy(double ty)
  */
 errno_t FRRobot::SetTrajectoryJTorqueTz(double tz)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -4984,6 +5405,10 @@ errno_t FRRobot::GetLoadedProgram(char program_name[64])
  */
 errno_t FRRobot::GetCurrentLine(int *line)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5019,6 +5444,11 @@ errno_t FRRobot::ProgramRun()
     {
         return g_sock_com_err;
     }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5043,6 +5473,10 @@ errno_t FRRobot::ProgramRun()
  */
 errno_t FRRobot::ProgramPause()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5071,6 +5505,10 @@ errno_t FRRobot::ProgramResume()
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5095,6 +5533,10 @@ errno_t FRRobot::ProgramResume()
  */
 errno_t FRRobot::ProgramStop()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5120,6 +5562,10 @@ errno_t FRRobot::ProgramStop()
  */
 errno_t FRRobot::GetProgramState(uint8_t *state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5145,6 +5591,10 @@ errno_t FRRobot::GetProgramState(uint8_t *state)
  */
 errno_t FRRobot::SetGripperConfig(int company, int device, int softvesion, int bus)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5178,6 +5628,10 @@ errno_t FRRobot::SetGripperConfig(int company, int device, int softvesion, int b
  */
 errno_t FRRobot::GetGripperConfig(int *company, int *device, int *softvesion, int *bus)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5214,6 +5668,14 @@ errno_t FRRobot::GetGripperConfig(int *company, int *device, int *softvesion, in
  */
 errno_t FRRobot::ActGripper(int index, uint8_t act)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5255,6 +5717,10 @@ errno_t FRRobot::MoveGripper(int index, int pos, int vel, int force, int max_tim
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5292,6 +5758,10 @@ errno_t FRRobot::MoveGripper(int index, int pos, int vel, int force, int max_tim
  */
 errno_t FRRobot::GetGripperMotionDone(uint16_t *fault, uint8_t *status)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5304,7 +5774,7 @@ errno_t FRRobot::GetGripperMotionDone(uint16_t *fault, uint8_t *status)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u - %u.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_motiondone);
+    //logger_info("state com: %d, return value is: %u - %u.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_motiondone);
     return errcode;
 }
 
@@ -5316,6 +5786,10 @@ errno_t FRRobot::GetGripperMotionDone(uint16_t *fault, uint8_t *status)
  */
 errno_t FRRobot::GetGripperActivateStatus(uint16_t *fault, uint16_t *status)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5328,7 +5802,6 @@ errno_t FRRobot::GetGripperActivateStatus(uint16_t *fault, uint16_t *status)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u - %u.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_active);
     return errcode;
 }
 
@@ -5340,6 +5813,10 @@ errno_t FRRobot::GetGripperActivateStatus(uint16_t *fault, uint16_t *status)
  */
 errno_t FRRobot::GetGripperCurPosition(uint16_t *fault, uint8_t *position)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5352,7 +5829,6 @@ errno_t FRRobot::GetGripperCurPosition(uint16_t *fault, uint8_t *position)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u - %u.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_position);
     return errcode;
 }
 
@@ -5364,6 +5840,10 @@ errno_t FRRobot::GetGripperCurPosition(uint16_t *fault, uint8_t *position)
  */
 errno_t FRRobot::GetGripperCurSpeed(uint16_t *fault, int8_t *speed)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5376,7 +5856,6 @@ errno_t FRRobot::GetGripperCurSpeed(uint16_t *fault, int8_t *speed)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u - %u.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_speed);
     return errcode;
 }
 
@@ -5388,6 +5867,10 @@ errno_t FRRobot::GetGripperCurSpeed(uint16_t *fault, int8_t *speed)
  */
 errno_t FRRobot::GetGripperCurCurrent(uint16_t *fault, int8_t *current)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5400,7 +5883,6 @@ errno_t FRRobot::GetGripperCurCurrent(uint16_t *fault, int8_t *current)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u - %u.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_current);
     return errcode;
 }
 
@@ -5412,6 +5894,10 @@ errno_t FRRobot::GetGripperCurCurrent(uint16_t *fault, int8_t *current)
  */
 errno_t FRRobot::GetGripperVoltage(uint16_t *fault, int *voltage)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5424,7 +5910,6 @@ errno_t FRRobot::GetGripperVoltage(uint16_t *fault, int *voltage)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u - %d.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_voltage);
     return errcode;
 }
 
@@ -5436,6 +5921,10 @@ errno_t FRRobot::GetGripperVoltage(uint16_t *fault, int *voltage)
  */
 errno_t FRRobot::GetGripperTemp(uint16_t *fault, int *temp)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5448,7 +5937,88 @@ errno_t FRRobot::GetGripperTemp(uint16_t *fault, int *temp)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u - %d.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_temp);
+    return errcode;
+}
+
+/**
+ * @brief  获取旋转夹爪的旋转圈数
+ * @param  [out] fault  0-无错误，1-有错误
+ * @param  [out] num  旋转圈数
+ * @return  错误码
+ */
+errno_t FRRobot::GetGripperRotNum(uint16_t* fault, double* num)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+
+    if (g_sock_com_err == ERR_SUCCESS)
+    {
+        *fault = robot_state_pkg.gripper_fault;
+        *num = robot_state_pkg.gripperRotNum;
+    }
+    else
+    {
+        errcode = g_sock_com_err;
+    }
+
+    
+    return errcode;
+}
+
+/**
+ * @brief  获取旋转夹爪的旋转速度百分比
+ * @param  [out] fault  0-无错误，1-有错误
+ * @param  [out] speed  旋转速度百分比
+ * @return  错误码
+ */
+errno_t FRRobot::GetGripperRotSpeed(uint16_t* fault, int* speed)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+
+    if (g_sock_com_err == ERR_SUCCESS)
+    {
+        *fault = robot_state_pkg.gripper_fault;
+        *speed = robot_state_pkg.gripperRotSpeed;
+    }
+    else
+    {
+        errcode = g_sock_com_err;
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief  获取旋转夹爪的旋转力矩百分比
+ * @param  [out] fault  0-无错误，1-有错误
+ * @param  [out] torque  旋转力矩百分比
+ * @return  错误码
+ */
+errno_t FRRobot::GetGripperRotTorque(uint16_t* fault, int* torque)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+
+    if (g_sock_com_err == ERR_SUCCESS)
+    {
+        *fault = robot_state_pkg.gripper_fault;
+        *torque = robot_state_pkg.gripperRotTorque;
+    }
+    else
+    {
+        errcode = g_sock_com_err;
+    }
+
     return errcode;
 }
 
@@ -5462,6 +6032,10 @@ errno_t FRRobot::GetGripperTemp(uint16_t *fault, int *temp)
  */
 errno_t FRRobot::ComputePrePick(DescPose *desc_pos, double zlength, double zangle, DescPose *pre_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5511,6 +6085,10 @@ errno_t FRRobot::ComputePrePick(DescPose *desc_pos, double zlength, double zangl
  */
 errno_t FRRobot::ComputePostPick(DescPose *desc_pos, double zlength, double zangle, DescPose *post_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5560,6 +6138,10 @@ errno_t FRRobot::ComputePostPick(DescPose *desc_pos, double zlength, double zang
  */
 errno_t FRRobot::FT_SetConfig(int company, int device, int softvesion, int bus)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5593,6 +6175,10 @@ errno_t FRRobot::FT_SetConfig(int company, int device, int softvesion, int bus)
  */
 errno_t FRRobot::FT_GetConfig(int *company, int *device, int *softvesion, int *bus)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5628,6 +6214,14 @@ errno_t FRRobot::FT_GetConfig(int *company, int *device, int *softvesion, int *b
  */
 errno_t FRRobot::FT_Activate(uint8_t act)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5655,6 +6249,10 @@ errno_t FRRobot::FT_Activate(uint8_t act)
  */
 errno_t FRRobot::FT_SetZero(uint8_t act)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5683,6 +6281,10 @@ errno_t FRRobot::FT_SetZero(uint8_t act)
  */
 errno_t FRRobot::FT_SetRCS(uint8_t ref, DescPose coord)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5716,6 +6318,10 @@ errno_t FRRobot::FT_SetRCS(uint8_t ref, DescPose coord)
  */
 errno_t FRRobot::FT_PdIdenRecord(int id)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5743,6 +6349,10 @@ errno_t FRRobot::FT_PdIdenRecord(int id)
  */
 errno_t FRRobot::FT_PdIdenCompute(float *weight)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5776,6 +6386,10 @@ errno_t FRRobot::FT_PdIdenCompute(float *weight)
  */
 errno_t FRRobot::FT_PdCogIdenRecord(int id, int index)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5804,6 +6418,10 @@ errno_t FRRobot::FT_PdCogIdenRecord(int id, int index)
  */
 errno_t FRRobot::FT_PdCogIdenCompute(DescTran *cog)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5839,6 +6457,10 @@ errno_t FRRobot::FT_PdCogIdenCompute(DescTran *cog)
  */
 errno_t FRRobot::FT_GetForceTorqueRCS(uint8_t flag, ForceTorque *ft)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5871,6 +6493,10 @@ errno_t FRRobot::FT_GetForceTorqueRCS(uint8_t flag, ForceTorque *ft)
  */
 errno_t FRRobot::FT_GetForceTorqueOrigin(uint8_t flag, ForceTorque *ft)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -5908,6 +6534,14 @@ errno_t FRRobot::FT_GetForceTorqueOrigin(uint8_t flag, ForceTorque *ft)
  */
 errno_t FRRobot::FT_Guard(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque *ft, float max_threshold[6], float min_threshold[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -5971,6 +6605,14 @@ errno_t FRRobot::FT_Guard(uint8_t flag, int sensor_id, uint8_t select[6], ForceT
  */
 errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque *ft, float ft_pid[6], uint8_t adj_sign, uint8_t ILC_sign, float max_dis, float max_ang, int filter_Sign, int posAdapt_sign, int isNoBlock)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6028,6 +6670,14 @@ errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], Forc
  */
 errno_t FRRobot::FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, float max_vel)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6065,6 +6715,14 @@ errno_t FRRobot::FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, fl
  */
 errno_t FRRobot::FT_RotInsertion(int rcs, float angVelRot, float ft, float max_angle, uint8_t orn, float max_angAcc, uint8_t rotorn)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6103,6 +6761,14 @@ errno_t FRRobot::FT_RotInsertion(int rcs, float angVelRot, float ft, float max_a
  */
 errno_t FRRobot::FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, float max_dis, uint8_t linorn)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6141,6 +6807,14 @@ errno_t FRRobot::FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, fl
  */
 errno_t FRRobot::FT_FindSurface(int rcs, uint8_t dir, uint8_t axis, float lin_v, float lin_a, float max_dis, float ft)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6173,6 +6847,14 @@ errno_t FRRobot::FT_FindSurface(int rcs, uint8_t dir, uint8_t axis, float lin_v,
  */
 errno_t FRRobot::FT_CalCenterStart()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6198,6 +6880,10 @@ errno_t FRRobot::FT_CalCenterStart()
  */
 errno_t FRRobot::FT_CalCenterEnd(DescPose *pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6236,6 +6922,14 @@ errno_t FRRobot::FT_CalCenterEnd(DescPose *pos)
  */
 errno_t FRRobot::FT_ComplianceStart(float p, float force)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6263,6 +6957,10 @@ errno_t FRRobot::FT_ComplianceStart(float p, float force)
  */
 errno_t FRRobot::FT_ComplianceStop()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6287,6 +6985,10 @@ errno_t FRRobot::FT_ComplianceStop()
  */
 errno_t FRRobot::LoadIdentifyDynFilterInit()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6311,6 +7013,10 @@ errno_t FRRobot::LoadIdentifyDynFilterInit()
  */
 errno_t FRRobot::LoadIdentifyDynVarInit()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6338,6 +7044,14 @@ errno_t FRRobot::LoadIdentifyDynVarInit()
  */
 errno_t FRRobot::LoadIdentifyMain(double joint_torque[6], double joint_pos[6], double t)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6374,6 +7088,10 @@ errno_t FRRobot::LoadIdentifyMain(double joint_torque[6], double joint_pos[6], d
  */
 errno_t FRRobot::LoadIdentifyGetResult(double gain[12], double *weight, DescTran *cog)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6415,6 +7133,10 @@ errno_t FRRobot::LoadIdentifyGetResult(double gain[12], double *weight, DescTran
  */
 errno_t FRRobot::ConveyorStartEnd(uint8_t status)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6441,6 +7163,10 @@ errno_t FRRobot::ConveyorStartEnd(uint8_t status)
  */
 errno_t FRRobot::ConveyorPointIORecord()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6465,6 +7191,10 @@ errno_t FRRobot::ConveyorPointIORecord()
  */
 errno_t FRRobot::ConveyorPointARecord()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6489,6 +7219,10 @@ errno_t FRRobot::ConveyorPointARecord()
  */
 errno_t FRRobot::ConveyorRefPointRecord()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6513,6 +7247,10 @@ errno_t FRRobot::ConveyorRefPointRecord()
  */
 errno_t FRRobot::ConveyorPointBRecord()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6538,6 +7276,10 @@ errno_t FRRobot::ConveyorPointBRecord()
  */
 errno_t FRRobot::ConveyorIODetect(int max_t)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6565,6 +7307,10 @@ errno_t FRRobot::ConveyorIODetect(int max_t)
  */
 errno_t FRRobot::ConveyorGetTrackData(int mode)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6592,6 +7338,10 @@ errno_t FRRobot::ConveyorGetTrackData(int mode)
  */
 errno_t FRRobot::ConveyorTrackStart(uint8_t status)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6618,6 +7368,10 @@ errno_t FRRobot::ConveyorTrackStart(uint8_t status)
  */
 errno_t FRRobot::ConveyorTrackEnd()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6643,6 +7397,10 @@ errno_t FRRobot::ConveyorTrackEnd()
  */
 errno_t FRRobot::ConveyorSetParam(float para[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6674,6 +7432,10 @@ errno_t FRRobot::ConveyorSetParam(float para[6])
  */
 errno_t FRRobot::ConveyorCatchPointComp(double cmp[3])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6708,6 +7470,10 @@ errno_t FRRobot::TrackMoveL(char name[32], int tool, int wobj, float vel, float 
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -6744,6 +7510,10 @@ errno_t FRRobot::TrackMoveL(char name[32], int tool, int wobj, float vel, float 
  */
 errno_t FRRobot::GetSSHKeygen(char keygen[1024])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6784,6 +7554,10 @@ errno_t FRRobot::GetSSHKeygen(char keygen[1024])
  */
 errno_t FRRobot::SetSSHScpCmd(int mode, char sshname[32], char sship[32], char usr_file_url[128], char robot_file_url[128])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6816,6 +7590,10 @@ errno_t FRRobot::SetSSHScpCmd(int mode, char sshname[32], char sship[32], char u
  */
 errno_t FRRobot::ComputeFileMD5(char file_path[256], char md5[256])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6854,6 +7632,10 @@ errno_t FRRobot::ComputeFileMD5(char file_path[256], char md5[256])
  */
 errno_t FRRobot::GetRobotEmergencyStopState(uint8_t *state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -6875,6 +7657,10 @@ errno_t FRRobot::GetRobotEmergencyStopState(uint8_t *state)
  */
 errno_t FRRobot::GetSDKComState(int *state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -6900,6 +7686,10 @@ errno_t FRRobot::GetSDKComState(int *state)
  */
 errno_t FRRobot::GetSafetyStopState(uint8_t *si0_state, uint8_t *si1_state)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -6925,6 +7715,10 @@ errno_t FRRobot::GetSafetyStopState(uint8_t *si0_state, uint8_t *si1_state)
  */
 errno_t FRRobot::GetSoftwareVersion(char robotModel[64], char webVersion[64], char controllerVersion[64])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -6971,6 +7765,10 @@ errno_t FRRobot::GetHardwareVersion(char ctrlBoxBoardversion[128], char driver1v
                                     char driver3version[128], char driver4version[128], char driver5version[128],
                                     char driver6version[128], char endBoardversion[128])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7027,7 +7825,16 @@ errno_t FRRobot::GetHardwareVersion(char ctrlBoxBoardversion[128], char driver1v
 errno_t FRRobot::GetFirmwareVersion(char ctrlBoxBoardversion[128], char driver1version[128], char driver2version[128],
                                     char driver3version[128], char driver4version[128], char driver5version[128],
                                     char driver6version[128], char endBoardversion[128])
+
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7076,6 +7883,10 @@ errno_t FRRobot::GetFirmwareVersion(char ctrlBoxBoardversion[128], char driver1v
  */
 errno_t FRRobot::GetDHCompensation(double dhCompensation[6])
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7112,6 +7923,10 @@ errno_t FRRobot::GetDHCompensation(double dhCompensation[6])
  */
 errno_t FRRobot::PointTableSwitch(const std::string pointTableName)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7141,6 +7956,10 @@ errno_t FRRobot::PointTableSwitch(const std::string pointTableName)
  */
 errno_t FRRobot::PointTableDownLoad(const std::string &pointTableName, const std::string &saveFilePath)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7421,6 +8240,10 @@ errno_t FRRobot::PointTableDownLoad(const std::string &pointTableName, const std
  */
 errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7680,6 +8503,10 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
  */
 errno_t FRRobot::PointTableUpdateLua(const std::string &pointTableName, const std::string &luaFileName)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7742,6 +8569,14 @@ errno_t FRRobot::PointTableUpdateLua(const std::string &pointTableName, const st
  */
 errno_t FRRobot::ARCStart(int ioType, int arcNum, int timeout)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7772,6 +8607,10 @@ errno_t FRRobot::ARCStart(int ioType, int arcNum, int timeout)
  */
 errno_t FRRobot::ARCEnd(int ioType, int arcNum, int timeout)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7804,6 +8643,10 @@ errno_t FRRobot::ARCEnd(int ioType, int arcNum, int timeout)
  */
 errno_t FRRobot::WeldingSetCurrentRelation(double currentMin, double currentMax, double outputVoltageMin, double outputVoltageMax, int AOIndex)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7837,6 +8680,10 @@ errno_t FRRobot::WeldingSetCurrentRelation(double currentMin, double currentMax,
  */
 errno_t FRRobot::WeldingSetVoltageRelation(double weldVoltageMin, double weldVoltageMax, double outputVoltageMin, double outputVoltageMax, int AOIndex)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7870,6 +8717,10 @@ errno_t FRRobot::WeldingSetVoltageRelation(double weldVoltageMin, double weldVol
  */
 errno_t FRRobot::WeldingGetCurrentRelation(double *currentMin, double *currentMax, double *outputVoltageMin, double *outputVoltageMax, int* AOIndex)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7909,6 +8760,10 @@ errno_t FRRobot::WeldingGetCurrentRelation(double *currentMin, double *currentMa
  */
 errno_t FRRobot::WeldingGetVoltageRelation(double *weldVoltageMin, double *weldVoltageMax, double *outputVoltageMin, double *outputVoltageMax, int* AOIndex)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7948,6 +8803,10 @@ errno_t FRRobot::WeldingGetVoltageRelation(double *weldVoltageMin, double *weldV
  */
 errno_t FRRobot::WeldingSetCurrent(int ioType, double current, int AOIndex, int blend)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -7980,6 +8839,10 @@ errno_t FRRobot::WeldingSetCurrent(int ioType, double current, int AOIndex, int 
  */
 errno_t FRRobot::WeldingSetVoltage(int ioType, double voltage, int AOIndex, int blend)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8021,6 +8884,10 @@ errno_t FRRobot::WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency
                             double weaveRightRange, int additionalStayTime, int weaveLeftStayTime, 
                             int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8067,6 +8934,10 @@ errno_t FRRobot::WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency
  */
 errno_t FRRobot::WeaveOnlineSetPara(int weaveNum, int weaveType, double weaveFrequency, int weaveIncStayTime, double weaveRange, int weaveLeftStayTime, int weaveRightStayTime, int weaveCircleRadio, int weaveStationary)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8101,6 +8972,10 @@ errno_t FRRobot::WeaveOnlineSetPara(int weaveNum, int weaveType, double weaveFre
  */
 errno_t FRRobot::WeaveStart(int weaveNum)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8127,6 +9002,10 @@ errno_t FRRobot::WeaveStart(int weaveNum)
  */
 errno_t FRRobot::WeaveEnd(int weaveNum)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8154,6 +9033,10 @@ errno_t FRRobot::WeaveEnd(int weaveNum)
  */
 errno_t FRRobot::SetForwardWireFeed(int ioType, int wireFeed)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8182,6 +9065,10 @@ errno_t FRRobot::SetForwardWireFeed(int ioType, int wireFeed)
  */
 errno_t FRRobot::SetReverseWireFeed(int ioType, int wireFeed)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8210,6 +9097,10 @@ errno_t FRRobot::SetReverseWireFeed(int ioType, int wireFeed)
  */
 errno_t FRRobot::SetAspirated(int ioType, int airControl)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8235,6 +9126,10 @@ errno_t FRRobot::SegmentWeldStart(DescPose* startDesePos, DescPose* endDesePos, 
                                   bool isWeave, int weaveNum, int tool, int user, float vel, float acc, float ovl, float blendR,
                                   ExaxisPos* epos, uint8_t search, uint8_t offset_flag, DescPose* offset_pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -8522,6 +9417,10 @@ void FRRobot::SetLoggerLevel(int lvl)
  */
 errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string saveFilePath)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     /* 检查文件名称，文件路径*/
     if(fileName.length() == 0)
     {
@@ -8801,6 +9700,10 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
  */
 errno_t FRRobot::LuaDownLoad(std::string fileName, std::string savePath)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
 
     /* 先检查，lua包和tar.gz压缩包的逻辑不同 */
@@ -8856,6 +9759,10 @@ errno_t FRRobot::LuaDownLoad(std::string fileName, std::string savePath)
  */
 errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     /* 检查文件名称，文件路径*/
     if (filePath.length() == 0)
     {
@@ -8874,7 +9781,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     {
         logger_error("path %s do not exist.", filePath.c_str());
         c.close();
-        return ERR_SAVE_FILE_PATH_NOT_FOUND;
+        return ERR_UPLOAD_FILE_NOT_FOUND;
     }
 #else
     char save_path[MAX_FILE_PATH_LENGTH];
@@ -8884,7 +9791,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     {
         logger_error("path %s do not exist.", save_path);
         c.close();
-        return ERR_SAVE_FILE_PATH_NOT_FOUND;
+        return ERR_UPLOAD_FILE_NOT_FOUND;
     }
 #endif
 
@@ -8966,7 +9873,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         c.close();
         return ERR_XMLRPC_CMD_FAILED;
     }
-    std::this_thread::sleep_for(chrono::seconds(2));
+    std::this_thread::sleep_for(chrono::seconds(1));
 
     /* 创建，设置套接字 */
     fr_network::socket_fd fd = fr_network::get_socket_fd();
@@ -8981,7 +9888,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         fr_network::close_fd(fd);
         return ERR_OTHER;
     }
-    int timeout = 80000;
+    int timeout = 8000;
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(int));
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(int));
 #else
@@ -9005,7 +9912,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         return ERR_SOCKET_COM_FAILED;
     }
     /* 等待服务端发起连接 */
-    std::this_thread::sleep_for(chrono::seconds(2));
+    std::this_thread::sleep_for(chrono::seconds(1));
 
     
     /* 发送 头+内容+尾，send_buf_first, send_buf, send_buf_last */
@@ -9144,6 +10051,10 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
  */
 errno_t FRRobot::LuaUpload(std::string filePath)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     /* 先上传，再发起rpc通知做远程检查 */
     int errcode = FileUpLoad(0, filePath);
     if(0 == errcode)
@@ -9196,6 +10107,10 @@ errno_t FRRobot::LuaUpload(std::string filePath)
  */
 errno_t FRRobot::FileDelete(int fileType, std::string fileName)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     /* 检查文件名称，文件路径*/
     if (fileName.length() == 0)
     {
@@ -9236,6 +10151,10 @@ errno_t FRRobot::FileDelete(int fileType, std::string fileName)
  */
 errno_t FRRobot::LuaDelete(std::string fileName)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = FileDelete(0, fileName);
     return errcode;
 }
@@ -9247,6 +10166,10 @@ errno_t FRRobot::LuaDelete(std::string fileName)
  */
 errno_t FRRobot::GetLuaList(std::list<std::string>* luaNames)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9315,6 +10238,10 @@ errno_t FRRobot::GetLuaList(std::list<std::string>* luaNames)
 errno_t FRRobot::AuxServoSetParam(int servoId, int servoCompany, int servoModel,
                          int servoSoftVersion, int servoResolution, double axisMechTransRatio)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9359,6 +10286,10 @@ errno_t FRRobot::AuxServoSetParam(int servoId, int servoCompany, int servoModel,
 errno_t FRRobot::AuxServoGetParam(int servoId, int* servoCompany, int* servoModel,
                                   int* servoSoftVersion, int* servoResolution, double* axisMechTransRatio)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9401,6 +10332,14 @@ errno_t FRRobot::AuxServoGetParam(int servoId, int* servoCompany, int* servoMode
  */
 errno_t FRRobot::AuxServoEnable(int servoId, int status)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9436,6 +10375,10 @@ errno_t FRRobot::AuxServoEnable(int servoId, int status)
  */
 errno_t FRRobot::AuxServoSetControlMode(int servoId, int mode)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9473,6 +10416,14 @@ errno_t FRRobot::AuxServoSetControlMode(int servoId, int mode)
  */
 errno_t FRRobot::AuxServoSetTargetPos(int servoId, double pos, double speed, double acc)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9511,6 +10462,14 @@ errno_t FRRobot::AuxServoSetTargetPos(int servoId, double pos, double speed, dou
  */
 errno_t FRRobot::AuxServoSetTargetSpeed(int servoId, double speed, double acc)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9550,6 +10509,10 @@ errno_t FRRobot::AuxServoSetTargetTorque(int servoId, double torque)
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -9592,6 +10555,10 @@ errno_t FRRobot::AuxServoHoming(int servoId, int mode, double searchVel, double 
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -9896,6 +10863,10 @@ errno_t FRRobot::MoveAOStart(int AONum, int maxTCPSpeed, int maxAOPercent, int z
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9931,6 +10902,10 @@ errno_t FRRobot::MoveAOStart(int AONum, int maxTCPSpeed, int maxAOPercent, int z
  */
 errno_t FRRobot::MoveAOStop()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -9962,6 +10937,10 @@ errno_t FRRobot::MoveToolAOStart(int AONum, int maxTCPSpeed, int maxAOPercent, i
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -9998,6 +10977,10 @@ errno_t FRRobot::MoveToolAOStart(int AONum, int maxTCPSpeed, int maxAOPercent, i
  */
 errno_t FRRobot::MoveToolAOStop()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10031,6 +11014,10 @@ errno_t FRRobot::MoveToolAOStop()
 */
 errno_t FRRobot::ExtDevSetUDPComParam(string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10080,6 +11067,10 @@ errno_t FRRobot::ExtDevSetUDPComParam(string ip, int port, int period, int lossP
  */
 errno_t FRRobot::ExtDevGetUDPComParam(string& ip, int& port, int& period, int& lossPkgTime, int& lossPkgNum, int& disconnectTime, int& reconnectEnable, int& reconnectPeriod, int& reconnectNum)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10122,6 +11113,10 @@ errno_t FRRobot::ExtDevGetUDPComParam(string& ip, int& port, int& period, int& l
  */
 errno_t FRRobot::ExtDevLoadUDPDriver()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10152,6 +11147,10 @@ errno_t FRRobot::ExtDevLoadUDPDriver()
  */
 errno_t FRRobot::ExtDevUnloadUDPDriver()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10186,6 +11185,14 @@ errno_t FRRobot::ExtDevUnloadUDPDriver()
  */
 errno_t FRRobot::ExtAxisSetHoming(int axisID, int mode, double searchVel, double latchVel)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10226,6 +11233,14 @@ errno_t FRRobot::ExtAxisSetHoming(int axisID, int mode, double searchVel, double
  */
 errno_t FRRobot::ExtAxisStartJog(int axisID, int direction, double vel, double acc, double maxDistance)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10288,6 +11303,14 @@ errno_t FRRobot::ExtAxisStopJog(int axisID)
  */
 errno_t FRRobot::ExtAxisServoOn(int axisID, int status)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10326,6 +11349,10 @@ errno_t FRRobot::ExtAxisMove(ExaxisPos pos, double ovl)
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -10368,6 +11395,10 @@ errno_t FRRobot::ExtAxisMove(ExaxisPos pos, double ovl)
  */
 errno_t FRRobot::SetAuxDO(int DONum, bool bOpen, bool smooth, bool block)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10406,6 +11437,10 @@ errno_t FRRobot::SetAuxDO(int DONum, bool bOpen, bool smooth, bool block)
  */
 errno_t FRRobot::SetAuxAO(int AONum, double value, bool block)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10441,6 +11476,10 @@ errno_t FRRobot::SetAuxAO(int AONum, double value, bool block)
  */
 errno_t FRRobot::SetAuxDIFilterTime(int filterTime)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10475,6 +11514,10 @@ errno_t FRRobot::SetAuxDIFilterTime(int filterTime)
  */
 errno_t FRRobot::SetAuxAIFilterTime(int AONum, int filterTime)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10512,6 +11555,10 @@ errno_t FRRobot::SetAuxAIFilterTime(int AONum, int filterTime)
  */
 errno_t FRRobot::WaitAuxDI(int DINum, bool bOpen, int time, bool errorAlarm)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10552,6 +11599,10 @@ errno_t FRRobot::WaitAuxDI(int DINum, bool bOpen, int time, bool errorAlarm)
  */
 errno_t FRRobot::WaitAuxAI(int AINum, int sign, int value, int time, bool errorAlarm)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10591,6 +11642,10 @@ errno_t FRRobot::WaitAuxAI(int AINum, int sign, int value, int time, bool errorA
  */
 errno_t FRRobot::GetAuxDI(int DINum, bool isNoBlock, bool& isOpen)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10631,6 +11686,10 @@ errno_t FRRobot::GetAuxDI(int DINum, bool isNoBlock, bool& isOpen)
  */
 errno_t FRRobot::GetAuxAI(int AINum, bool isNoBlock, int& value)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10668,6 +11727,10 @@ errno_t FRRobot::GetAuxAI(int AINum, bool isNoBlock, int& value)
  */
 errno_t FRRobot::ExtDevUDPClientComReset()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10698,6 +11761,10 @@ errno_t FRRobot::ExtDevUDPClientComReset()
  */
 errno_t FRRobot::ExtDevUDPClientComClose()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10741,6 +11808,10 @@ errno_t FRRobot::ExtDevUDPClientComClose()
  */
 errno_t FRRobot::ExtAxisParamConfig(int axisID, int axisType, int axisDirection, double axisMax, double axisMin, double axisVel, double axisAcc, double axisLead, int encResolution, double axisOffect, int axisCompany, int axisModel, int axisEncType)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10828,6 +11899,10 @@ errno_t FRRobot::ExtAxisParamConfig(int axisID, int axisType, int axisDirection,
  */
 errno_t FRRobot::SetRobotPosToAxis(int installType)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10869,6 +11944,10 @@ errno_t FRRobot::SetRobotPosToAxis(int installType)
  */
 errno_t FRRobot::SetAxisDHParaConfig(int axisConfig, double axisDHd1, double axisDHd2, double axisDHd3, double axisDHd4, double axisDHa1, double axisDHa2, double axisDHa3, double axisDHa4)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10910,6 +11989,10 @@ errno_t FRRobot::SetAxisDHParaConfig(int axisConfig, double axisDHd1, double axi
  */
 errno_t FRRobot::ExtAxisSetRefPoint(int pointNum)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10943,6 +12026,10 @@ errno_t FRRobot::ExtAxisSetRefPoint(int pointNum)
  */
 errno_t FRRobot::ExtAxisComputeECoordSys(DescPose& coord)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -10986,6 +12073,10 @@ errno_t FRRobot::ExtAxisComputeECoordSys(DescPose& coord)
  */
 errno_t FRRobot::ExtAxisActiveECoordSys(int axisCoordNum, int toolNum, DescPose coord, int calibFlag)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -11027,6 +12118,10 @@ errno_t FRRobot::ExtAxisActiveECoordSys(int axisCoordNum, int toolNum, DescPose 
  */
 errno_t FRRobot::SetRefPointInExAxisEnd(DescPose pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -11065,6 +12160,10 @@ errno_t FRRobot::SetRefPointInExAxisEnd(DescPose pos)
  */
 errno_t FRRobot::PositionorSetRefPoint(int pointNum)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -11156,6 +12255,10 @@ errno_t FRRobot::ExtAxisSyncMoveJ(JointPos joint_pos, DescPose desc_pos, int too
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -11208,6 +12311,10 @@ errno_t FRRobot::ExtAxisSyncMoveL(JointPos joint_pos, DescPose desc_pos, int too
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -11270,6 +12377,10 @@ errno_t FRRobot::ExtAxisSyncMoveC(JointPos joint_pos_p, DescPose desc_pos_p, int
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -11568,6 +12679,10 @@ errno_t FRRobot::ArcWeldTraceControl(int flag, double delaytime, int isLeftRight
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -11621,6 +12736,10 @@ errno_t FRRobot::ArcWeldTraceExtAIChannelConfig(int channel)
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -11665,6 +12784,10 @@ errno_t FRRobot::EndForceDragControl(int status, int asaptiveFlag, int interfere
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -11756,6 +12879,10 @@ errno_t FRRobot::ForceAndJointImpedanceStartStop(int status, int impedanceFlag, 
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -12004,6 +13131,10 @@ errno_t FRRobot::GetForceSensorPayloadCog(double& x, double& y, double& z)
  */
 errno_t FRRobot::ForceSensorAutoComputeLoad(double& weight, DescTran& pos)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     JointPos startJ = { };
     DescPose startDesc = {};
     GetActualJointPosDegree(1, &startJ);
@@ -12150,6 +13281,10 @@ errno_t FRRobot::GetSegmentWeldPoint(DescPose startPos, DescPose endPos, double 
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
 
     int errcode = 0;
@@ -12424,6 +13559,10 @@ errno_t FRRobot::AxleSensorActivate(int actFlag)
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -12466,6 +13605,10 @@ errno_t FRRobot::AxleSensorRegWrite(int devAddr, int regHAddr, int regLAddr, int
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -13291,6 +14434,10 @@ errno_t FRRobot::ServoJTStart()
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -13326,6 +14473,10 @@ errno_t FRRobot::ServoJT(float torque[], double interval)
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -13438,6 +14589,10 @@ errno_t FRRobot::SetRobotRealtimeStateSamplePeriod(int period)
  */
 errno_t FRRobot::GetRobotRealtimeStateSamplePeriod(int& period)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -13506,6 +14661,14 @@ errno_t FRRobot::GetJointDriverTorque(double torque[])
  */
 errno_t FRRobot::ArcWeldTraceReplayStart()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -13531,6 +14694,10 @@ errno_t FRRobot::ArcWeldTraceReplayStart()
  */
 errno_t FRRobot::ArcWeldTraceReplayEnd()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -13661,6 +14828,10 @@ errno_t FRRobot::AngularSpeedEnd()
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
 
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -13694,6 +14865,11 @@ errno_t FRRobot::AngularSpeedEnd()
 */
 errno_t FRRobot::SoftwareUpgrade(std::string filePath, bool block)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
     int errcode = FileUpLoad(1, filePath);
     if (0 == errcode)
     {
@@ -14705,6 +15881,10 @@ errno_t FRRobot::TractorEnable(bool enable)
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -14741,6 +15921,10 @@ errno_t FRRobot::TractorHoming()
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -14776,6 +15960,10 @@ errno_t FRRobot::TractorMoveL(double distance, double vel)
     if (IsSockError())
     {
         return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
     }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
@@ -14817,6 +16005,10 @@ errno_t FRRobot::TractorMoveC(double radio, double angle, double vel)
     {
         return g_sock_com_err;
     }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -14851,6 +16043,10 @@ errno_t FRRobot::TractorMoveC(double radio, double angle, double vel)
  */
 errno_t FRRobot::TractorStop()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int rtn = ProgramStop();
     return rtn;
 }
@@ -14975,6 +16171,10 @@ errno_t FRRobot::SetWeldMachineCtrlMode(int mode)
 */
 errno_t FRRobot::AxleLuaUpload(std::string filePath)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
     int errcode = FileUpLoad(10, filePath);
     if (0 == errcode)
     {
@@ -15095,6 +16295,254 @@ errno_t FRRobot::SingularAvoidEnd()
     return errcode;
 }
 
+/**
+* @brief 开始Ptp运动FIR滤波
+* @param [in] maxAcc 最大加速度极值(deg/s2)
+* @return 错误码
+*/
+errno_t FRRobot::PtpFIRPlanningStart(double maxAcc)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = maxAcc;
+
+    if (c.execute("PtpFIRPlanningStart", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute PtpFIRPlanningStart fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 关闭Ptp运动FIR滤波
+* @return 错误码
+*/
+errno_t FRRobot::PtpFIRPlanningEnd()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("PtpFIRPlanningEnd", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute PtpFIRPlanningEnd fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 开始LIN、ARC运动FIR滤波
+* @param [in] maxAccLin 线加速度极值(mm/s2)
+* @param [in] maxAccDeg 角加速度极值(deg/s2)
+* @param [in] maxJerkLin 线加加速度极值(mm/s3)
+* @param [in] maxJerkDeg 角加加速度极值(deg/s3)
+* @return 错误码
+*/
+errno_t FRRobot::LinArcFIRPlanningStart(double maxAccLin, double maxAccDeg, double maxJerkLin, double maxJerkDeg)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = maxAccLin;
+    param[1] = maxAccDeg;
+    param[2] = maxJerkLin;
+    param[3] = maxJerkDeg;
+
+    if (c.execute("LinArcFIRPlanningStart", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LinArcFIRPlanningStart fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 关闭LIN、ARC运动FIR滤波
+* @return 错误码
+*/
+errno_t FRRobot::LinArcFIRPlanningEnd()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("LinArcFIRPlanningEnd", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LinArcFIRPlanningEnd fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 上传轨迹J文件
+ * @param [in] filePath 上传轨迹文件的全路径名   C://test/testJ.txt
+ * @return 错误码
+ */
+errno_t FRRobot::TrajectoryJUpLoad(const std::string& filePath)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    return FileUpLoad(20, filePath);
+}
+
+/**
+ * @brief 删除轨迹J文件
+ * @param [in] fileName 文件名称 testJ.txt
+ * @return 错误码
+ */
+errno_t FRRobot::TrajectoryJDelete(const std::string& fileName)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    return FileDelete(20, fileName);
+}
+
+/**
+ * @brief 工具坐标系转换开始
+ * @param [in] toolNum 工具坐标系编号[0-14]
+ * @return 错误码
+ */
+errno_t FRRobot::ToolTrsfStart(int toolNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = toolNum;
+
+    if (c.execute("ToolTrsfStart", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute ToolTrsfStart fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 工具坐标系转换结束
+ * @return 错误码
+ */
+errno_t FRRobot::ToolTrsfEnd()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("ToolTrsfEnd", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute ToolTrsfEnd fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+
 /* 根据字符分割字符串 */
 std::vector<std::string> FRRobot::split(const std::string &s, char delim)
 {
@@ -15145,6 +16593,17 @@ bool FRRobot::IsSockError()
     }
 }
 
+//判断当前安全状态，安全停止、主子故障等
+int FRRobot::GetSafetyCode()
+{
+    if (robot_state_pkg.safety_stop0_state == 1 || robot_state_pkg.safety_stop1_state == 1)
+    {
+        return 99;
+    }
+
+    return 0;
+}
+
 /**
  * @brief  设置与机器人通讯重连参数
  * @param  [in] enable  网络故障时使能重连 true-使能 false-不使能
@@ -15152,14 +16611,14 @@ bool FRRobot::IsSockError()
  * @param  [in] period 重连周期，单位ms
  * @return  错误码
  */
-errno_t FRRobot::FRRobot::SetReConnectParam(bool enable, int reconnectTime, int period)
+errno_t FRRobot::SetReConnectParam(bool enable, int reconnectTime, int period)
 {
     rtClient->SetReConnectParam(enable, reconnectTime, period);
     cmdClient->SetReConnectParam(enable, reconnectTime, period);
     return 0;
 }
 
-errno_t FRRobot::FRRobot::Sleep(int ms)
+errno_t FRRobot::Sleep(int ms)
 {
     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
     return 0;

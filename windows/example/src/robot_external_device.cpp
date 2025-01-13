@@ -83,7 +83,7 @@ int main(void)
 
 		printf("\n");
 
-		// second move
+		// 第二次移动
 		block = 1;
 		robot.MoveGripper(index, 0, 10, 0, max_time, block);
 

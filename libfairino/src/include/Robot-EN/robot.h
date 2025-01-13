@@ -1289,6 +1289,30 @@ public:
 	errno_t  GetGripperTemp(uint16_t *fault, int *temp);
 
 	/**
+	 * @brief  Gets the number of turns of the rotary gripper
+	 * @param  [out] fault 0-no error, 1-error
+	 * @param  [out] num  Number of turns
+	 * @return  Error code
+	 */
+	errno_t GetGripperRotNum(uint16_t* fault, double* num);
+
+	/**
+	 * @brief  Gets the rotation speed of the rotating gripper
+	 * @param  [out] fault 0-no error, 1-error
+	 * @param  [out] speed  Percent rotation speed
+	 * @return  Error code
+	 */
+	errno_t GetGripperRotSpeed(uint16_t* fault, int* speed);
+
+	/**
+	 * @brief  Obtain the rotating torque of the rotating gripper
+	 * @param  [out] fault 0-no error, 1-error
+	 * @param  [out] torque  Percent torque of rotation
+	 * @return  Error code
+	 */
+	errno_t GetGripperRotTorque(uint16_t* fault, int* torque);
+
+	/**
 	 *@brief  Computing Prefetch Points - Vision
 	 *@param  [in] desc_pos  Grab point Cartesian pose
 	 *@param  [in] zlength   z-axis offset
@@ -1308,8 +1332,8 @@ public:
 
 	/**
     *@brief  Configured force sensor
-    *@param  [in] company  Manufacturer of force sensors, 17-Kunwei Technology
-    *@param  [in] device  Device number, not used yet. The default value is 0
+    *@param  [in] company  Manufacturer of force sensors, 17-KUNWEI，19-CAAA，20-ATI，21-HKM，22-GZCX，23-NBIT，24-XJC，26-NSR
+    *@param  [in] device  Device number,  KUNWEI(0-KWR75B)，CAAA(0-MCS6A-200-4)，ATI(0-AXIA80-M8)，HKM(0-MST2010)，GZCX(0-WHC6L-YB-10A)，NBIT(0-XLH93003ACS)，XJC(0-XJC-6F-D82)，NSR(0-NSR-FTSensorA)
     *@param  [in] softvesion  Software version. The value is not used. The default value is 0
     *@param  [in] bus The device is attached to the terminal bus and is not in use. The default value is 0
     *@return  Error code
@@ -3183,6 +3207,61 @@ public:
 	*/
 	errno_t SingularAvoidEnd();
 
+	/**
+	* @brief Start Ptp motion FIR filtering
+	* @param [in] maxAcc Maximum acceleration(deg/s2)
+	* @return error code
+	*/
+	errno_t PtpFIRPlanningStart(double maxAcc);
+
+	/**
+	* @brief Stop Ptp motion FIR filtering
+	* @return error code
+	*/
+	errno_t PtpFIRPlanningEnd();
+
+	/**
+	* @brief Start LIN, ARC motion FIR filtering
+	* @param [in] maxAccLin Extreme linear acceleration(mm/s2)
+	* @param [in] maxAccDeg Extreme angular acceleration(deg/s2)
+	* @param [in] maxJerkLin Extreme linear plus acceleration(mm/s3)
+	* @param [in] maxJerkDeg Extreme angular plus acceleration(deg/s3)
+	* @return error code
+	*/
+	errno_t LinArcFIRPlanningStart(double maxAccLin, double maxAccDeg, double maxJerkLin, double maxJerkDeg);
+
+	/**
+	* @brief Stop LIN, ARC motion FIR filtering
+	* @return error code
+	*/
+	errno_t LinArcFIRPlanningEnd();
+
+	/**
+	 * @brief upload TrajectoryJ file
+	 * @param [in] filePath file path   C://test/testJ.txt
+	 * @return error code
+	 */
+	errno_t TrajectoryJUpLoad(const std::string& filePath);
+
+	/**
+	 * @brief delete TrajectoryJ file
+	 * @param [in] fileName file name   testJ.txt
+	 * @return error code
+	 */
+	errno_t TrajectoryJDelete(const std::string& fileName);
+
+	/**
+	 * @brief Tool coordinate system transition begins
+	 * @param [in] toolNum Tool coordinate system number[0-14]
+	 * @return error code
+	 */
+	errno_t ToolTrsfStart(int toolNum);
+
+	/**
+	 * @brief Tool coordinate system transition ends
+	 * @return error code
+	 */
+	errno_t ToolTrsfEnd();
 
 	/**
 	* @brief  Set communication reconnection parameters with the robot
@@ -3241,6 +3320,8 @@ private:
 	std::vector<std::string> split(std::string s, std::string delimiter);
 
 	bool IsSockError();
+
+	int GetSafetyCode();
 
 private:
 	uint8_t robot_realstate_exit = 0;

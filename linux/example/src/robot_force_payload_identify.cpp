@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-    FRRobot robot;                 
-    robot.RPC("192.168.58.2");     
+    FRRobot robot;                 //实例化机器人对象
+    robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
     float weight;
     int retval = 0;
@@ -29,7 +29,7 @@ int main(void)
     memset(&desc_p2, 0, sizeof(DescPose));
     memset(&desc_p3, 0, sizeof(DescPose));
 
-    /* Clear the load */
+    /* 清空负载 */
     robot.SetLoadWeight(0.0);
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
     DescTran coord;
