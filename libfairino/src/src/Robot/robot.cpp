@@ -42,11 +42,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "1"
-    #define SDK_VERSION_RELEASE "7"
+    #define SDK_VERSION_RELEASE "8"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.1.7.0-robot v3.7.7"
+#define SDK_RELEASE "SDK V2.1.8.0-robot v3.7.8"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -394,7 +394,8 @@ errno_t FRRobot::GetControllerIP(char *ip)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -425,7 +426,8 @@ errno_t FRRobot::DragTeachSwitch(uint8_t state)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -489,7 +491,8 @@ errno_t FRRobot::RobotEnable(uint8_t state)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -520,7 +523,8 @@ errno_t FRRobot::Mode(int mode)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -567,7 +571,8 @@ errno_t FRRobot::StartJOG(uint8_t ref, uint8_t nb, uint8_t dir, float vel, float
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -598,7 +603,8 @@ errno_t FRRobot::StopJOG(uint8_t ref)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -626,7 +632,8 @@ errno_t FRRobot::ImmStopJOG()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -701,7 +708,8 @@ errno_t FRRobot::MoveJ(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -760,7 +768,7 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
         else
         {
             c.close();
-            return -1;
+            return ERR_XMLRPC_CMD_FAILED;
         }
        
         if (errcode != 0)
@@ -809,7 +817,8 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     if (overSpeedStrategy > 1)
@@ -822,7 +831,7 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
         else
         {
             c.close();
-            return -1;
+            return ERR_XMLRPC_CMD_FAILED;
         }
 
         if (errcode != 0)
@@ -946,7 +955,8 @@ errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, i
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     logger_info("errcode:%d.", errcode);
@@ -1048,7 +1058,8 @@ errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, 
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1128,7 +1139,8 @@ errno_t FRRobot::NewSpiral(JointPos *joint_pos, DescPose *desc_pos, int tool, in
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1162,7 +1174,8 @@ errno_t FRRobot::ServoMoveStart()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1196,7 +1209,8 @@ errno_t FRRobot::ServoMoveEnd()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1253,7 +1267,8 @@ errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, floa
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1313,7 +1328,8 @@ errno_t FRRobot::ServoCart(int mode, DescPose *desc_pose, float pos_gain[6], flo
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1368,7 +1384,8 @@ errno_t FRRobot::MoveCart(DescPose *desc_pos, int tool, int user, float vel, flo
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1400,7 +1417,8 @@ errno_t FRRobot::SplineStart()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1457,7 +1475,8 @@ errno_t FRRobot::SplinePTP(JointPos *joint_pos, DescPose *desc_pos, int tool, in
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1489,7 +1508,8 @@ errno_t FRRobot::SplineEnd()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1525,7 +1545,8 @@ errno_t FRRobot::NewSplineStart(int type,  int averageTime)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1586,7 +1607,8 @@ errno_t FRRobot::NewSplinePoint(JointPos *joint_pos, DescPose *desc_pos, int too
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1618,7 +1640,8 @@ errno_t FRRobot::NewSplineEnd()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1647,7 +1670,8 @@ errno_t FRRobot::StopMotion()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1740,7 +1764,8 @@ errno_t FRRobot::PointsOffsetEnable(int flag, DescPose *offset_pos)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1769,7 +1794,8 @@ errno_t FRRobot::PointsOffsetDisable()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1811,7 +1837,8 @@ errno_t FRRobot::SetDO(int id, uint8_t status, uint8_t smooth, uint8_t block)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1853,7 +1880,8 @@ errno_t FRRobot::SetToolDO(int id, uint8_t status, uint8_t smooth, uint8_t block
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1892,7 +1920,8 @@ errno_t FRRobot::SetAO(int id, float value, uint8_t block)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -1931,7 +1960,8 @@ errno_t FRRobot::SetToolAO(int id, float value, uint8_t block)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2052,7 +2082,8 @@ errno_t FRRobot::WaitDI(int id, uint8_t status, int max_time, int opt)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2095,7 +2126,8 @@ errno_t FRRobot::WaitMultiDI(int mode, int id, uint8_t status, int max_time, int
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2136,7 +2168,8 @@ errno_t FRRobot::WaitToolDI(int id, uint8_t status, int max_time, int opt)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2329,7 +2362,8 @@ errno_t FRRobot::WaitAI(int id, int sign, float value, int max_time, int opt)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2372,7 +2406,8 @@ errno_t FRRobot::WaitToolAI(int id, int sign, float value, int max_time, int opt
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2407,7 +2442,8 @@ errno_t FRRobot::SetSpeed(int vel)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2440,7 +2476,8 @@ errno_t FRRobot::SetSysVarValue(int id, float value)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2471,7 +2508,8 @@ errno_t FRRobot::SetToolPoint(int point_num)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2512,7 +2550,8 @@ errno_t FRRobot::ComputeTool(DescPose *tcp_pose)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2543,7 +2582,8 @@ errno_t FRRobot::SetTcp4RefPoint(int point_num)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2584,7 +2624,8 @@ errno_t FRRobot::ComputeTcp4(DescPose *tcp_pose)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2628,7 +2669,8 @@ errno_t FRRobot::SetToolCoord(int id, DescPose *coord, int type, int install, in
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2672,7 +2714,8 @@ errno_t FRRobot::SetToolList(int id, DescPose *coord, int type, int install, int
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2703,7 +2746,8 @@ errno_t FRRobot::SetExTCPPoint(int point_num)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2744,7 +2788,8 @@ errno_t FRRobot::ComputeExTCF(DescPose *tcp_pose)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2789,7 +2834,8 @@ errno_t FRRobot::SetExToolCoord(int id, DescPose *etcp, DescPose *etool)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2834,7 +2880,8 @@ errno_t FRRobot::SetExToolList(int id, DescPose *etcp, DescPose *etool)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2865,7 +2912,8 @@ errno_t FRRobot::SetWObjCoordPoint(int point_num)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2911,7 +2959,8 @@ errno_t FRRobot::ComputeWObjCoord(int method, int refFrame, DescPose *wobj_pose)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2951,7 +3000,8 @@ errno_t FRRobot::SetWObjCoord(int id, DescPose *coord, int refFrame)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -2991,7 +3041,8 @@ errno_t FRRobot::SetWObjList(int id, DescPose *coord, int refFrame)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3001,10 +3052,11 @@ errno_t FRRobot::SetWObjList(int id, DescPose *coord, int refFrame)
 
 /**
  * @brief  设置末端负载重量
+ * @param  [in] loadNum 负载编号
  * @param  [in] weight  负载重量，单位kg
  * @return  错误码
  */
-errno_t FRRobot::SetLoadWeight(float weight)
+errno_t FRRobot::SetLoadWeight(int loadNum, float weight)
 {
     if (IsSockError())
     {
@@ -3014,7 +3066,8 @@ errno_t FRRobot::SetLoadWeight(float weight)
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
 
-    param = weight;
+    param[0] = loadNum;
+    param[1] = weight;
 
     if (c.execute("SetLoadWeight", param, result))
     {
@@ -3022,7 +3075,8 @@ errno_t FRRobot::SetLoadWeight(float weight)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3055,7 +3109,8 @@ errno_t FRRobot::SetLoadCoord(DescTran *coord)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3086,7 +3141,8 @@ errno_t FRRobot::SetRobotInstallPos(uint8_t install)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3119,7 +3175,8 @@ errno_t FRRobot::SetRobotInstallAngle(double yangle, double zangle)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3150,7 +3207,8 @@ errno_t FRRobot::WaitMs(int t_ms)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3190,7 +3248,8 @@ errno_t FRRobot::SetAnticollision(int mode, float level[6], int config)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3203,10 +3262,11 @@ errno_t FRRobot::SetAnticollision(int mode, float level[6], int config)
  * @param  [in] strategy  0-报错停止，1-继续运行
  * @param  [in] safeTime  安全停止时间[1000 - 2000]ms
  * @param  [in] safeDistance  安全停止距离[1-150]mm
+ * @param  [in] safeVel 安全速度[50-250] mm/s
  * @param  [in] safetyMargin  j1-j6安全系数[1-10]
  * @return  错误码
  */
-errno_t FRRobot::SetCollisionStrategy(int strategy, int safeTime, int safeDistance, int safetyMargin[])
+errno_t FRRobot::SetCollisionStrategy(int strategy, int safeTime, int safeDistance, int safeVel, int safetyMargin[])
 {
     if (IsSockError())
     {
@@ -3219,12 +3279,13 @@ errno_t FRRobot::SetCollisionStrategy(int strategy, int safeTime, int safeDistan
     param[0] = strategy;
     param[1] = safeTime;
     param[2] = safeDistance;
-    param[3][0] = safetyMargin[0];
-    param[3][1] = safetyMargin[1];
-    param[3][2] = safetyMargin[2];
-    param[3][3] = safetyMargin[3];
-    param[3][4] = safetyMargin[4];
-    param[3][5] = safetyMargin[5];
+    param[3] = safeVel;
+    param[4][0] = safetyMargin[0];
+    param[4][1] = safetyMargin[1];
+    param[4][2] = safetyMargin[2];
+    param[4][3] = safetyMargin[3];
+    param[4][4] = safetyMargin[4];
+    param[4][5] = safetyMargin[5];
 
     if (c.execute("SetCollisionStrategy", param, result))
     {
@@ -3232,7 +3293,8 @@ errno_t FRRobot::SetCollisionStrategy(int strategy, int safeTime, int safeDistan
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3268,7 +3330,8 @@ errno_t FRRobot::SetLimitPositive(float limit[6])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3304,7 +3367,8 @@ errno_t FRRobot::SetLimitNegative(float limit[6])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3332,7 +3396,8 @@ errno_t FRRobot::ResetAllError()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3363,7 +3428,8 @@ errno_t FRRobot::FrictionCompensationOnOff(uint8_t state)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3399,7 +3465,8 @@ errno_t FRRobot::SetFrictionValue_level(float coeff[6])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3435,7 +3502,8 @@ errno_t FRRobot::SetFrictionValue_wall(float coeff[6])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3471,7 +3539,8 @@ errno_t FRRobot::SetFrictionValue_ceiling(float coeff[6])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3507,7 +3576,8 @@ errno_t FRRobot::SetFrictionValue_freedom(float coeff[6])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3545,7 +3615,8 @@ errno_t FRRobot::GetRobotInstallAngle(float *yangle, float *zangle)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3584,7 +3655,8 @@ errno_t FRRobot::GetSysVarValue(int id, float *value)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -3997,7 +4069,8 @@ errno_t FRRobot::GetInverseKin(int type, DescPose *desc_pos, int config, JointPo
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4055,7 +4128,8 @@ errno_t FRRobot::GetInverseKinRef(int type, DescPose *desc_pos, JointPos *joint_
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4109,7 +4183,8 @@ errno_t FRRobot::GetInverseKinHasSolution(int type, DescPose *desc_pos, JointPos
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
     c.close();
 
@@ -4157,7 +4232,8 @@ errno_t FRRobot::GetForwardKin(JointPos *joint_pos, DescPose *desc_pos)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4231,7 +4307,8 @@ errno_t FRRobot::GetTargetPayload(uint8_t flag, float *weight)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4272,7 +4349,8 @@ errno_t FRRobot::GetTargetPayloadCog(uint8_t flag, DescTran *cog)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4316,7 +4394,8 @@ errno_t FRRobot::GetTCPOffset(uint8_t flag, DescPose *desc_pos)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4360,7 +4439,8 @@ errno_t FRRobot::GetWObjOffset(uint8_t flag, DescPose *desc_pos)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4411,7 +4491,8 @@ errno_t FRRobot::GetJointSoftLimitDeg(uint8_t flag, float negative[6], float pos
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4447,7 +4528,8 @@ errno_t FRRobot::GetSystemClock(float *t_ms)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4483,7 +4565,8 @@ errno_t FRRobot::GetRobotCurJointsConfig(int *config)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4519,7 +4602,8 @@ errno_t FRRobot::GetDefaultTransVel(float *vel)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4622,7 +4706,8 @@ errno_t FRRobot::GetRobotTeachingPoint(char name[64], float data[20])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4687,7 +4772,8 @@ errno_t FRRobot::SetTPDParam(int type, char name[30], int period_ms, uint16_t di
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4726,7 +4812,8 @@ errno_t FRRobot::SetTPDStart(int type, char name[30], int period_ms, uint16_t di
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4754,7 +4841,8 @@ errno_t FRRobot::SetWebTPDStop()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4785,7 +4873,8 @@ errno_t FRRobot::SetTPDDelete(char name[30])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4816,7 +4905,8 @@ errno_t FRRobot::LoadTPD(char name[30])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4859,7 +4949,8 @@ errno_t FRRobot::GetTPDStartPose(char name[30], DescPose *desc_pose)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4898,7 +4989,8 @@ errno_t FRRobot::MoveTPD(char name[30], uint8_t blend, float ovl)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4933,7 +5025,8 @@ errno_t FRRobot::LoadTrajectoryJ(char name[30], float ovl, int opt)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -4965,7 +5058,8 @@ errno_t FRRobot::MoveTrajectoryJ()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5008,7 +5102,8 @@ errno_t FRRobot::GetTrajectoryStartPose(char name[30], DescPose *desc_pose)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5064,7 +5159,8 @@ errno_t FRRobot::SetTrajectoryJSpeed(float ovl)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5100,7 +5196,8 @@ errno_t FRRobot::SetTrajectoryJForceTorque(ForceTorque *ft)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5131,7 +5228,8 @@ errno_t FRRobot::SetTrajectoryJForceFx(double fx)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5162,7 +5260,8 @@ errno_t FRRobot::SetTrajectoryJForceFy(double fy)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5193,7 +5292,8 @@ errno_t FRRobot::SetTrajectoryJForceFz(double fz)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5224,7 +5324,8 @@ errno_t FRRobot::SetTrajectoryJTorqueTx(double tx)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5255,7 +5356,8 @@ errno_t FRRobot::SetTrajectoryJTorqueTy(double ty)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5286,7 +5388,8 @@ errno_t FRRobot::SetTrajectoryJTorqueTz(double tz)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5319,7 +5422,8 @@ errno_t FRRobot::LoadDefaultProgConfig(uint8_t flag, char program_name[64])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5350,7 +5454,8 @@ errno_t FRRobot::ProgramLoad(char program_name[64])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5390,7 +5495,8 @@ errno_t FRRobot::GetLoadedProgram(char program_name[64])
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5426,7 +5532,8 @@ errno_t FRRobot::GetCurrentLine(int *line)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5459,7 +5566,8 @@ errno_t FRRobot::ProgramRun()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5487,7 +5595,8 @@ errno_t FRRobot::ProgramPause()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5519,7 +5628,8 @@ errno_t FRRobot::ProgramResume()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5547,7 +5657,8 @@ errno_t FRRobot::ProgramStop()
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5610,7 +5721,8 @@ errno_t FRRobot::SetGripperConfig(int company, int device, int softvesion, int b
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5652,7 +5764,8 @@ errno_t FRRobot::GetGripperConfig(int *company, int *device, int *softvesion, in
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5689,7 +5802,8 @@ errno_t FRRobot::ActGripper(int index, uint8_t act)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -5742,7 +5856,8 @@ errno_t FRRobot::MoveGripper(int index, int pos, int vel, int force, int max_tim
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6067,7 +6182,8 @@ errno_t FRRobot::ComputePrePick(DescPose *desc_pos, double zlength, double zangl
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6120,7 +6236,8 @@ errno_t FRRobot::ComputePostPick(DescPose *desc_pos, double zlength, double zang
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6157,7 +6274,8 @@ errno_t FRRobot::FT_SetConfig(int company, int device, int softvesion, int bus)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6199,7 +6317,8 @@ errno_t FRRobot::FT_GetConfig(int *company, int *device, int *softvesion, int *b
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6234,7 +6353,8 @@ errno_t FRRobot::FT_Activate(uint8_t act)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6265,7 +6385,8 @@ errno_t FRRobot::FT_SetZero(uint8_t act)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6303,7 +6424,8 @@ errno_t FRRobot::FT_SetRCS(uint8_t ref, DescPose coord)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6334,7 +6456,8 @@ errno_t FRRobot::FT_PdIdenRecord(int id)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6370,7 +6493,8 @@ errno_t FRRobot::FT_PdIdenCompute(float *weight)
     }
     else
     {
-        errcode = -1;
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6403,7 +6527,7 @@ errno_t FRRobot::FT_PdCogIdenRecord(int id, int index)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6441,7 +6565,7 @@ errno_t FRRobot::FT_PdCogIdenCompute(DescTran *cog)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6579,7 +6703,7 @@ errno_t FRRobot::FT_Guard(uint8_t flag, int sensor_id, uint8_t select[6], ForceT
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6651,7 +6775,7 @@ errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], Forc
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6694,7 +6818,7 @@ errno_t FRRobot::FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, fl
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6741,7 +6865,7 @@ errno_t FRRobot::FT_RotInsertion(int rcs, float angVelRot, float ft, float max_a
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6786,7 +6910,7 @@ errno_t FRRobot::FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, fl
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6833,7 +6957,7 @@ errno_t FRRobot::FT_FindSurface(int rcs, uint8_t dir, uint8_t axis, float lin_v,
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6865,7 +6989,7 @@ errno_t FRRobot::FT_CalCenterStart()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6906,7 +7030,7 @@ errno_t FRRobot::FT_CalCenterEnd(DescPose *pos)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6943,7 +7067,7 @@ errno_t FRRobot::FT_ComplianceStart(float p, float force)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6971,7 +7095,7 @@ errno_t FRRobot::FT_ComplianceStop()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -6999,7 +7123,7 @@ errno_t FRRobot::LoadIdentifyDynFilterInit()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7027,7 +7151,7 @@ errno_t FRRobot::LoadIdentifyDynVarInit()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7071,7 +7195,7 @@ errno_t FRRobot::LoadIdentifyMain(double joint_torque[6], double joint_pos[6], d
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7118,7 +7242,7 @@ errno_t FRRobot::LoadIdentifyGetResult(double gain[12], double *weight, DescTran
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7149,7 +7273,7 @@ errno_t FRRobot::ConveyorStartEnd(uint8_t status)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7177,7 +7301,7 @@ errno_t FRRobot::ConveyorPointIORecord()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7205,7 +7329,7 @@ errno_t FRRobot::ConveyorPointARecord()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7233,7 +7357,7 @@ errno_t FRRobot::ConveyorRefPointRecord()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7261,7 +7385,7 @@ errno_t FRRobot::ConveyorPointBRecord()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7292,7 +7416,7 @@ errno_t FRRobot::ConveyorIODetect(int max_t)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7323,7 +7447,7 @@ errno_t FRRobot::ConveyorGetTrackData(int mode)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7354,7 +7478,7 @@ errno_t FRRobot::ConveyorTrackStart(uint8_t status)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7382,7 +7506,7 @@ errno_t FRRobot::ConveyorTrackEnd()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7417,7 +7541,7 @@ errno_t FRRobot::ConveyorSetParam(float para[6])
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7452,7 +7576,7 @@ errno_t FRRobot::ConveyorCatchPointComp(double cmp[3])
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7495,7 +7619,7 @@ errno_t FRRobot::TrackMoveL(char name[32], int tool, int wobj, float vel, float 
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7535,7 +7659,7 @@ errno_t FRRobot::GetSSHKeygen(char keygen[1024])
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7574,7 +7698,7 @@ errno_t FRRobot::SetSSHScpCmd(int mode, char sshname[32], char sship[32], char u
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7617,7 +7741,7 @@ errno_t FRRobot::ComputeFileMD5(char file_path[256], char md5[256])
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7742,7 +7866,7 @@ errno_t FRRobot::GetSoftwareVersion(char robotModel[64], char webVersion[64], ch
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7803,7 +7927,7 @@ errno_t FRRobot::GetHardwareVersion(char ctrlBoxBoardversion[128], char driver1v
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7869,7 +7993,7 @@ errno_t FRRobot::GetFirmwareVersion(char ctrlBoxBoardversion[128], char driver1v
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -7904,12 +8028,11 @@ errno_t FRRobot::GetDHCompensation(double dhCompensation[6])
         else
         {
             logger_error("execute GetDHCompensation fail, retval is: %d", retval);
-            errcode = -1;
         }
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -10916,7 +11039,7 @@ errno_t FRRobot::MoveAOStop()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -10991,7 +11114,7 @@ errno_t FRRobot::MoveToolAOStop()
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -14611,7 +14734,7 @@ errno_t FRRobot::GetRobotRealtimeStateSamplePeriod(int& period)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -14680,7 +14803,7 @@ errno_t FRRobot::ArcWeldTraceReplayStart()
     else
     {
         logger_error("execute ArcWeldTraceReplayStart fail: %d.", errcode);
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -14709,7 +14832,7 @@ errno_t FRRobot::ArcWeldTraceReplayEnd()
     else
     {
         logger_error("execute ArcWeldTraceReplayEnd fail: %d.", errcode);
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -15058,7 +15181,7 @@ errno_t FRRobot::AuxServoGetAcc(double& acc, double& dec)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -15097,7 +15220,7 @@ errno_t FRRobot::AuxServoGetEmergencyStopAcc(double& acc, double& dec)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -15140,7 +15263,7 @@ errno_t FRRobot::GetAxleCommunicationParam(AxleComParam* comParam)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -15333,7 +15456,7 @@ errno_t FRRobot::GetAxleLuaEnableStatus(int* status)
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -15416,7 +15539,7 @@ errno_t FRRobot::GetAxleLuaEnableDeviceType(int* forceSensorEnable, int* gripper
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -15487,7 +15610,7 @@ errno_t FRRobot::GetAxleLuaEnableDevice(int forceSensorEnable[], int gripperEnab
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -15590,7 +15713,7 @@ errno_t FRRobot::GetAxleLuaGripperFunc(int id, int func[])
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -15675,7 +15798,7 @@ errno_t FRRobot::GetCtrlOpenLUAName(std::string name[])
     }
     else
     {
-        errcode = -1;
+        errcode = ERR_XMLRPC_CMD_FAILED;
     }
 
     c.close();
@@ -16472,11 +16595,138 @@ errno_t FRRobot::TrajectoryJDelete(const std::string& fileName)
 }
 
 /**
- * @brief 工具坐标系转换开始
- * @param [in] toolNum 工具坐标系编号[0-14]
+ * @brief 根据点位信息计算工具坐标系
+ * @param [in] method 计算方法；0-四点法；1-六点法
+ * @param [in] pos 关节位置组，四点法时数组长度为4个，六点法时数组长度为6个
+ * @param [out] coord 工具坐标系结果
  * @return 错误码
  */
-errno_t FRRobot::ToolTrsfStart(int toolNum)
+errno_t FRRobot::ComputeToolCoordWithPoints(int method, JointPos pos[], DescPose& coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = method;
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 6; j++)
+        {
+            param[i+1][j] = pos[i].jPos[j];
+        }
+    }
+
+    for (int i = 4; i < 6; i++)
+    {
+        if (method == 0)
+        {
+            for (int j = 0; j < 6; j++)
+            {
+                param[i + 1][j] = 0.0;
+            }
+        }
+        else if (method == 1)
+        {
+            for (int j = 0; j < 6; j++)
+            {
+                param[i + 1][j] = pos[i].jPos[j];
+            }
+        }
+        
+    }
+
+    if (c.execute("ComputeToolCoordWithPoints", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            coord.tran.x = double(result[1]);
+            coord.tran.y = double(result[2]);
+            coord.tran.z = double(result[3]);
+            coord.rpy.rx = double(result[4]);
+            coord.rpy.ry = double(result[5]);
+            coord.rpy.rz = double(result[6]);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 根据点位信息计算工件坐标系
+ * @param [in] method 计算方法；0：原点-x轴-z轴  1：原点-x轴-xy平面
+ * @param [in] pos 三个TCP位置组
+ * @param [in] refFrame 参考坐标系
+ * @param [out] coord 工具坐标系结果
+ * @return 错误码
+ */
+errno_t FRRobot::ComputeWObjCoordWithPoints(int method, DescPose pos[], int refFrame, DescPose& coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = method;
+    for (int i = 0; i < 3; i++)
+    {
+        param[i + 1][0] = pos[i].tran.x;
+        param[i + 1][1] = pos[i].tran.y;
+        param[i + 1][2] = pos[i].tran.z;
+        param[i + 1][3] = pos[i].rpy.rx;
+        param[i + 1][4] = pos[i].rpy.ry;
+        param[i + 1][5] = pos[i].rpy.rz;
+    }
+    param[4] = refFrame;
+
+    if (c.execute("ComputeWObjCoordWithPoints", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            coord.tran.x = double(result[1]);
+            coord.tran.y = double(result[2]);
+            coord.tran.z = double(result[3]);
+            coord.rpy.rx = double(result[4]);
+            coord.rpy.ry = double(result[5]);
+            coord.rpy.rz = double(result[6]);
+        }
+
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置机器人焊接电弧意外中断检测参数
+ * @param [in] checkEnable 是否使能检测；0-不使能；1-使能
+ * @param [in] arcInterruptTimeLength 电弧中断确认时长(ms)
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingSetCheckArcInterruptionParam(int checkEnable, int arcInterruptTimeLength)
 {
     if (IsSockError())
     {
@@ -16486,14 +16736,15 @@ errno_t FRRobot::ToolTrsfStart(int toolNum)
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
 
-    param[0] = toolNum;
+    param[0] = checkEnable;
+    param[1] = arcInterruptTimeLength;
 
-    if (c.execute("ToolTrsfStart", param, result))
+    if (c.execute("WeldingSetCheckArcInterruptionParam", param, result))
     {
         errcode = int(result);
         if (0 != errcode)
         {
-            logger_error("execute ToolTrsfStart fail: %d.", errcode);
+            logger_error("execute WeldingSetCheckArcInterruptionParam fail: %d.", errcode);
             c.close();
             return errcode;
         }
@@ -16509,10 +16760,54 @@ errno_t FRRobot::ToolTrsfStart(int toolNum)
 }
 
 /**
- * @brief 工具坐标系转换结束
+ * @brief 获取机器人焊接电弧意外中断检测参数
+ * @param [out] checkEnable 是否使能检测；0-不使能；1-使能
+ * @param [out] arcInterruptTimeLength 电弧中断确认时长(ms)
  * @return 错误码
  */
-errno_t FRRobot::ToolTrsfEnd()
+errno_t FRRobot::WeldingGetCheckArcInterruptionParam(int* checkEnable, int* arcInterruptTimeLength)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("WeldingGetCheckArcInterruptionParam", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            *checkEnable = (int)result[1];
+            *arcInterruptTimeLength = (int)result[2];
+        }
+        else
+        {
+            logger_error("WeldingGetCheckArcInterruptionParam fail. %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置机器人焊接中断恢复参数
+ * @param [in] enable 是否使能焊接中断恢复
+ * @param [in] length 焊缝重叠距离(mm)
+ * @param [in] velocity 机器人回到再起弧点速度百分比(0-100)
+ * @param [in] moveType 机器人运动到再起弧点方式；0-LIN；1-PTP
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingSetReWeldAfterBreakOffParam(int enable, double length, double velocity, int moveType)
 {
     if (IsSockError())
     {
@@ -16522,12 +16817,17 @@ errno_t FRRobot::ToolTrsfEnd()
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
 
-    if (c.execute("ToolTrsfEnd", param, result))
+    param[0] = enable;
+    param[1] = length;
+    param[2] = velocity;
+    param[3] = moveType;
+
+    if (c.execute("WeldingSetReWeldAfterBreakOffParam", param, result))
     {
         errcode = int(result);
         if (0 != errcode)
         {
-            logger_error("execute ToolTrsfEnd fail: %d.", errcode);
+            logger_error("execute WeldingSetReWeldAfterBreakOffParam fail: %d.", errcode);
             c.close();
             return errcode;
         }
@@ -16541,6 +16841,340 @@ errno_t FRRobot::ToolTrsfEnd()
     c.close();
     return errcode;
 }
+
+/**
+ * @brief 获取机器人焊接中断恢复参数
+ * @param [out] enable 是否使能焊接中断恢复
+ * @param [out] length 焊缝重叠距离(mm)
+ * @param [out] velocity 机器人回到再起弧点速度百分比(0-100)
+ * @param [out] moveType 机器人运动到再起弧点方式；0-LIN；1-PTP
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingGetReWeldAfterBreakOffParam(int* enable, double* length, double* velocity, int* moveType)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("WeldingGetReWeldAfterBreakOffParam", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            *enable = (int)result[1];
+            *length = (double)result[2];
+            *velocity = (double)result[3];
+            *moveType = (int)result[4];
+        }
+        else
+        {
+            logger_error("WeldingGetReWeldAfterBreakOffParam fail. %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置机器人焊接中断后恢复焊接
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingStartReWeldAfterBreakOff()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("WeldingStartReWeldAfterBreakOff", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置机器人焊接中断后退出焊接
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingAbortWeldAfterBreakOff()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("WeldingAbortWeldAfterBreakOff", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+errno_t FRRobot::LaserSensorRecord(int status, int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, double speed)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = status;
+    param[1] = delayMode;
+    param[2] = delayTime;
+    param[3] = delayDisExAxisNum;
+    param[4] = delayDis;
+    param[5] = sensitivePara;
+    param[6] = speed;
+
+    if (c.execute("LaserSensorRecord", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserSensorRecord fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+errno_t FRRobot::LaserTrackingLaserOn(int weldId)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = weldId;
+
+    if (c.execute("LaserTrackingLaserOn", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingLaserOn fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+errno_t FRRobot::LaserTrackingLaserOff()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("LaserTrackingLaserOff", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingLaserOff fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+errno_t FRRobot::LaserTrackingTrackOn(int coordId)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = coordId;
+
+    if (c.execute("LaserTrackingTrackOn", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingTrackOn fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+errno_t FRRobot::LaserTrackingTrackOff()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("LaserTrackingTrackOff", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingTrackOff fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+errno_t FRRobot::LaserTrackingSearchStart(int direction, DescTran directionPoint, int vel, int distance, int timeout, int posSensorNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = direction;
+    param[1] = directionPoint.x;
+    param[2] = directionPoint.y;
+    param[3] = directionPoint.z;
+    param[4] = vel;
+    param[5] = distance;
+    param[6] = timeout;
+    param[7] = posSensorNum;
+
+    if (c.execute("LaserTrackingSearchStart", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingSearchStart fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+errno_t FRRobot::LaserTrackingSearchStop()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("LaserTrackingSearchStop", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingSearchStop fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
 
 
 /* 根据字符分割字符串 */

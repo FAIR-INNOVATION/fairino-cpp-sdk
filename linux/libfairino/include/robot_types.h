@@ -201,6 +201,15 @@ typedef struct ROBOT_AUX_STATE
 } robot_aux_state;
 #pragma pack(pop)
 
+#pragma pack(push)
+#pragma pack(1)
+typedef struct _WELDING_BREAKOFF_STATE
+{
+	uint8_t breakOffState;  //º¸½ÓÖÐ¶Ï×´Ì¬
+	uint8_t weldArcState;   //º¸½Óµç»¡ÖÐ¶Ï×´Ì¬
+}WELDING_BREAKOFF_STATE;
+#pragma pack(pop)
+
 
 #pragma pack(push)
 #pragma pack(1)
@@ -292,6 +301,7 @@ typedef struct _ROBOT_STATE_PKG
 	float gripperRotNum;				//The current number of turns of the rotating clamp
 	uint8_t gripperRotSpeed;			//Percentage of the current rotation speed of the rotary clamp
 	uint8_t gripperRotTorque;			//Percentage of the current rotating torque of the rotating clamp
+	WELDING_BREAKOFF_STATE weldingBreakOffState;  //º¸½ÓÖÐ¶Ï×´Ì¬
 	uint16_t check_sum;					//check sum
 }ROBOT_STATE_PKG;
 

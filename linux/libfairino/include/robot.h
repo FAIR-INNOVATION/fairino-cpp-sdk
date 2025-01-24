@@ -632,10 +632,11 @@ public:
 	
 	/**
     *@brief  Set the end load weight
+	*@param  [in] loadNum load index
     *@param  [in] weight  Load weight, unit: kg
     *@return  Error code
 	 */
-	errno_t  SetLoadWeight(float weight);
+	errno_t  SetLoadWeight(int loadNum = 0, float weight = 0.0);
 	
 	/**
     *@brief  Set the end-load centroid coordinates
@@ -676,14 +677,15 @@ public:
 	errno_t  SetAnticollision(int mode, float level[6], int config);
 	
 	/**
-    * @brief  Set the post-collision policy
-    * @param  [in] strategy  0- Error stop, 1- Continue running
+	* @brief  Set the post-collision policy
+	* @param  [in] strategy  0- Error stop, 1- Continue running
 	* @param  [in] safeTime  Safe stop time[1000 - 2000]ms
 	* @param  [in] safeDistance  Safe stopping distance[1-150]mm
-    * @param  [in] safetyMargin  j1-j6 Safety factor[1-10]
-    * @return  Error code   
+	* @param  [in] safeVel safety velocity[50-250] mm/s
+	* @param  [in] safetyMargin  j1-j6 Safety factor[1-10]
+	* @return  Error code
 	 */
-	errno_t  SetCollisionStrategy(int strategy, int safeTime, int safeDistance, int safetyMargin[]);
+	errno_t  SetCollisionStrategy(int strategy, int safeTime, int safeDistance, int safeVel, int safetyMargin[]);
 	
 	/**
     *@brief  Set the positive limit
@@ -3251,17 +3253,125 @@ public:
 	errno_t TrajectoryJDelete(const std::string& fileName);
 
 	/**
-	 * @brief Tool coordinate system transition begins
-	 * @param [in] toolNum Tool coordinate system number[0-14]
-	 * @return error code
+	 * @brief calculates the tool coordinate system based on the point information
+	 * @param [in] method Calculation method; 0-four point method; One - six point method
+	 * @param [in] pos joint position group, the array length is 4 in four-point method and 6 in six-point method
+	 * @param [out] coord tool coordinate results
+	 * @return Error code
 	 */
-	errno_t ToolTrsfStart(int toolNum);
+	errno_t ComputeToolCoordWithPoints(int method, JointPos pos[], DescPose& coord);
 
 	/**
-	 * @brief Tool coordinate system transition ends
-	 * @return error code
+	 * @brief calculates the workpiece coordinate system based on the point information
+	 * @param [in] method Calculation method; 0: origin - X-axis - Z-axis 1: origin - X-axis -xy plane
+	 * @param [in] pos Three TCP location groups
+	 * @param [in] refFrame Reference coordinate system
+	 * @param [out] coord tool coordinate results
+	 * @return Error code
 	 */
-	errno_t ToolTrsfEnd();
+	errno_t ComputeWObjCoordWithPoints(int method, DescPose pos[], int refFrame, DescPose& coord);
+
+	/**
+	 * @brief sets the detection parameters of unexpected interruption of robot welding arc
+	 * @param [in] checkEnable Whether the check is enabled. 0: Indicates that the function is disabled. 1- Enable
+	 * @param [in] arcInterruptTimeLength Duration for confirming arc interruption (ms)
+	 * @return Error code
+	 */
+	errno_t WeldingSetCheckArcInterruptionParam(int checkEnable, int arcInterruptTimeLength);
+
+	/**
+	 * @brief get the detection parameters of unexpected interruption of robot welding arc
+	 * @param [out] checkEnable Whether the check is enabled. 0: Indicates that the function is disabled. 1- Enable
+	 * @param [out] arcInterruptTimeLength Duration for confirming arc interruption (ms)
+	 * @return Error code
+	 */
+	errno_t WeldingGetCheckArcInterruptionParam(int* checkEnable, int* arcInterruptTimeLength);
+
+	/**
+	 * @brief set the parameters of robot welding interruption recovery
+	 * @param [in] enable Whether to enable welding interrupt recovery
+	 * @param [in] length Weld overlap distance (mm)
+	 * @param [in] velocity Percentage of velocity at which the robot returns to the rearcing point (0-100)
+	 * @param [in] moveType Indicates how the robot moves to the rearcing point. 0-LIN; 1-PTP
+	 * @return Error code
+	 */
+	errno_t WeldingSetReWeldAfterBreakOffParam(int enable, double length, double velocity, int moveType);
+
+	/**
+	 * @brief get robot welding interrupt recovery parameters
+	 * @param [out] enable Whether to enable welding interrupt recovery
+	 * @param [out] length Weld overlap distance (mm)
+	 * @param [out] velocity Percentage of robot return to rearcing point (0-100)
+	 * @param [out] moveType Indicates how the robot moves to the rearcing point. 0-LIN; 1-PTP
+	 * @return Error code
+	 */
+	errno_t WeldingGetReWeldAfterBreakOffParam(int* enable, double* length, double* velocity, int* moveType);
+
+	/**
+	 * @brief sets the robot to resume welding after welding interruption
+	 * @return Error code
+	 */
+	errno_t WeldingStartReWeldAfterBreakOff();
+
+	/**
+	 * @brief sets the robot to exit welding after welding interruption
+	 * @return Error code
+	 */
+	errno_t WeldingAbortWeldAfterBreakOff();
+
+	/**
+	 * @brief laser track record
+	 * @param [in] enable Whether to enable welding interrupt recovery
+	 * @param [in] length Weld overlap distance (mm)
+	 * @param [in] velocity Percentage of velocity at which the robot returns to the rearcing point (0-100)
+	 * @param [in] moveType Indicates how the robot moves to the rearcing point. 0-LIN; 1-PTP
+	 * @return Error code
+	 */
+	errno_t LaserSensorRecord(int status, int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, double speed);
+
+	/**
+	 * @brief laser on
+	 * @param [in] weldId Weld type number
+	 * @return Error code
+	 */
+	errno_t LaserTrackingLaserOn(int weldId);
+
+	/**
+	 * @brief laser off
+	 * @return Error code
+	 */
+	errno_t LaserTrackingLaserOff();
+
+	/**
+	 * @brief starts tracking
+	 * @param [in] coordId Laser sensor tool number
+	 * @return Error code
+	 */
+	errno_t LaserTrackingTrackOn(int coordId);
+
+	/**
+	 * @brief stops tracking
+	 * @return Error code
+	 */
+	errno_t LaserTrackingTrackOff();
+
+	/**
+	 * @brief starts the search
+	 * @ param [in] direction and find a direction 0: + X, 1: - X, 2: + Y, 3: - Y, 4: + Z, 5: Z, 6 to specify the direction
+	 * @param [in] directionPoint Endpoint coordinates of search direction
+	 * @param [in] vel Search speed,[%]
+	 * @param [in] distance Search distance,[mm]
+	 * @param [in] maxtime Maximum search time, [ms]
+	 * @param [in] posSensorNum Number of the sensor coordinate system
+	 * @return Error code
+	 */
+	errno_t LaserTrackingSearchStart(int direction, DescTran directionPoint, int vel, int distance, int timeout, int posSensorNum);
+
+	/**
+	 * @brief stops searching
+	 * @return Error code
+	 */
+	errno_t LaserTrackingSearchStop();
 
 	/**
 	* @brief  Set communication reconnection parameters with the robot
@@ -3320,7 +3430,6 @@ private:
 	std::vector<std::string> split(std::string s, std::string delimiter);
 
 	bool IsSockError();
-
 	int GetSafetyCode();
 
 private:
