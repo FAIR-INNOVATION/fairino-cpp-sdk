@@ -8,17 +8,17 @@ rm -rf lib
 rm -rf include
 
 
-#cmake ..
+cmake ..
 
 #cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 ..
 
 #cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-9 -DCMAKE_CXX_COMPILER=/usr/bin/g++-9 ..
 
-cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-11 -DCMAKE_CXX_COMPILER=/usr/bin/g++-11 ..
+#cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-11 -DCMAKE_CXX_COMPILER=/usr/bin/g++-11 ..
 
 make
 
 cp -r bin lib
-cp -r ../src/include/Robot include
+cp -r ../src/include/Robot-CN include
 
 

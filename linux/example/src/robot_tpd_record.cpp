@@ -15,11 +15,11 @@
 
 using namespace std;
 
-// Note: Before running this program, verify that the end load is configured correctly and that you can switch into drag teach-in mode
+//注意：运行此程序前，请确认末端负载是否配置正确以及能否切入拖动示教模式
 int main(void)
 {
-	FRRobot robot;                
-	robot.RPC("192.168.58.2");     
+	FRRobot robot;                 //实例化机器人对象
+	robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
 	int type = 1;
 	char name[30] = "tpd2023_1226";

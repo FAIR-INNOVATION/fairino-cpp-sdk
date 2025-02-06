@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-    FRRobot robot;                
-    robot.RPC("192.168.58.2");   
+    FRRobot robot;                 //实例化机器人对象
+    robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
     uint8_t flag = 1;
     uint8_t sensor_id = 1;
@@ -80,8 +80,12 @@ int main(void)
 
     ft.fz = -10.0;
 
+    // robot.MoveJ(&j1,&desc_p1,9,0,100.0,180.0,100.0,&epos,-1.0,0,&offset_pos);
     robot.MoveCart(&desc_p1, 0, 0, 100.0, 100.0, 100.0, -1.0, -1);
     robot.FT_Control(flag, sensor_id, select, &ft, ft_pid, adj_sign, ILC_sign, max_dis, max_ang);
+    // robot.MoveL(&j2,&desc_p2,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
+    // robot.MoveL(&j3,&desc_p3,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
+    // robot.MoveL(&j4,&desc_p4,9,0,100.0,180.0,20.0,-1.0,&epos,0,0,&offset_pos);
     robot.MoveCart(&desc_p2, 0, 0, 100.0, 100.0, 100.0, -1.0, -1);
     robot.MoveCart(&desc_p3, 0, 0, 100.0, 100.0, 100.0, -1.0, -1);
     flag = 0;

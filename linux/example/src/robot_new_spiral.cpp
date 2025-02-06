@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-	FRRobot robot;			  
-	robot.RPC("192.168.58.2"); 
+	FRRobot robot;			   // 实例化机器人对象
+	robot.RPC("192.168.58.2"); // 与机器人控制器建立通信连接
 
 	JointPos j;
 	DescPose desc_pos, offset_pos1, offset_pos2;
@@ -63,7 +63,7 @@ int main(void)
 	robot.GetActualJointAccDegree(block, acc_deg);
 	printf("acc for every joint is: %f %f %f %f %f %f  deg/s^2\n", acc_deg[0], acc_deg[1], acc_deg[2], acc_deg[3], acc_deg[4], acc_deg[5]);
 
-	int ret = robot.GetForwardKin(&j, &desc_pos); // In cases where there is only joint position, Cartesian coordinates can be solved using the Positive Kinematics interface
+	int ret = robot.GetForwardKin(&j, &desc_pos); // 只有关节位置的情况下，可用正运动学接口求解笛卡尔空间坐标
 	printf("GetForwardKin ret is: %d \n", ret);
 	printf("GetForwardKin result:%f,%f,%f,%f,%f,%f\n", desc_pos.tran.x, desc_pos.tran.y, desc_pos.tran.z, \
 											desc_pos.rpy.rx, desc_pos.rpy.ry, desc_pos.rpy.rz);
@@ -80,7 +80,7 @@ int main(void)
 
 	if (ret == 0)
 	{
-		ret = robot.GetInverseKinHasSolution(1, &offset_pos1, &j, &result); // According to the coordinates of the reference joint, determine whether the target pose has a solution
+		ret = robot.GetInverseKinHasSolution(1, &offset_pos1, &j, &result); // 根据参考关节坐标，判断目标位姿是否有解
 		printf("GetInverseKinHasSolution ret: %d\n", result);
 		if (0 == result)
 		{

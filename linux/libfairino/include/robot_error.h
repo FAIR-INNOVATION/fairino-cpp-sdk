@@ -41,6 +41,7 @@
 #define     ERR_TPD_CMD_POINT                      82      //The TPD command point is incorrect
 #define     ERR_TPD_CMD_TOOL                       83      //The TPD tool number is incorrect
 #define     ERR_SPLINE_POINT                       94      //The spline command point is incorrect
+#define     ERR_SAFETY_STOP	                       99	   /* safety stop */
 #define     ERR_SPIRAL_START_POINT                 108     //The helix start point is incorrect
 #define     ERR_TARGET_POSE_CANNOT_REACHED         112     //The target pose cannot be reached
 #define     ERR_POINTTABLE_NOTFOUND                130     //The point table does not exist

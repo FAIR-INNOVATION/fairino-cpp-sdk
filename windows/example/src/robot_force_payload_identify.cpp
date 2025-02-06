@@ -17,8 +17,8 @@ using namespace std;
 
 int main(void)
 {
-    FRRobot robot;                
-    robot.RPC("192.168.58.2");     
+    FRRobot robot;                 //实例化机器人对象
+    robot.RPC("192.168.58.2");     //与机器人控制器建立通信连接
 
     float weight;
     int retval = 0;
