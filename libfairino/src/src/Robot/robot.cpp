@@ -41,12 +41,12 @@
     // #include <filesystem>
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
-    #define SDK_VERSION_MINOR "1"
-    #define SDK_VERSION_RELEASE "8"
+    #define SDK_VERSION_MINOR "2"
+    #define SDK_VERSION_RELEASE "0"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.1.8.0-robot v3.7.8"
+#define SDK_RELEASE "SDK V2.2.0.0-robot v3.8.0"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -89,14 +89,15 @@ FRRobot::FRRobot(void)
     strncpy(robot_ip, default_ip, strlen(default_ip));
 #endif
 
-    memset(&robot_state_pkg, 0, sizeof(ROBOT_STATE_PKG));
+    robot_state_pkg = std::make_shared<ROBOT_STATE_PKG>();
+    memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
     robot_instcmd_recv_exit = 0;
     robot_instcmd_send_exit = 0;
     robot_realstate_exit = 0;
     robot_task_exit = 0;
     g_sock_com_err = ERR_SUCCESS;
-    rtClient = new FRTcpClient(robot_ip, ROBOT_REALTIME_PORT);
-    cmdClient = new FRTcpClient(robot_ip, ROBOT_CMD_PORT);
+    rtClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_REALTIME_PORT);
+    cmdClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_CMD_PORT);
 
 }
 
@@ -125,7 +126,7 @@ void FRRobot::RobotStateRoutineThread()
         }
         else
         {
-            memcpy(&robot_state_pkg, pkgBuf, sizeof(ROBOT_STATE_PKG));
+            memcpy(robot_state_pkg.get(), pkgBuf, sizeof(ROBOT_STATE_PKG));
             memset(pkgBuf, 0, 1024);
         }
     }
@@ -157,7 +158,7 @@ void FRRobot::RobotInstCmdSendRoutineThread()
             {
                 cmdClient->Close();
                 g_sock_com_err = ERR_SOCKET_COM_FAILED;
-                memset(&robot_state_pkg, 0, sizeof(ROBOT_STATE_PKG));
+                memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
                 logger_error("cmd send %s error", g_sendbuf);
                 return;
             }
@@ -171,7 +172,7 @@ void FRRobot::RobotInstCmdSendRoutineThread()
 
     cmdClient->Close();
     g_sock_com_err = ERR_SOCKET_COM_FAILED;
-    memset(&robot_state_pkg, 0, sizeof(ROBOT_STATE_PKG));
+    memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
     
     return;
 }
@@ -196,7 +197,7 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
         //{
         //    cmdClient->Close();
         //    g_sock_com_err = ERR_SOCKET_COM_FAILED;
-        //    memset(&robot_state_pkg, 0, sizeof(ROBOT_STATE_PKG));
+        //    memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
         //    logger_error("cmd recv fail.");
         //    return;
         //}
@@ -204,7 +205,7 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
 
     cmdClient->Close();
     g_sock_com_err = ERR_SOCKET_COM_FAILED;
-    memset(&robot_state_pkg, 0, sizeof(ROBOT_STATE_PKG));
+    memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
    
     return;
 }
@@ -232,20 +233,20 @@ void FRRobot::RobotTaskRoutineThread()
 
             if (!s_isFirst)
             {
-                s_last_frame_cnt = robot_state_pkg.frame_cnt;
+                s_last_frame_cnt = robot_state_pkg->frame_cnt;
                 s_last_time = curtime;
                 s_isFirst = 1;
             }
             else
             {
-                if (((robot_state_pkg.frame_cnt - s_last_frame_cnt) == 0) && ((curtime - s_last_time) < 2 * 8000))
+                if (((robot_state_pkg->frame_cnt - s_last_frame_cnt) == 0) && ((curtime - s_last_time) < 2 * 8000))
                 {
                     s_check_cnt++;
                     if (s_check_cnt >= MAX_CHECK_CNT_COM && !rtClient->GetReConnectEnable())
                     {
                         logger_error("the robot RobotTaskRoutineThread is error");
                         g_sock_com_err = ERR_SOCKET_COM_FAILED;
-                        memset(&robot_state_pkg, 0, sizeof(ROBOT_STATE_PKG));
+                        memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
                         s_check_cnt = 0;
                     }
                 }
@@ -254,7 +255,7 @@ void FRRobot::RobotTaskRoutineThread()
                     s_check_cnt = 0;
                 }
 
-                s_last_frame_cnt = robot_state_pkg.frame_cnt;
+                s_last_frame_cnt = robot_state_pkg->frame_cnt;
                 s_last_time = curtime;
             }
         }
@@ -340,7 +341,7 @@ errno_t FRRobot::CloseRPC()
     }
     
     g_sock_com_err = ERR_SOCKET_COM_FAILED;
-    memset(&robot_state_pkg, 0, sizeof(ROBOT_STATE_PKG));
+    memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
 
     return 0;
 }
@@ -450,7 +451,7 @@ errno_t FRRobot::IsInDragTeach(uint8_t *state)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        if (robot_state_pkg.robot_state == 4)
+        if (robot_state_pkg->robot_state == 4)
         {
             *state = 1;
         }
@@ -464,7 +465,7 @@ errno_t FRRobot::IsInDragTeach(uint8_t *state)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u", errcode, robot_state_pkg.robot_state);
+    logger_info("state com: %d, return value is: %u", errcode, robot_state_pkg->robot_state);
     return errcode;
 }
 
@@ -714,7 +715,7 @@ errno_t FRRobot::MoveJ(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
 
     c.close();
 
-    if ((robot_state_pkg.main_code != 0 || robot_state_pkg.sub_code != 0) && errcode == 0)
+    if ((robot_state_pkg->main_code != 0 || robot_state_pkg->sub_code != 0) && errcode == 0)
     {
         errcode = 14;
     }
@@ -842,7 +843,7 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
 
     c.close();
 
-    if ((robot_state_pkg.main_code != 0 || robot_state_pkg.sub_code != 0) && errcode == 0)
+    if ((robot_state_pkg->main_code != 0 || robot_state_pkg->sub_code != 0) && errcode == 0)
     {
         errcode = 14;
     }
@@ -1988,12 +1989,12 @@ errno_t FRRobot::GetDI(int id, uint8_t block, uint8_t *result)
     {
         if (id >= 0 && id < 8)
         {
-            *result = (robot_state_pkg.cl_dgt_input_l & (0x01 << id)) >> id;
+            *result = (robot_state_pkg->cl_dgt_input_l & (0x01 << id)) >> id;
         }
         else if (id >= 8 && id < 16)
         {
             id -= 8;
-            *result = (robot_state_pkg.cl_dgt_input_h & (0x01 << id)) >> id;
+            *result = (robot_state_pkg->cl_dgt_input_h & (0x01 << id)) >> id;
         }
         else
         {
@@ -2031,7 +2032,7 @@ errno_t FRRobot::GetToolDI(int id, uint8_t block, uint8_t *result)
         if (id >= 0 && id < 2)
         {
             id += 1;
-            *result = (robot_state_pkg.tl_dgt_input_l & (0x01 << id)) >> id;
+            *result = (robot_state_pkg->tl_dgt_input_l & (0x01 << id)) >> id;
         }
         else
         {
@@ -2196,7 +2197,7 @@ errno_t FRRobot::GetAI(int id, uint8_t block, float *result)
     {
         if (id >= 0 && id < 2)
         {
-            *result = (float)(robot_state_pkg.cl_analog_input[id] / 40.95);
+            *result = (float)(robot_state_pkg->cl_analog_input[id] / 40.95);
         }
         else
         {
@@ -2212,7 +2213,7 @@ errno_t FRRobot::GetAI(int id, uint8_t block, float *result)
     logger_info("state com: %d", errcode);
     for (int i = 0; i < 2; i++)
     {
-        logger_info("return value %d is: %u", i, robot_state_pkg.cl_analog_input[i]);
+        logger_info("return value %d is: %u", i, robot_state_pkg->cl_analog_input[i]);
     }
     return errcode;
 }
@@ -2234,7 +2235,7 @@ errno_t FRRobot::GetToolAI(int id, uint8_t block, float *result)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *result = (float)(robot_state_pkg.tl_anglog_input / 40.95);
+        *result = (float)(robot_state_pkg->tl_anglog_input / 40.95);
     }
     else
     {
@@ -2242,7 +2243,7 @@ errno_t FRRobot::GetToolAI(int id, uint8_t block, float *result)
     }
 
     logger_info("state com: %d", errcode);
-    logger_info("return value is: %u", robot_state_pkg.tl_anglog_input);
+    logger_info("return value is: %u", robot_state_pkg->tl_anglog_input);
     return errcode;
 }
 /**
@@ -2260,7 +2261,7 @@ errno_t FRRobot::GetAxlePointRecordBtnState(uint8_t *state)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *state = (robot_state_pkg.tl_dgt_input_l & 0x10) >> 4;
+        *state = (robot_state_pkg->tl_dgt_input_l & 0x10) >> 4;
     }
     else
     {
@@ -2286,7 +2287,7 @@ errno_t FRRobot::GetToolDO(uint8_t *do_state)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *do_state = robot_state_pkg.tl_dgt_output_l;
+        *do_state = robot_state_pkg->tl_dgt_output_l;
     }
     else
     {
@@ -2294,7 +2295,7 @@ errno_t FRRobot::GetToolDO(uint8_t *do_state)
     }
 
     logger_info("state com: %d", errcode);
-    logger_info("return value is: %u", robot_state_pkg.tl_dgt_output_l);
+    logger_info("return value is: %u", robot_state_pkg->tl_dgt_output_l);
     return errcode;
 }
 
@@ -2314,8 +2315,8 @@ errno_t FRRobot::GetDO(uint8_t *do_state_h, uint8_t *do_state_l)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *do_state_h = robot_state_pkg.cl_dgt_output_h;
-        *do_state_l = robot_state_pkg.cl_dgt_output_l;
+        *do_state_h = robot_state_pkg->cl_dgt_output_h;
+        *do_state_l = robot_state_pkg->cl_dgt_output_l;
     }
     else
     {
@@ -2323,7 +2324,7 @@ errno_t FRRobot::GetDO(uint8_t *do_state_h, uint8_t *do_state_l)
     }
 
     logger_info("state com: %d", errcode);
-    logger_info("return value is: %u - %u", robot_state_pkg.cl_dgt_output_h, robot_state_pkg.cl_dgt_output_l);
+    logger_info("return value is: %u - %u", robot_state_pkg->cl_dgt_output_h, robot_state_pkg->cl_dgt_output_l);
     return errcode;
 }
 
@@ -3683,7 +3684,7 @@ errno_t FRRobot::GetActualJointPosDegree(uint8_t flag, JointPos *jPos)
     {
         for (i = 0; i < 6; i++)
         {
-            jPos->jPos[i] = robot_state_pkg.jt_cur_pos[i];
+            jPos->jPos[i] = robot_state_pkg->jt_cur_pos[i];
         }
     }
     else
@@ -3691,8 +3692,8 @@ errno_t FRRobot::GetActualJointPosDegree(uint8_t flag, JointPos *jPos)
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %f-%f-%f-%f-%f-%f", errcode, robot_state_pkg.jt_cur_pos[0],robot_state_pkg.jt_cur_pos[1],robot_state_pkg.jt_cur_pos[2],
-                robot_state_pkg.jt_cur_pos[3],robot_state_pkg.jt_cur_pos[4],robot_state_pkg.jt_cur_pos[5]);
+    logger_info("state com: %d, return value is: %f-%f-%f-%f-%f-%f", errcode, robot_state_pkg->jt_cur_pos[0],robot_state_pkg->jt_cur_pos[1],robot_state_pkg->jt_cur_pos[2],
+                robot_state_pkg->jt_cur_pos[3],robot_state_pkg->jt_cur_pos[4],robot_state_pkg->jt_cur_pos[5]);
     return errcode;
 }
 
@@ -3715,7 +3716,7 @@ errno_t FRRobot::GetActualJointSpeedsDegree(uint8_t flag, float speed[6])
     {
         for (i = 0; i < 6; i++)
         {
-            speed[i] = robot_state_pkg.actual_qd[i];
+            speed[i] = robot_state_pkg->actual_qd[i];
         }
     }
     else
@@ -3726,7 +3727,7 @@ errno_t FRRobot::GetActualJointSpeedsDegree(uint8_t flag, float speed[6])
     logger_info("state com: %d", errcode);
     for (i = 0; i < 6; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.actual_qd[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->actual_qd[i]);
     }
     return errcode;
 }
@@ -3750,7 +3751,7 @@ errno_t FRRobot::GetActualJointAccDegree(uint8_t flag, float acc[6])
     {
         for (i = 0; i < 6; i++)
         {
-            acc[i] = robot_state_pkg.actual_qdd[i];
+            acc[i] = robot_state_pkg->actual_qdd[i];
         }
     }
     else
@@ -3761,7 +3762,7 @@ errno_t FRRobot::GetActualJointAccDegree(uint8_t flag, float acc[6])
     logger_info("state com: %d", errcode);
     for (i = 0; i < 6; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.actual_qdd[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->actual_qdd[i]);
     }
     return errcode;
 }
@@ -3783,8 +3784,8 @@ errno_t FRRobot::GetTargetTCPCompositeSpeed(uint8_t flag, float *tcp_speed, floa
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *tcp_speed = robot_state_pkg.target_TCP_CmpSpeed[0];
-        *ori_speed = robot_state_pkg.target_TCP_CmpSpeed[1];
+        *tcp_speed = robot_state_pkg->target_TCP_CmpSpeed[0];
+        *ori_speed = robot_state_pkg->target_TCP_CmpSpeed[1];
     }
     else
     {
@@ -3794,7 +3795,7 @@ errno_t FRRobot::GetTargetTCPCompositeSpeed(uint8_t flag, float *tcp_speed, floa
     logger_info("state com: %d", errcode);
     for (int i = 0; i < 2; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.target_TCP_CmpSpeed[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->target_TCP_CmpSpeed[i]);
     }
     return errcode;
 }
@@ -3816,8 +3817,8 @@ errno_t FRRobot::GetActualTCPCompositeSpeed(uint8_t flag, float *tcp_speed, floa
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *tcp_speed = robot_state_pkg.actual_TCP_CmpSpeed[0];
-        *ori_speed = robot_state_pkg.actual_TCP_CmpSpeed[1];
+        *tcp_speed = robot_state_pkg->actual_TCP_CmpSpeed[0];
+        *ori_speed = robot_state_pkg->actual_TCP_CmpSpeed[1];
     }
     else
     {
@@ -3827,7 +3828,7 @@ errno_t FRRobot::GetActualTCPCompositeSpeed(uint8_t flag, float *tcp_speed, floa
     logger_info("state com: %d", errcode);
     for (int i = 0; i < 2; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.actual_TCP_CmpSpeed[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->actual_TCP_CmpSpeed[i]);
     }
     return errcode;
 }
@@ -3851,7 +3852,7 @@ errno_t FRRobot::GetTargetTCPSpeed(uint8_t flag, float speed[6])
     {
         for (i = 0; i < 6; i++)
         {
-            speed[i] = robot_state_pkg.target_TCP_Speed[i];
+            speed[i] = robot_state_pkg->target_TCP_Speed[i];
         }
     }
     else
@@ -3862,7 +3863,7 @@ errno_t FRRobot::GetTargetTCPSpeed(uint8_t flag, float speed[6])
     logger_info("state com: %d", errcode);
     for (i = 0; i < 6; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.target_TCP_Speed[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->target_TCP_Speed[i]);
     }
     return errcode;
 }
@@ -3886,7 +3887,7 @@ errno_t FRRobot::GetActualTCPSpeed(uint8_t flag, float speed[6])
     {
         for (i = 0; i < 6; i++)
         {
-            speed[i] = robot_state_pkg.actual_TCP_Speed[i];
+            speed[i] = robot_state_pkg->actual_TCP_Speed[i];
         }
     }
     else
@@ -3897,7 +3898,7 @@ errno_t FRRobot::GetActualTCPSpeed(uint8_t flag, float speed[6])
     logger_info("state com: %d", errcode);
     for (i = 0; i < 6; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.actual_TCP_Speed[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->actual_TCP_Speed[i]);
     }
     return errcode;
 }
@@ -3918,20 +3919,20 @@ errno_t FRRobot::GetActualTCPPose(uint8_t flag, DescPose *desc_pos)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        desc_pos->tran.x = robot_state_pkg.tl_cur_pos[0];
-        desc_pos->tran.y = robot_state_pkg.tl_cur_pos[1];
-        desc_pos->tran.z = robot_state_pkg.tl_cur_pos[2];
-        desc_pos->rpy.rx = robot_state_pkg.tl_cur_pos[3];
-        desc_pos->rpy.ry = robot_state_pkg.tl_cur_pos[4];
-        desc_pos->rpy.rz = robot_state_pkg.tl_cur_pos[5];
+        desc_pos->tran.x = robot_state_pkg->tl_cur_pos[0];
+        desc_pos->tran.y = robot_state_pkg->tl_cur_pos[1];
+        desc_pos->tran.z = robot_state_pkg->tl_cur_pos[2];
+        desc_pos->rpy.rx = robot_state_pkg->tl_cur_pos[3];
+        desc_pos->rpy.ry = robot_state_pkg->tl_cur_pos[4];
+        desc_pos->rpy.rz = robot_state_pkg->tl_cur_pos[5];
     }
     else
     {
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %f-%f-%f-%f-%f-%f", errcode, robot_state_pkg.tl_cur_pos[0],robot_state_pkg.tl_cur_pos[1],robot_state_pkg.tl_cur_pos[2],
-                robot_state_pkg.tl_cur_pos[3],robot_state_pkg.tl_cur_pos[4],robot_state_pkg.tl_cur_pos[5]);
+    logger_info("state com: %d, return value is: %f-%f-%f-%f-%f-%f", errcode, robot_state_pkg->tl_cur_pos[0],robot_state_pkg->tl_cur_pos[1],robot_state_pkg->tl_cur_pos[2],
+                robot_state_pkg->tl_cur_pos[3],robot_state_pkg->tl_cur_pos[4],robot_state_pkg->tl_cur_pos[5]);
     return errcode;
 }
 
@@ -3951,7 +3952,7 @@ errno_t FRRobot::GetActualTCPNum(uint8_t flag, int *id)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *id = robot_state_pkg.tool;
+        *id = robot_state_pkg->tool;
     }
     else
     {
@@ -3959,7 +3960,7 @@ errno_t FRRobot::GetActualTCPNum(uint8_t flag, int *id)
     }
 
     logger_info("state com: %d", errcode);
-    logger_info("return value is: %d", robot_state_pkg.tool);
+    logger_info("return value is: %d", robot_state_pkg->tool);
     return errcode;
 }
 
@@ -3979,7 +3980,7 @@ errno_t FRRobot::GetActualWObjNum(uint8_t flag, int *id)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *id = robot_state_pkg.user;
+        *id = robot_state_pkg->user;
     }
     else
     {
@@ -3987,7 +3988,7 @@ errno_t FRRobot::GetActualWObjNum(uint8_t flag, int *id)
     }
 
     logger_info("state com: %d", errcode);
-    logger_info("return value is: %d", robot_state_pkg.user);
+    logger_info("return value is: %d", robot_state_pkg->user);
     return errcode;
 }
 
@@ -4007,20 +4008,20 @@ errno_t FRRobot::GetActualToolFlangePose(uint8_t flag, DescPose *desc_pos)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        desc_pos->tran.x = robot_state_pkg.flange_cur_pos[0];
-        desc_pos->tran.y = robot_state_pkg.flange_cur_pos[1];
-        desc_pos->tran.z = robot_state_pkg.flange_cur_pos[2];
-        desc_pos->rpy.rx = robot_state_pkg.flange_cur_pos[3];
-        desc_pos->rpy.ry = robot_state_pkg.flange_cur_pos[4];
-        desc_pos->rpy.rz = robot_state_pkg.flange_cur_pos[5];
+        desc_pos->tran.x = robot_state_pkg->flange_cur_pos[0];
+        desc_pos->tran.y = robot_state_pkg->flange_cur_pos[1];
+        desc_pos->tran.z = robot_state_pkg->flange_cur_pos[2];
+        desc_pos->rpy.rx = robot_state_pkg->flange_cur_pos[3];
+        desc_pos->rpy.ry = robot_state_pkg->flange_cur_pos[4];
+        desc_pos->rpy.rz = robot_state_pkg->flange_cur_pos[5];
     }
     else
     {
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %f-%f-%f-%f-%f-%f", errcode, robot_state_pkg.flange_cur_pos[0],robot_state_pkg.flange_cur_pos[1],robot_state_pkg.flange_cur_pos[2],
-                robot_state_pkg.flange_cur_pos[3],robot_state_pkg.flange_cur_pos[4],robot_state_pkg.flange_cur_pos[5]);
+    logger_info("state com: %d, return value is: %f-%f-%f-%f-%f-%f", errcode, robot_state_pkg->flange_cur_pos[0],robot_state_pkg->flange_cur_pos[1],robot_state_pkg->flange_cur_pos[2],
+                robot_state_pkg->flange_cur_pos[3],robot_state_pkg->flange_cur_pos[4],robot_state_pkg->flange_cur_pos[5]);
     return errcode;
 }
 
@@ -4260,7 +4261,7 @@ errno_t FRRobot::GetJointTorques(uint8_t flag, float torques[6])
     {
         for (i = 0; i < 6; i++)
         {
-            torques[i] = robot_state_pkg.jt_cur_tor[i];
+            torques[i] = robot_state_pkg->jt_cur_tor[i];
         }
     }
     else
@@ -4271,7 +4272,7 @@ errno_t FRRobot::GetJointTorques(uint8_t flag, float torques[6])
     logger_info("state com: %d", errcode);
     for (i = 0; i < 6; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.jt_cur_tor[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->jt_cur_tor[i]);
     }
     return errcode;
 }
@@ -4626,14 +4627,14 @@ errno_t FRRobot::GetRobotMotionDone(uint8_t *state)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *state = robot_state_pkg.motion_done;
+        *state = robot_state_pkg->motion_done;
     }
     else
     {
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %d.", errcode, robot_state_pkg.motion_done);
+    logger_info("state com: %d, return value is: %d.", errcode, robot_state_pkg->motion_done);
     return errcode;
 }
 
@@ -4653,15 +4654,15 @@ errno_t FRRobot::GetRobotErrorCode(int *maincode, int *subcode)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *maincode = robot_state_pkg.main_code;
-        *subcode = robot_state_pkg.sub_code;
+        *maincode = robot_state_pkg->main_code;
+        *subcode = robot_state_pkg->sub_code;
     }
     else
     {
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %d-%d", errcode, robot_state_pkg.main_code, robot_state_pkg.sub_code);
+    logger_info("state com: %d, return value is: %d-%d", errcode, robot_state_pkg->main_code, robot_state_pkg->sub_code);
     return errcode;
 }
 
@@ -4730,14 +4731,14 @@ errno_t FRRobot::GetMotionQueueLength(int *len)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *len = robot_state_pkg.mc_queue_len;
+        *len = robot_state_pkg->mc_queue_len;
     }
     else
     {
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u.", errcode, robot_state_pkg.mc_queue_len);
+    logger_info("state com: %d, return value is: %u.", errcode, robot_state_pkg->mc_queue_len);
     return errcode;
 }
 
@@ -5125,14 +5126,14 @@ errno_t FRRobot::GetTrajectoryPointNum(int *pnum)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *pnum = robot_state_pkg.trajectory_pnum;
+        *pnum = robot_state_pkg->trajectory_pnum;
     }
     else
     {
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %d.", errcode, robot_state_pkg.trajectory_pnum);
+    logger_info("state com: %d, return value is: %d.", errcode, robot_state_pkg->trajectory_pnum);
     return errcode;
 }
 
@@ -5681,14 +5682,14 @@ errno_t FRRobot::GetProgramState(uint8_t *state)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *state = robot_state_pkg.robot_state;
+        *state = robot_state_pkg->robot_state;
     }
     else
     {
         errcode = g_sock_com_err;
     }
 
-    logger_info("state com: %d, return value is: %u", errcode, robot_state_pkg.robot_state);
+    logger_info("state com: %d, return value is: %u", errcode, robot_state_pkg->robot_state);
     return errcode;
 }
 
@@ -5881,15 +5882,15 @@ errno_t FRRobot::GetGripperMotionDone(uint16_t *fault, uint8_t *status)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *status = robot_state_pkg.gripper_motiondone;
+        *fault = robot_state_pkg->gripper_fault;
+        *status = robot_state_pkg->gripper_motiondone;
     }
     else
     {
         errcode = g_sock_com_err;
     }
 
-    //logger_info("state com: %d, return value is: %u - %u.", errcode, robot_state_pkg.gripper_fault, robot_state_pkg.gripper_motiondone);
+    //logger_info("state com: %d, return value is: %u - %u.", errcode, robot_state_pkg->gripper_fault, robot_state_pkg->gripper_motiondone);
     return errcode;
 }
 
@@ -5909,8 +5910,8 @@ errno_t FRRobot::GetGripperActivateStatus(uint16_t *fault, uint16_t *status)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *status = robot_state_pkg.gripper_active;
+        *fault = robot_state_pkg->gripper_fault;
+        *status = robot_state_pkg->gripper_active;
     }
     else
     {
@@ -5936,8 +5937,8 @@ errno_t FRRobot::GetGripperCurPosition(uint16_t *fault, uint8_t *position)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *position = robot_state_pkg.gripper_position;
+        *fault = robot_state_pkg->gripper_fault;
+        *position = robot_state_pkg->gripper_position;
     }
     else
     {
@@ -5963,8 +5964,8 @@ errno_t FRRobot::GetGripperCurSpeed(uint16_t *fault, int8_t *speed)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *speed = robot_state_pkg.gripper_speed;
+        *fault = robot_state_pkg->gripper_fault;
+        *speed = robot_state_pkg->gripper_speed;
     }
     else
     {
@@ -5990,8 +5991,8 @@ errno_t FRRobot::GetGripperCurCurrent(uint16_t *fault, int8_t *current)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *current = robot_state_pkg.gripper_current;
+        *fault = robot_state_pkg->gripper_fault;
+        *current = robot_state_pkg->gripper_current;
     }
     else
     {
@@ -6017,8 +6018,8 @@ errno_t FRRobot::GetGripperVoltage(uint16_t *fault, int *voltage)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *voltage = robot_state_pkg.gripper_voltage;
+        *fault = robot_state_pkg->gripper_fault;
+        *voltage = robot_state_pkg->gripper_voltage;
     }
     else
     {
@@ -6044,8 +6045,8 @@ errno_t FRRobot::GetGripperTemp(uint16_t *fault, int *temp)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *temp = robot_state_pkg.gripper_temp;
+        *fault = robot_state_pkg->gripper_fault;
+        *temp = robot_state_pkg->gripper_temp;
     }
     else
     {
@@ -6071,8 +6072,8 @@ errno_t FRRobot::GetGripperRotNum(uint16_t* fault, double* num)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *num = robot_state_pkg.gripperRotNum;
+        *fault = robot_state_pkg->gripper_fault;
+        *num = robot_state_pkg->gripperRotNum;
     }
     else
     {
@@ -6099,8 +6100,8 @@ errno_t FRRobot::GetGripperRotSpeed(uint16_t* fault, int* speed)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *speed = robot_state_pkg.gripperRotSpeed;
+        *fault = robot_state_pkg->gripper_fault;
+        *speed = robot_state_pkg->gripperRotSpeed;
     }
     else
     {
@@ -6126,8 +6127,8 @@ errno_t FRRobot::GetGripperRotTorque(uint16_t* fault, int* torque)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *fault = robot_state_pkg.gripper_fault;
-        *torque = robot_state_pkg.gripperRotTorque;
+        *fault = robot_state_pkg->gripper_fault;
+        *torque = robot_state_pkg->gripperRotTorque;
     }
     else
     {
@@ -6589,12 +6590,12 @@ errno_t FRRobot::FT_GetForceTorqueRCS(uint8_t flag, ForceTorque *ft)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        ft->fx = robot_state_pkg.ft_sensor_data[0];
-        ft->fy = robot_state_pkg.ft_sensor_data[1];
-        ft->fz = robot_state_pkg.ft_sensor_data[2];
-        ft->tx = robot_state_pkg.ft_sensor_data[3];
-        ft->ty = robot_state_pkg.ft_sensor_data[4];
-        ft->tz = robot_state_pkg.ft_sensor_data[5];
+        ft->fx = robot_state_pkg->ft_sensor_data[0];
+        ft->fy = robot_state_pkg->ft_sensor_data[1];
+        ft->fz = robot_state_pkg->ft_sensor_data[2];
+        ft->tx = robot_state_pkg->ft_sensor_data[3];
+        ft->ty = robot_state_pkg->ft_sensor_data[4];
+        ft->tz = robot_state_pkg->ft_sensor_data[5];
     }
     else
     {
@@ -6604,7 +6605,7 @@ errno_t FRRobot::FT_GetForceTorqueRCS(uint8_t flag, ForceTorque *ft)
     logger_info("state com: %d", errcode);
     for (int i = 0; i < 6; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.ft_sensor_data[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->ft_sensor_data[i]);
     }
     return errcode;
 }
@@ -6625,12 +6626,12 @@ errno_t FRRobot::FT_GetForceTorqueOrigin(uint8_t flag, ForceTorque *ft)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        ft->fx = robot_state_pkg.ft_sensor_raw_data[0];
-        ft->fy = robot_state_pkg.ft_sensor_raw_data[1];
-        ft->fz = robot_state_pkg.ft_sensor_raw_data[2];
-        ft->tx = robot_state_pkg.ft_sensor_raw_data[3];
-        ft->ty = robot_state_pkg.ft_sensor_raw_data[4];
-        ft->tz = robot_state_pkg.ft_sensor_raw_data[5];
+        ft->fx = robot_state_pkg->ft_sensor_raw_data[0];
+        ft->fy = robot_state_pkg->ft_sensor_raw_data[1];
+        ft->fz = robot_state_pkg->ft_sensor_raw_data[2];
+        ft->tx = robot_state_pkg->ft_sensor_raw_data[3];
+        ft->ty = robot_state_pkg->ft_sensor_raw_data[4];
+        ft->tz = robot_state_pkg->ft_sensor_raw_data[5];
     }
     else
     {
@@ -6640,7 +6641,7 @@ errno_t FRRobot::FT_GetForceTorqueOrigin(uint8_t flag, ForceTorque *ft)
     logger_info("state com: %d", errcode);
     for (int i = 0; i < 6; i++)
     {
-        logger_info("return value %d is: %f", i, robot_state_pkg.ft_sensor_raw_data[i]);
+        logger_info("return value %d is: %f", i, robot_state_pkg->ft_sensor_raw_data[i]);
     }
     return errcode;
 }
@@ -7764,8 +7765,8 @@ errno_t FRRobot::GetRobotEmergencyStopState(uint8_t *state)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *state = robot_state_pkg.EmergencyStop;
-        logger_info("emergency = %u.", robot_state_pkg.EmergencyStop);
+        *state = robot_state_pkg->EmergencyStop;
+        logger_info("emergency = %u.", robot_state_pkg->EmergencyStop);
     }
     else
     {
@@ -7818,8 +7819,8 @@ errno_t FRRobot::GetSafetyStopState(uint8_t *si0_state, uint8_t *si1_state)
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *si0_state = robot_state_pkg.safety_stop0_state;
-        *si1_state = robot_state_pkg.safety_stop1_state;
+        *si0_state = robot_state_pkg->safety_stop0_state;
+        *si1_state = robot_state_pkg->safety_stop1_state;
     }
     else
     {
@@ -7827,7 +7828,7 @@ errno_t FRRobot::GetSafetyStopState(uint8_t *si0_state, uint8_t *si1_state)
     }
 
     logger_info("state com: %d", errcode);
-    logger_info("return value is: %u - %u", robot_state_pkg.safety_stop0_state, robot_state_pkg.safety_stop1_state);
+    logger_info("return value is: %u - %u", robot_state_pkg->safety_stop0_state, robot_state_pkg->safety_stop1_state);
     return errcode;
 }
 /**
@@ -9917,9 +9918,6 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         return ERR_UPLOAD_FILE_NOT_FOUND;
     }
 #endif
-
-    logger_info("path %s do exist.", filePath.c_str());
-
     long file_size = 0;
     // 检查文件大小;
 #ifdef WIN32
@@ -9954,8 +9952,6 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     fclose(file_p);
 #endif
 
-
-    // long total_size = file_size + 16 + 32;
     long total_size = file_size + 16 + 32 +2;
     logger_info("file size is: %ld, total size is: %ld.", file_size, total_size);
     if (total_size > UPLOAD_FILE_MAX_SIZE)
@@ -9996,13 +9992,12 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         c.close();
         return ERR_XMLRPC_CMD_FAILED;
     }
-    std::this_thread::sleep_for(chrono::seconds(1));
-
+    
     /* 创建，设置套接字 */
     fr_network::socket_fd fd = fr_network::get_socket_fd();
 
     /* 设置连接超时 */
-    int syncnt = 3;
+    int syncnt = 4;
 #ifdef WIN32
     if (setsockopt(fd, IPPROTO_TCP, TCP_MAXRT, (char *)&syncnt, sizeof(syncnt)) == SOCKET_ERROR)
     {
@@ -10011,20 +10006,19 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         fr_network::close_fd(fd);
         return ERR_OTHER;
     }
-    int timeout = 8000;
+    int timeout = 4000;
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(int));
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(int));
 #else
     setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));
     struct timeval tv;
-    tv.tv_sec = 80;
+    tv.tv_sec = 4;
     tv.tv_usec = 0;
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof tv);
 #endif
-
-
-    /* 发起网络连接 */
+    std::this_thread::sleep_for(std::chrono::microseconds(30));
+     /* 发起网络连接 */
     errcode = fr_network::connect(fd, robot_ip, UPLOAD_POINT_TABLE_PORT);
     logger_info("connect error code is: %d.", errcode);
     if (errcode < 0)
@@ -10035,9 +10029,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         return ERR_SOCKET_COM_FAILED;
     }
     /* 等待服务端发起连接 */
-    std::this_thread::sleep_for(chrono::seconds(1));
-
-    
+ 
     /* 发送 头+内容+尾，send_buf_first, send_buf, send_buf_last */
     do
     {
@@ -10164,7 +10156,6 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     c.close();
     fr_network::close_fd(fd);
     return errcode;
-
 }
 
 /**
@@ -10855,7 +10846,7 @@ errno_t FRRobot::GetRobotRealTimeState(ROBOT_STATE_PKG *pkg)
         return -1;
     }
 
-    memcpy(pkg, &robot_state_pkg, sizeof(ROBOT_STATE_PKG));
+    memcpy(pkg, robot_state_pkg.get(), sizeof(ROBOT_STATE_PKG));
     return 0;
 }
 /**
@@ -12794,9 +12785,11 @@ errno_t FRRobot::SetPointToDatabase(string varName, DescPose pos)
  * @param  [in] referSampleStartUd 上下基准电流采样开始计数(反馈)，cyc
  * @param  [in] referSampleCountUd 上下基准电流采样循环计数(反馈)，cyc
  * @param  [in] referenceCurrent 上下基准电流mA
+ * @param  [in] offsetType 偏置跟踪类型，0-不偏置；1-采样；2-百分比
+ * @param  [in] offsetParameter 偏置参数；采样(偏置采样开始时间，默认采一周期)；百分比(偏置百分比(-100 ~ 100))
  * @return  错误码
  */
-errno_t FRRobot::ArcWeldTraceControl(int flag, double delaytime, int isLeftRight, double klr, double tStartLr, double stepMaxLr, double sumMaxLr, int isUpLow, double kud, double tStartUd, double stepMaxUd, double sumMaxUd, int axisSelect, int referenceType, double referSampleStartUd, double referSampleCountUd, double referenceCurrent)
+errno_t FRRobot::ArcWeldTraceControl(int flag, double delaytime, int isLeftRight, double klr, double tStartLr, double stepMaxLr, double sumMaxLr, int isUpLow, double kud, double tStartUd, double stepMaxUd, double sumMaxUd, int axisSelect, int referenceType, double referSampleStartUd, double referSampleCountUd, double referenceCurrent, int offsetType, int offsetParameter)
 {
     if (IsSockError())
     {
@@ -12827,6 +12820,9 @@ errno_t FRRobot::ArcWeldTraceControl(int flag, double delaytime, int isLeftRight
     param[8] = referSampleStartUd;
     param[9] = referSampleCountUd;
     param[10] = referenceCurrent;
+    param[11] = offsetType;
+    param[12] = offsetParameter;
+
 
     if (c.execute("ArcWeldTraceControl", param, result))
     {
@@ -12894,6 +12890,7 @@ errno_t FRRobot::ArcWeldTraceExtAIChannelConfig(int channel)
  * @param  [in] status 控制状态，0-关闭；1-开启
  * @param  [in] asaptiveFlag 自适应开启标志，0-关闭；1-开启
  * @param  [in] interfereDragFlag 干涉区拖动标志，0-关闭；1-开启
+ * @param  [in] ingularityConstraintsFlag 奇异点策略，0-规避；1-穿越
  * @param  [in] M 惯性系数
  * @param  [in] B 阻尼系数
  * @param  [in] K 刚度系数
@@ -12902,7 +12899,7 @@ errno_t FRRobot::ArcWeldTraceExtAIChannelConfig(int channel)
  * @param  [in] Vmax 最大关节速度限制
  * @return  错误码
  */
-errno_t FRRobot::EndForceDragControl(int status, int asaptiveFlag, int interfereDragFlag, vector<double> M, vector<double> B, vector<double> K, vector<double> F, double Fmax, double Vmax)
+errno_t FRRobot::EndForceDragControl(int status, int asaptiveFlag, int interfereDragFlag, int ingularityConstraintsFlag, vector<double> M, vector<double> B, vector<double> K, vector<double> F, double Fmax, double Vmax)
 {
     if (IsSockError())
     {
@@ -12919,15 +12916,16 @@ errno_t FRRobot::EndForceDragControl(int status, int asaptiveFlag, int interfere
     param[0] = status;
     param[1] = asaptiveFlag;
     param[2] = interfereDragFlag;
+    param[3] = ingularityConstraintsFlag;
     for (int i = 0; i < 6; i++)
     {
-        param[3][i] = M.at(i);
-        param[4][i] = B.at(i);
-        param[5][i] = K.at(i);
-        param[6][i] = F.at(i);
+        param[4][i] = M.at(i);
+        param[5][i] = B.at(i);
+        param[6][i] = K.at(i);
+        param[7][i] = F.at(i);
     }
-    param[7] = Fmax;
-    param[8] = Vmax;
+    param[8] = Fmax;
+    param[9] = Vmax;
 
     if (c.execute("EndForceDragControl", param, result))
     {
@@ -14755,7 +14753,7 @@ errno_t FRRobot::GetJointDriverTemperature(double temperature[])
     
     for (int i = 0; i < 6; i++)
     {
-        temperature[i] = robot_state_pkg.jointDriverTemperature[i];
+        temperature[i] = robot_state_pkg->jointDriverTemperature[i];
     }
     return g_sock_com_err;
 }
@@ -14773,7 +14771,7 @@ errno_t FRRobot::GetJointDriverTorque(double torque[])
 
     for (int i = 0; i < 6; i++)
     {
-        torque[i] = robot_state_pkg.jointDriverTorque[i];
+        torque[i] = robot_state_pkg->jointDriverTorque[i];
     }
     return g_sock_com_err;
 }
@@ -15065,7 +15063,7 @@ errno_t FRRobot::GetSoftwareUpgradeState(int& state)
         return g_sock_com_err;
     }
 
-    state = robot_state_pkg.softwareUpgradeState;
+    state = robot_state_pkg->softwareUpgradeState;
     
     return g_sock_com_err;
 }
@@ -17175,6 +17173,249 @@ errno_t FRRobot::LaserTrackingSearchStop()
     return errcode;
 }
 
+/**
+ * @brief  摆动渐变开始
+ * @param  [in] weaveNum 摆动编号
+ * @return  错误码
+ */
+errno_t FRRobot::WeaveChangeStart(int weaveNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = weaveNum;
+
+    if (c.execute("WeaveChangeStart", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute WeaveChangeStart fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief  摆动渐变结束
+ * @param  [in] weaveNum 摆动编号
+ * @return  错误码
+ */
+errno_t FRRobot::WeaveChangeEnd()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("WeaveChangeEnd", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute WeaveChangeEnd fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief  轨迹预处理(轨迹前瞻)
+ * @param  [in] name  轨迹文件名
+ * @param  [in] mode 采样模式，0-不进行采样；1-等数据间隔采样；2-等误差限制采样
+ * @param  [in] errorLim 误差限制，使用直线拟合生效
+ * @param  [in] type 平滑方式，0-贝塞尔平滑
+ * @param  [in] precision 平滑精度，使用贝塞尔平滑时生效
+ * @param  [in] vamx 设定的最大速度，mm/s
+ * @param  [in] amax 设定的最大加速度，mm/s2
+ * @param  [in] jmax 设定的最大加加速度，mm/s3
+ * @return  错误码
+ */
+errno_t FRRobot::LoadTrajectoryLA(char name[30], int mode, double errorLim, int type, double precision, double vamx, double amax, double jmax)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = name;
+    param[1] = mode;
+    param[2] = errorLim * 1.0;
+    param[3] = type;
+    param[4] = precision * 1.0;
+    param[5] = vamx * 1.0;
+    param[6] = amax * 1.0;
+    param[7] = jmax * 1.0;
+
+    if (c.execute("LoadTrajectoryLA", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief  轨迹复现(轨迹前瞻)
+ * @return  错误码
+ */
+errno_t FRRobot::MoveTrajectoryLA()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("MoveTrajectoryLA", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief  自定义碰撞检测阈值功能开始，设置关节端和TCP端的碰撞检测阈值
+ * @param  [in] flag 1-仅关节检测开启；2-仅TCP检测开启；3-关节和TCP检测同时开启
+ * @param  [in] jointDetectionThreshould 关节碰撞检测阈值 j1-j6
+ * @param  [in] tcpDetectionThreshould TCP碰撞检测阈值，xyzabc
+ * @param  [in] block 0-非阻塞；1-阻塞
+ * @return  错误码
+ */
+errno_t FRRobot::CustomCollisionDetectionStart(int flag, double jointDetectionThreshould[6], double tcpDetectionThreshould[6], int block)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = flag;
+    param[1][0] = jointDetectionThreshould[0];
+    param[1][1] = jointDetectionThreshould[1];
+    param[1][2] = jointDetectionThreshould[2];
+    param[1][3] = jointDetectionThreshould[3];
+    param[1][4] = jointDetectionThreshould[4];
+    param[1][5] = jointDetectionThreshould[5];
+    param[2][0] = tcpDetectionThreshould[0];
+    param[2][1] = tcpDetectionThreshould[1];
+    param[2][2] = tcpDetectionThreshould[2];
+    param[2][3] = tcpDetectionThreshould[3];
+    param[2][4] = tcpDetectionThreshould[4];
+    param[2][5] = tcpDetectionThreshould[5];
+    param[3] = block;
+
+    if (c.execute("CustomCollisionDetectionStart", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    if ((robot_state_pkg->main_code != 0 || robot_state_pkg->sub_code != 0) && errcode == 0)
+    {
+        errcode = 14;
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief  自定义碰撞检测阈值功能关闭
+ * @return  错误码
+ */
+errno_t FRRobot::CustomCollisionDetectionEnd()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("CustomCollisionDetectionEnd", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
 
 
 /* 根据字符分割字符串 */
@@ -17230,7 +17471,7 @@ bool FRRobot::IsSockError()
 //判断当前安全状态，安全停止、主子故障等
 int FRRobot::GetSafetyCode()
 {
-    if (robot_state_pkg.safety_stop0_state == 1 || robot_state_pkg.safety_stop1_state == 1)
+    if (robot_state_pkg->safety_stop0_state == 1 || robot_state_pkg->safety_stop1_state == 1)
     {
         return 99;
     }
@@ -17265,15 +17506,4 @@ FRRobot::~FRRobot(void)
 {
     fr_logger::logger_deinit();
 
-    if (rtClient != nullptr)
-    {
-        delete(rtClient);
-        rtClient = nullptr;
-    }
-
-    if (cmdClient != nullptr)
-    {
-        delete(cmdClient);
-        cmdClient = nullptr;
-    }
 }

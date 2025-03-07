@@ -2,6 +2,7 @@
 #ifdef WIN32
 #include <string.h>
 #include <windows.h>
+#include <chrono>
 #else
 #include <cstdlib>
 #include <iostream>
@@ -16,6 +17,8 @@
 #include "FRTcpClient.h"
 
 using namespace std;
+using std::chrono::duration_cast, std::chrono::system_clock;
+using std::chrono::milliseconds, std::chrono::seconds;
 
 int WeldingProcessParamConfig(FRRobot* robot)
 {
@@ -80,11 +83,11 @@ int DragControl(FRRobot* robot)
     vector <double> B = { 150.0, 150.0, 150.0, 5.0, 5.0, 1.0 };
     vector <double> K = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     vector <double> F = { 10.0, 10.0, 10.0, 1.0, 1.0, 1.0 };
-    robot->EndForceDragControl(1, 0, 0, M, B, K, F, 50, 100);
+    robot->EndForceDragControl(1, 0, 0, 0, M, B, K, F, 50, 100);
 
     robot->Sleep(5000);
 
-    robot->EndForceDragControl(0, 0, 0, M, B, K, F, 50, 100);
+    robot->EndForceDragControl(0, 0, 0, 0, M, B, K, F, 50, 100);
 }
 
 int SixDiaDrag(FRRobot* robot)
@@ -114,12 +117,12 @@ int RobotGetFTDragState(FRRobot* robot)
     vector <double> B = { 150.0, 150.0, 150.0, 5.0, 5.0, 1.0 };
     vector <double> K = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     vector <double> F = { 10.0, 10.0, 10.0, 1.0, 1.0, 1.0 };
-    robot->EndForceDragControl(1, 0, 0, M, B, K, F, 50, 100);
+    robot->EndForceDragControl(1, 0, 0, 0, M, B, K, F, 50, 100);
     robot->GetForceAndTorqueDragState(dragState, sixDimensionalDragState);
     printf("the drag state is %d %d \n", dragState, sixDimensionalDragState);
 
     robot->Sleep(1000);
-    robot->EndForceDragControl(0, 0, 0, M, B, K, F, 50, 100);
+    robot->EndForceDragControl(0, 0, 0, 0, M, B, K, F, 50, 100);
     robot->GetForceAndTorqueDragState(dragState, sixDimensionalDragState);
     printf("the drag state is %d %d \n", dragState, sixDimensionalDragState);
     robot->Sleep(1000);
@@ -147,7 +150,7 @@ int FTAutoOn(FRRobot* robot)
     vector <double> B = { 150.0, 150.0, 150.0, 5.0, 5.0, 1.0 };
     vector <double> K = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     vector <double> F = { 10.0, 10.0, 10.0, 1.0, 1.0, 1.0 };
-    robot->EndForceDragControl(1, 0, 0, M, B, K, F, 50, 100);
+    robot->EndForceDragControl(1, 0, 0, 0, M, B, K, F, 50, 100);
     return 0;
 }
 
@@ -158,7 +161,7 @@ int FTAutoOff(FRRobot* robot)
     vector <double> B = { 150.0, 150.0, 150.0, 5.0, 5.0, 1.0 };
     vector <double> K = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     vector <double> F = { 10.0, 10.0, 10.0, 1.0, 1.0, 1.0 };
-    robot->EndForceDragControl(1, 0, 0, M, B, K, F, 50, 100);
+    robot->EndForceDragControl(1, 0, 0, 0, M, B, K, F, 50, 100);
     return 0;
 }
 
@@ -948,11 +951,11 @@ void AxleSensorConfig(FRRobot* robot)
      vector <double> B = { 150.0, 150.0, 150.0, 5.0, 5.0, 1.0 };
      vector <double> K = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
      vector <double> F = { 10.0, 10.0, 10.0, 1.0, 1.0, 1.0 };
-     robot->EndForceDragControl(1, 0, 0, M, B, K, F, 50, 100);
+     robot->EndForceDragControl(1, 0, 0, 0, M, B, K, F, 50, 100);
 
      robot->Sleep(10 * 1000);
 
-     robot->EndForceDragControl(0, 0, 0, M, B, K, F, 50, 100);
+     robot->EndForceDragControl(0, 0, 0, 0, M, B, K, F, 50, 100);
  }
 
  void TestEndLuaUpload(FRRobot* robot)
@@ -1764,8 +1767,7 @@ void AxleSensorConfig(FRRobot* robot)
      }
  }
 
-
- int main(void)
+ int AllInterface(void)
  {
      ROBOT_STATE_PKG pkg = {};
      FRRobot robot;
@@ -1775,11 +1777,12 @@ void AxleSensorConfig(FRRobot* robot)
      int rtn = robot.RPC("192.168.58.2");
      robot.SetReConnectParam(true, 30000, 500);
      DescPose p1Desc(540.067, 51.456, 534.113, -179.888, -1.727, -152.934);
-     JointPos p1Joint(171.785, -84.965, 76.066, -79.756, -91.088, 54.730); 
+     JointPos p1Joint(171.785, -84.965, 76.066, -79.756, -91.088, 54.730);
      ExaxisPos exaxisPos(0.0, 0.0, 0.0, 0.0);
      DescPose offdese(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
      int tool = 0, user = 0, vel = 100, acc = 100, ovl = 100;
      DescPose offdese1(0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
+
 
 
      while (true)
@@ -1906,6 +1909,161 @@ void AxleSensorConfig(FRRobot* robot)
 
 
 
+
+     robot.CloseRPC();
+     return 0;
+ }
+
+ void TestWeaveChange(FRRobot* robot)
+ {
+     DescPose p1Desc(-72.912, -587.664, 31.849, 43.283, -6.731, 15.068);
+     JointPos p1Joint(74.620, -80.903, 94.608, -109.882, -90.436, -13.432);
+
+     DescPose p2Desc(-104.915, -483.712, -25.231, 42.228, -6.572, 18.433);
+     JointPos p2Joint(66.431, -92.875, 116.362, -120.516, -88.627, -24.731);
+
+     DescPose p3Desc(-240.651, -483.840, -7.161, 46.577, -5.286, 8.318);
+     JointPos p3Joint(56.457, -84.796, 104.618, -114.497, -92.422, -25.430);
+
+     ExaxisPos exaxisPos(0.0, 0.0, 0.0, 0.0);
+     DescPose offdese(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+     robot->WeldingSetVoltage(1, 19, 0, 0);
+     robot->WeldingSetCurrent(1, 190, 0, 0);
+     robot->MoveJ(&p1Joint, &p1Desc, 1, 1, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot->MoveL(&p2Joint, &p2Desc, 1, 1, 100, 100, 50, -1, &exaxisPos, 0, 0, &offdese);
+     robot->ARCStart(1, 0, 10000);
+     robot->ArcWeldTraceControl(1, 0, 1, 0.06, 5, 5, 60, 1, 0.06, 5, 5, 80, 0, 0, 4, 1, 10, 0, 0);
+     robot->WeaveStart(0);
+     robot->WeaveChangeStart(1);
+     robot->MoveL(&p3Joint, &p3Desc, 1, 1, 100, 100, 1, -1, &exaxisPos, 0, 0, &offdese);
+     robot->WeaveChangeEnd();
+     robot->WeaveEnd(0);
+     robot->ArcWeldTraceControl(0, 0, 1, 0.06, 5, 5, 60, 1, 0.06, 5, 5, 80, 0, 0, 4, 1, 10, 0, 0);
+     robot->ARCEnd(1, 0, 10000);
+ }
+
+ void TestArcWeldTraceChange(FRRobot* robot)
+ {
+     DescPose p1Desc(-72.912, -587.664, 31.849, 43.283, -6.731, 15.068);
+     JointPos p1Joint(74.620, -80.903, 94.608, -109.882, -90.436, -13.432);
+
+     DescPose p2Desc( -104.915, -483.712, -25.231, 42.228, -6.572, 18.433);
+     JointPos p2Joint(66.431, -92.875, 116.362, -120.516, -88.627, -24.731);
+
+     DescPose p3Desc(-240.651, -483.840, -7.161, 46.577, -5.286, 8.318);
+     JointPos p3Joint(56.457, -84.796, 104.618, -114.497, -92.422, -25.430);
+
+     ExaxisPos exaxisPos(0.0, 0.0, 0.0, 0.0);
+     DescPose offdese(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+     robot->WeldingSetVoltage(1, 19, 0, 0);
+     robot->WeldingSetCurrent(1, 190, 0, 0);
+     robot->MoveJ(&p1Joint, &p1Desc, 1, 1, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot->MoveL(&p2Joint, &p2Desc, 1, 1, 100, 100, 50, -1, &exaxisPos, 0, 0, &offdese);
+     robot->ARCStart(1, 0, 10000);
+     robot->ArcWeldTraceControl(1, 0, 1, 0.06, 5, 5, 60, 1, 0.06, 5, 5, 60, 0, 0, 4, 1, 10, 2, -5);
+     robot->WeaveStart(0);
+     robot->MoveL(&p3Joint, &p3Desc, 1, 1, 100, 100, 1, -1, &exaxisPos, 0, 0, &offdese);
+     robot->WeaveEnd(0);
+     robot->ArcWeldTraceControl(0, 0, 1, 0.06, 5, 5, 60, 1, 0.06, 5, 5, 60, 0, 0, 4, 1, 10, 2, -5);
+     robot->ARCEnd(1, 0, 10000);
+ }
+
+ void TestTrajectoryLA(FRRobot* robot)
+ {
+     int rtn = 0;
+     rtn = robot->TrajectoryJUpLoad("D://zUP/A.txt");
+     cout << "TrajectoryJUpLoad A.txt rtn is " << rtn << endl;
+     rtn = robot->TrajectoryJUpLoad("D://zUP/B.txt");
+     cout << "TrajectoryJUpLoad B.txt rtn is " << rtn << endl;
+     char nameA[30] = "/fruser/traj/A.txt";
+     char nameB[30] = "/fruser/traj/B.txt";
+     
+     robot->LoadTrajectoryLA(nameA, 1, 2, 0, 2, 100, 200, 1000);   
+     DescPose startPos(0, 0, 0, 0, 0, 0);
+     robot->GetTrajectoryStartPose(nameA, &startPos);
+     robot->MoveCart(&startPos, 1, 0, 100, 100, 100, -1, -1);
+     rtn = robot->MoveTrajectoryLA();
+     cout << "MoveTrajectoryLA rtn is " << rtn << endl;
+ }
+
+ void CustomCollisionTest(FRRobot* robot)
+ {
+     DescPose p1Desc(228.879, -503.594, 453.984, -175.580, 8.293, 171.267);
+     JointPos p1Joint(102.700, -85.333, 90.518, -102.365, -83.932, 22.134);
+
+     DescPose p2Desc(-333.302, -435.580, 449.866, -174.997, 2.017, 109.815);
+     JointPos p2Joint(41.862, -85.333, 90.526, -100.587, -90.014, 22.135);
+
+     ExaxisPos exaxisPos(0.0, 0.0, 0.0, 0.0);
+     DescPose offdese(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+     robot->MoveL(&p2Joint, &p2Desc, 0, 0, 100, 100, 100, 2, &exaxisPos, 0, 0, &offdese);
+
+     robot->ResetAllError();
+     int safety[6] = { 5,5,5,5,5,5 };
+     robot->SetCollisionStrategy(3, 1000, 150, 250, safety);
+     double jointDetectionThreshould[6] = { 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+     double tcpDetectionThreshould[6] = { 60,60,60,60,60,60 };
+     int rtn = robot->CustomCollisionDetectionStart(3, jointDetectionThreshould, tcpDetectionThreshould, 0);
+     cout << "CustomCollisionDetectionStart rtn is " << rtn << endl;
+
+     robot->MoveL(&p1Joint, &p1Desc, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);
+     robot->MoveL(&p2Joint, &p2Desc, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);
+     rtn = robot->CustomCollisionDetectionEnd();
+     cout << "CustomCollisionDetectionEnd rtn is " << rtn << endl;
+ }
+
+
+ int main(void)
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     robot.SetReConnectParam(true, 30000, 500);
+     cout << "start" << endl;
+     
+     //while (true)
+     //{
+     //    auto start = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+     //    rtn = robot.LuaUpload("D://zUP/27.lua");
+     //    auto end = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+     //    cout << "file upload time is : " << (end - start) <<  "    rtn is " << rtn <<endl;
+
+     //    Sleep(100);
+     //}
+     
+
+     while (true)
+     {
+         DescPose p1Desc(-327.459, -378.978, 458.942, 172.127, 38.377, 115.097);
+         JointPos p1Joint(30.004, -91.868, 96.111, -88.079, -51.359, 0.000);
+
+         DescPose p2Desc(29.900, -499.960, 458.942, 172.127, 38.377, 159.348);
+         JointPos p2Joint(74.255, -91.868, 96.111, -88.079, -51.359, 0.000);
+
+         ExaxisPos exaxisPos(0.0, 0.0, 0.0, 0.0);
+         DescPose offdese(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+         rtn = robot.MoveL(&p1Joint, &p1Desc, 0, 0,100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);
+         if (rtn != 0)
+         {
+             break;
+         }
+         rtn = robot.MoveL(&p2Joint, &p2Desc, 0, 0,100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);
+         if (rtn != 0)
+         {
+             break;
+         }
+     }
+
+     while (true)
+     {
+         robot.GetRobotRealTimeState(&pkg);
+
+         robot.Sleep(100);
+     }
+     
 
      robot.CloseRPC();
      return 0;

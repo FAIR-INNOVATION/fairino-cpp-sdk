@@ -15,6 +15,7 @@
 #include <iostream>
 #include <list>
 #include <vector>
+#include <memory>
 
 class FRTcpClient;
 
@@ -632,11 +633,11 @@ public:
 	
 	/**
     *@brief  Set the end load weight
-	*@param  [in] loadNum load index
+	*@param  [in] loadNum load Num
     *@param  [in] weight  Load weight, unit: kg
     *@return  Error code
 	 */
-	errno_t  SetLoadWeight(int loadNum = 0, float weight = 0.0);
+	errno_t  SetLoadWeight(int loadNum, float weight);
 	
 	/**
     *@brief  Set the end-load centroid coordinates
@@ -2525,9 +2526,11 @@ public:
 	  * @param  [in] referSampleStartUd Up-down reference current sampling start count (feedback);cyc
 	  * @param  [in] referSampleCountUd Up-down reference current sampling cycle count;cyc
 	  * @param  [in] referenceCurrent Up-down reference current mA
+	  * @param  [in] offsetType Indicates the offset tracking type. 0- no offset. 1- Sampling; 2- percent
+	  * @param  [in] offsetParameter Offset parameter; Sampling (offset sampling start time, default sampling cycle); Percentage (offset percentage (-100 ~ 100))
 	  * @return  error code
 	  */
-	 errno_t ArcWeldTraceControl(int flag, double delaytime, int isLeftRight, double klr, double tStartLr, double stepMaxLr, double sumMaxLr, int isUpLow, double kud, double tStartUd, double stepMaxUd, double sumMaxUd, int axisSelect, int referenceType, double referSampleStartUd, double referSampleCountUd, double referenceCurrent);
+	 errno_t ArcWeldTraceControl(int flag, double delaytime, int isLeftRight, double klr, double tStartLr, double stepMaxLr, double sumMaxLr, int isUpLow, double kud, double tStartUd, double stepMaxUd, double sumMaxUd, int axisSelect, int referenceType, double referSampleStartUd, double referSampleCountUd, double referenceCurrent, int offsetType = 0, int offsetParameter = 0);
 
 
 	 /**
@@ -2543,6 +2546,7 @@ public:
 	  * @param  [in] status Control status, 0- off; 1- On
 	  * @param  [in] asaptiveFlag Adaptive on flag, 0- off; 1- On
 	  * @param  [in] interfereDragFlag Interference drag flag, 0- off; 1- On
+	  * @param  [in] ingularityConstraintsFlag Singularity strategy, 0- evade; 1- Crossing
 	  * @param  [in] M Inertia coefficient
 	  * @param  [in] B Damping coefficient
 	  * @param  [in] K Stiffness coefficient
@@ -2551,7 +2555,7 @@ public:
 	  * @param  [in] Vmax Maximum joint speed limit
 	  * @return  error code
 	  */
-	 errno_t EndForceDragControl(int status, int asaptiveFlag, int interfereDragFlag, std::vector<double> M, std::vector<double> B, std::vector<double> K, std::vector<double> F, double Fmax, double Vmax);
+	 errno_t EndForceDragControl(int status, int asaptiveFlag, int interfereDragFlag, int ingularityConstraintsFlag, std::vector<double> M, std::vector<double> B, std::vector<double> K, std::vector<double> F, double Fmax, double Vmax);
 
 
 	 /**
@@ -3329,49 +3333,67 @@ public:
 	 */
 	errno_t LaserSensorRecord(int status, int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, double speed);
 
-	/**
-	 * @brief laser on
-	 * @param [in] weldId Weld type number
-	 * @return Error code
-	 */
 	errno_t LaserTrackingLaserOn(int weldId);
 
-	/**
-	 * @brief laser off
-	 * @return Error code
-	 */
 	errno_t LaserTrackingLaserOff();
 
-	/**
-	 * @brief starts tracking
-	 * @param [in] coordId Laser sensor tool number
-	 * @return Error code
-	 */
 	errno_t LaserTrackingTrackOn(int coordId);
 
-	/**
-	 * @brief stops tracking
-	 * @return Error code
-	 */
 	errno_t LaserTrackingTrackOff();
 
-	/**
-	 * @brief starts the search
-	 * @ param [in] direction and find a direction 0: + X, 1: - X, 2: + Y, 3: - Y, 4: + Z, 5: Z, 6 to specify the direction
-	 * @param [in] directionPoint Endpoint coordinates of search direction
-	 * @param [in] vel Search speed,[%]
-	 * @param [in] distance Search distance,[mm]
-	 * @param [in] maxtime Maximum search time, [ms]
-	 * @param [in] posSensorNum Number of the sensor coordinate system
-	 * @return Error code
-	 */
 	errno_t LaserTrackingSearchStart(int direction, DescTran directionPoint, int vel, int distance, int timeout, int posSensorNum);
 
+	errno_t LaserTrackingSearchStop();
+
 	/**
-	 * @brief stops searching
+	 * @brief Wobble gradient begins
+	 * @param [in] weaveNum Swing number
 	 * @return Error code
 	 */
-	errno_t LaserTrackingSearchStop();
+	errno_t WeaveChangeStart(int weaveNum);
+
+	/**
+	 * @brief swing gradient ends
+	 * @return Error code
+	 */
+	errno_t WeaveChangeEnd();
+
+   /**
+	* @brief trajectory Preprocessing (trajectory Foresight)
+	* @param [in] name Indicates the track file name
+	* @param [in] mode Sampling mode. 0- Sampling is not performed. 1- equal data interval sampling; 2- Equal error limit sampling
+	* @param [in] errorLim Error limit, using line fitting takes effect
+	* @param [in] type Indicates the smoothing mode, 0-Bessel smoothing
+	* @param [in] precision Smoothing precision. This parameter takes effect when Bezier smoothing is used
+	* @param [in] vamx set maximum speed, mm/s
+	* @param [in] Maximum acceleration set by amax, mm/s2
+	* @param [in] Max acceleration set by jmax, mm/s3
+	* @return Error code
+	*/
+	errno_t LoadTrajectoryLA(char name[30], int mode, double errorLim, int type, double precision, double vamx, double amax, double jmax);
+
+	/**
+	* @brief trajectory reproduction(trajectory Foresight)
+	* @return Error code
+	*/
+	errno_t MoveTrajectoryLA();
+
+	/**
+	 * @brief custom collision detection threshold function starts, set the collision detection thresholds of the joint end and TCP end
+	 * @param[in] flag 1 - Only joint detection is enabled; 2 - Only TCP detection is enabled. 3 - Joint and TCP detection are enabled simultaneously
+	 * @param[in] jointDetectionThreshould Joint Collision Detection threshold j1 - j6
+	 * @param[in] tcpDetectionThreshould TCP collision detection threshold, xyzabc
+	 * @param[in] block 0 - non blocking; 1 - block
+	 * @return Error code
+	 */
+	errno_t CustomCollisionDetectionStart(int flag, double jointDetectionThreshould[6], double tcpDetectionThreshould[6], int block);
+
+	/**
+	 * @brief custom collision detection threshold function ends
+	 * @return Error code
+	 */
+	errno_t CustomCollisionDetectionEnd();
+
 
 	/**
 	* @brief  Set communication reconnection parameters with the robot
@@ -3444,10 +3466,10 @@ private:
 	double fileUploadPercent;
 
 	char robot_ip[64];
-	ROBOT_STATE_PKG robot_state_pkg;
+	std::shared_ptr<ROBOT_STATE_PKG> robot_state_pkg;
 
-	FRTcpClient* rtClient = nullptr;
-	FRTcpClient* cmdClient = nullptr;
+	std::shared_ptr <FRTcpClient> rtClient;
+	std::shared_ptr <FRTcpClient> cmdClient;
 
 };
 
