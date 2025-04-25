@@ -1613,11 +1613,19 @@ public:
 	errno_t ConveyorTrackEnd();
 
 	/**
-	 * @brief Transmission belt parameter configuration
-	 * @param [in] 
-	 * @return Error code 
+	 * @brief Drive belt Parameter Configuration
+	 * @param [in] para[0] Encoder channels 1-2
+	 * @param [in] para[1] The number of pulses for one revolution of the encoder
+	 * @param [in] para[2] The distance traveled by the conveyor belt when the encoder rotates one full circle
+	 * @param [in] para[3] Select the workpiece coordinate system number for the tracking motion function, and set the tracking grasping and TPD tracking to 0
+	 * @param [in] para[4] Does it have vision? 0 does not have 1
+	 * @param [in] para[5] Speed ratio for the conveyor belt tracking grasping option (1-100), the default for other options is 1
+	 * @param [in] followType Tracking motion type, 0- tracking motion; 1- Follow-up inspection campaign
+	 * @param [in] startDis Tracking and grasping need to be set. The starting distance for tracking is -1: automatic calculation (automatic tracking and grasping after the workpiece reaches under the robot), unit: mm, default value: 0
+	 * @param [in] endDis tracking and grasping need to be set. The tracking termination distance, in mm, the default value is 100
+	 * @return 错误码
 	 */
-	errno_t ConveyorSetParam(float para[6]);
+	errno_t ConveyorSetParam(float para[6], int followType = 0, int startDis = 0, int endDis = 100);
 
 	/**
 	 * @brief belt grab point compensation
@@ -3394,6 +3402,66 @@ public:
 	 */
 	errno_t CustomCollisionDetectionEnd();
 
+	/**
+	 * @brief  Acceleration smooth on
+	 * @param  [in] saveFlag Power-off save or not
+	 * @return  Error code
+	 */
+	errno_t AccSmoothStart(bool saveFlag);
+
+	/**
+	 * @brief  Acceleration smooth off
+	 * @param  [in] saveFlag Power-off save or not
+	 * @return  Error code
+	 */
+	errno_t AccSmoothEnd(bool saveFlag);
+
+	/**
+	 * @brief Download controller log 
+	 * @param [in] savePath Save file path "D://zDown/"
+	 * @return Error code
+	 */
+	errno_t RbLogDownload(std::string savePath);
+
+	/**
+	 * @brief Download all data sources
+	 * @param [in] savePath Save file path "D://zDown/"
+	 * @return Error code
+	 */
+	errno_t AllDataSourceDownload(std::string savePath);
+
+	/**
+	 * @brief Download data backup package 
+	 * @param [in] savePath Save file path "D://zDown/"
+	 * @return Error code
+	 */
+	errno_t DataPackageDownload(std::string savePath);
+
+	/**
+	 * @brief Get the SN code of the control box
+	 * @param [out] SNCode SN of the control box
+	 * @return Error code
+	 */
+	errno_t GetRobotSN(std::string& SNCode);
+
+	/**
+	 * @brief Shut down the robot operating system
+	 * @return Error code
+	 */
+	errno_t ShutDownRobotOS();
+
+	/**
+	 * @brief Conveyor communication input detection
+	 * @param [in] timeout Waiting timeout(ms)
+	 * @return Error code
+	 */
+	errno_t ConveyorComDetect(int timeout);
+
+	/**
+	 * @brief Conveyor communication input detection triggered
+	 * @return Error code
+	 */
+	errno_t ConveyorComDetectTrigger();
 
 	/**
 	* @brief  Set communication reconnection parameters with the robot

@@ -212,6 +212,27 @@ int PowerLimitOn(FRRobot* robot)
     return 0;
 }
 
+int TestServoJ(FRRobot* robot)
+{
+    robot->DragTeachSwitch(1);
+    float torques[] = { 0, 0, 0, 0, 0, 0 };
+    robot->GetJointTorques(1, torques);
+
+    int count = 100;
+    robot->ServoJTStart(); //   #servoJT开始
+    int error = 0;
+    while (count > 0)
+    {
+        error = robot->ServoJT(torques, 0.008);  //# 关节空间伺服模式运动
+        count = count - 1;
+        robot->Sleep(1);
+    }
+
+    error = robot->ServoJTEnd();  //#伺服运动结束
+    robot->DragTeachSwitch(1);
+    return 0;
+}
+
 int PowerLimitOff(FRRobot* robot)
 {
     robot->DragTeachSwitch(1);
@@ -483,7 +504,7 @@ void AxleSensorConfig(FRRobot* robot)
      robot->Sleep(1000);
  }
 
- void TestServoJ(FRRobot* robot)
+ void TestweServoJ(FRRobot* robot)
  {
      JointPos j;
      memset(&j, 0, sizeof(JointPos));
@@ -1971,16 +1992,21 @@ void AxleSensorConfig(FRRobot* robot)
  void TestTrajectoryLA(FRRobot* robot)
  {
      int rtn = 0;
-     rtn = robot->TrajectoryJUpLoad("D://zUP/A.txt");
-     cout << "TrajectoryJUpLoad A.txt rtn is " << rtn << endl;
-     rtn = robot->TrajectoryJUpLoad("D://zUP/B.txt");
-     cout << "TrajectoryJUpLoad B.txt rtn is " << rtn << endl;
+     //rtn = robot->TrajectoryJUpLoad("D://zUP/A.txt");
+     //cout << "TrajectoryJUpLoad A.txt rtn is " << rtn << endl;
+     //rtn = robot->TrajectoryJUpLoad("D://zUP/B.txt");
+     //cout << "TrajectoryJUpLoad B.txt rtn is " << rtn << endl;
+
      char nameA[30] = "/fruser/traj/A.txt";
      char nameB[30] = "/fruser/traj/B.txt";
      
-     robot->LoadTrajectoryLA(nameA, 1, 2, 0, 2, 100, 200, 1000);   
+     //rtn = robot->LoadTrajectoryLA(nameA, 2, 0.0, 0, 1.0, 100.0, 200.0, 1000.0);    //B样条
+     //cout << "LoadTrajectoryLA rtn is " << rtn << endl;
+     //robot->LoadTrajectoryLA(nameB, 0, 0, 0, 1, 100, 100, 1000);//直线连接
+     robot->LoadTrajectoryLA(nameA, 1, 2, 0, 2, 100, 200, 1000);    //直线拟合
      DescPose startPos(0, 0, 0, 0, 0, 0);
      robot->GetTrajectoryStartPose(nameA, &startPos);
+     //robot->GetTrajectoryStartPose(nameB, &startPos);
      robot->MoveCart(&startPos, 1, 0, 100, 100, 100, -1, -1);
      rtn = robot->MoveTrajectoryLA();
      cout << "MoveTrajectoryLA rtn is " << rtn << endl;
@@ -2012,6 +2038,184 @@ void AxleSensorConfig(FRRobot* robot)
      cout << "CustomCollisionDetectionEnd rtn is " << rtn << endl;
  }
 
+ void TestAccSmoothJ(FRRobot* robot)
+ {
+     DescPose startdescPose(88.739, -527.617, 514.939, -179.039, 1.494, 70.209);
+     JointPos startjointPos(88.927, -85.834, 80.289, -85.561, -91.388, 108.718);
+
+     DescPose enddescPose(-433.125, -334.428, 497.139, -179.723, -0.745, 8.437);
+     JointPos endjointPos(27.036, -83.909, 80.284, -85.579, -90.027, 108.604);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+     int rtn = robot->AccSmoothStart(0);
+     cout << "AccSmoothStart rtn is " << rtn << endl;
+     robot->MoveJ(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot->MoveJ(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     rtn = robot->AccSmoothEnd(0);
+     cout << "AccSmoothEnd rtn is " << rtn << endl;
+ }
+
+ void TestAccSmoothL(FRRobot* robot)
+ {
+     DescPose startdescPose(88.739, -527.617, 514.939, -179.039, 1.494, 70.209);
+     JointPos startjointPos(88.927, -85.834, 80.289, -85.561, -91.388, 108.718);
+
+     DescPose enddescPose(-433.125, -334.428, 497.139, -179.723, -0.745, 8.437);
+     JointPos endjointPos(27.036, -83.909, 80.284, -85.579, -90.027, 108.604);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+     int rtn = robot->AccSmoothStart(0);
+     cout << "AccSmoothStart rtn is " << rtn << endl;
+
+     robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);
+     robot->MoveL(&endjointPos, &enddescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);
+
+     rtn = robot->AccSmoothEnd(0);
+     cout << "AccSmoothEnd rtn is " << rtn << endl;
+ }
+
+ void TestAccSmoothC(FRRobot* robot)
+ {
+     DescPose startdescPose(88.739, -527.617, 514.939, -179.039, 1.494, 70.209);
+     JointPos startjointPos(88.927, -85.834, 80.289, -85.561, -91.388, 108.718);
+
+     DescPose enddescPose(-433.125, -334.428, 497.139, -179.723, -0.745, 8.437);
+     JointPos endjointPos(27.036, -83.909, 80.284, -85.579, -90.027, 108.604);
+
+     DescPose middescPose(-112.215, -409.323, 686.497, 176.217, 2.338, 41.625);
+     JointPos midjointPos(60.219, -94.324, 62.906, -62.005, -87.159, 108.598);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+
+     robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+
+     int rtn = robot->AccSmoothStart(0);
+     cout << "AccSmoothStart rtn is " << rtn << endl;
+
+     robot->MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+     robot->MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &startjointPos, &startdescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+
+     rtn = robot->AccSmoothEnd(0);
+     cout << "AccSmoothEnd rtn is " << rtn << endl;
+
+ }
+
+ void TestAccSmoothCirCle(FRRobot* robot)
+ {
+     DescPose startdescPose(88.739, -527.617, 514.939, -179.039, 1.494, 70.209);
+     JointPos startjointPos(88.927, -85.834, 80.289, -85.561, -91.388, 108.718);
+
+     DescPose enddescPose(-433.125, -334.428, 497.139, -179.723, -0.745, 8.437);
+     JointPos endjointPos(27.036, -83.909, 80.284, -85.579, -90.027, 108.604);
+
+     DescPose middescPose(-112.215, -409.323, 686.497, 176.217, 2.338, 41.625);
+     JointPos midjointPos(60.219, -94.324, 62.906, -62.005, -87.159, 108.598);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+
+     robot->MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+
+     int rtn = robot->AccSmoothStart(0);
+     cout << "AccSmoothStart rtn is " << rtn << endl;
+
+     robot->Circle(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 100, -1, &offdese);
+     robot->Circle(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 100, -1, &offdese);
+
+     rtn = robot->AccSmoothEnd(0);
+     cout << "AccSmoothEnd rtn is " << rtn << endl;
+ }
+
+ void TestInverseKen(FRRobot* robot)
+ {
+     DescPose dcs1(32.316, -232.029, 1063.415, 90.159, 18.376, 36.575);
+     DescPose dcs2(105.25, -170.914, 1076.283, 87.032, 25.94, 54.644);
+     DescPose dcs3(79.164, 81.645, 1045.609, 133.691, -73.265, 162.726);
+     DescPose dcs4(298.779, -104.112, 298.242, 179.631, -0.628, -166.481);
+     JointPos inverseRtn = {};
+
+     robot->GetInverseKin(0, &dcs1, -1, &inverseRtn);
+     printf("dcs1 getinverse rtn is %f %f %f %f %f %f \n", inverseRtn.jPos[0], inverseRtn.jPos[1], inverseRtn.jPos[2], inverseRtn.jPos[3], inverseRtn.jPos[4], inverseRtn.jPos[5]);
+     robot->GetInverseKin(0, &dcs2, -1, &inverseRtn);
+     printf("dcs2 getinverse rtn is %f %f %f %f %f %f \n", inverseRtn.jPos[0], inverseRtn.jPos[1], inverseRtn.jPos[2], inverseRtn.jPos[3], inverseRtn.jPos[4], inverseRtn.jPos[5]);
+     
+     robot->GetInverseKin(0, &dcs3, -1, &inverseRtn);
+     printf("dcs3 getinverse rtn is %f %f %f %f %f %f \n", inverseRtn.jPos[0], inverseRtn.jPos[1], inverseRtn.jPos[2], inverseRtn.jPos[3], inverseRtn.jPos[4], inverseRtn.jPos[5]);
+     robot->GetInverseKin(0, &dcs4, -1, &inverseRtn);
+     printf("dcs4 getinverse rtn is %f %f %f %f %f %f \n", inverseRtn.jPos[0], inverseRtn.jPos[1], inverseRtn.jPos[2], inverseRtn.jPos[3], inverseRtn.jPos[4], inverseRtn.jPos[5]);
+     
+     JointPos jpos1(56.999, -59.002, 56.996, -96.552, 60.392, -90.005);
+     DescPose forwordResult = {};
+     robot->GetForwardKin(&jpos1, &forwordResult);
+     printf("jpos1 forwordResult rtn is %f %f %f %f %f %f \n", forwordResult.tran.x, forwordResult.tran.y, forwordResult.tran.z, forwordResult.rpy.rx, forwordResult.rpy.ry, forwordResult.rpy.rz);
+
+
+ }
+
+ void Trigger(FRRobot* robot)
+ {
+     int i;
+
+     cout << "please input a number to trigger:" << endl;
+
+     std::cin >> i;
+
+     int rtn = robot->ConveyorComDetectTrigger();
+     printf("ConveyorComDetectTrigger retval is: %d\n", rtn);
+ }
+
+ int ConveyorTest(FRRobot * robot)
+ {
+     int retval = 0;
+     float param[6] = { 1,10000,200,0,0,20 };
+     retval = robot->ConveyorSetParam(param, 1, 0, 0);
+     printf("ConveyorSetParam retval is: %d\n", retval);
+
+     int index = 1;
+     int max_time = 30000;
+     uint8_t block = 0;
+     retval = 0;
+
+     DescPose startdescPose(139.176, 4.717, 9.088, -179.999, -0.004, -179.990);
+     JointPos startjointPos(-34.129, -88.062, 97.839, -99.780, -90.003, -34.140);
+     
+     DescPose homePose(139.177, 4.717, 69.084, -180.000, -0.004, -179.989);
+     JointPos homejointPos(-34.129, -88.618, 84.039, -85.423, -90.003, -34.140);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+
+     retval = robot->MoveL(&homejointPos, &homePose, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+     printf("MoveL to safety retval is: %d\n", retval);
+
+     std::thread textT(Trigger, robot);
+     textT.detach();
+
+     retval = robot->ConveyorComDetect(1000 * 10);
+     printf("ConveyorComDetect retval is: %d\n", retval);
+
+     retval = robot->ConveyorGetTrackData(2);
+     printf("ConveyorGetTrackData retval is: %d\n", retval);
+
+
+     retval = robot->ConveyorTrackStart(2);
+     printf("ConveyorTrackStart retval is: %d\n", retval);
+
+     robot->MoveL(&startjointPos, &startdescPose, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+     robot->MoveL(&startjointPos, &startdescPose, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+
+     retval = robot->ConveyorTrackEnd();
+     printf("ConveyorTrackEnd retval is: %d\n", retval);
+     robot->MoveL(&homejointPos, &homePose, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+     
+     return 0;
+ }
+
+
+
 
  int main(void)
  {
@@ -2022,7 +2226,45 @@ void AxleSensorConfig(FRRobot* robot)
      robot.SetLoggerLevel(1);
      int rtn = robot.RPC("192.168.58.2");
      robot.SetReConnectParam(true, 30000, 500);
-     cout << "start" << endl;
+
+     
+     for (int i = 0; i < 30; i++)
+     {
+         string SN = "";
+         robot.GetRobotSN(SN);
+         cout << "robot SN is " << SN << "  times  " << i << endl;
+     }
+
+
+
+
+
+
+
+     //robot.ShutDownRobotOS();
+
+
+
+
+     //rtn = robot.RbLogDownload("D://zDOWN/");
+     //cout << "RbLogDownload rtn is " << rtn << endl;
+     
+     //rtn = robot.AllDataSourceDownload("D://zDOWN/");
+     //cout << "AllDataSourceDownload rtn is " << rtn << endl;
+
+     //rtn = robot.DataPackageDownload("D://zDOWN/");
+     //cout << "DataPackageDownload rtn is " << rtn << endl;
+     //ConveyorTest(&robot);
+     //TestInverseKen(&robot);
+
+     Sleep(10000000);
+     //while (true)
+     //{
+     //    robot.GetRobotRealTimeState(&pkg);
+     //    cout << "jpos[0] is " << pkg.jt_cur_pos[0] << "  desc pos[0]  " << pkg.tl_cur_pos[0] << endl;
+
+     //    Sleep(100);
+     //}
      
      //while (true)
      //{
@@ -2034,8 +2276,7 @@ void AxleSensorConfig(FRRobot* robot)
      //    Sleep(100);
      //}
      
-
-     while (true)
+     /*while (true)
      {
          DescPose p1Desc(-327.459, -378.978, 458.942, 172.127, 38.377, 115.097);
          JointPos p1Joint(30.004, -91.868, 96.111, -88.079, -51.359, 0.000);
@@ -2055,14 +2296,9 @@ void AxleSensorConfig(FRRobot* robot)
          {
              break;
          }
-     }
+     }*/
 
-     while (true)
-     {
-         robot.GetRobotRealTimeState(&pkg);
 
-         robot.Sleep(100);
-     }
      
 
      robot.CloseRPC();

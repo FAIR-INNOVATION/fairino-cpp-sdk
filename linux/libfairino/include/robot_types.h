@@ -299,7 +299,7 @@ typedef struct _ROBOT_STATE_PKG
 	float gripperRotNum;				//The current number of turns of the rotating clamp
 	uint8_t gripperRotSpeed;			//Percentage of the current rotation speed of the rotary clamp
 	uint8_t gripperRotTorque;			//Percentage of the current rotating torque of the rotating clamp
-	WELDING_BREAKOFF_STATE weldingBreakOffState;  //Welding break off state
+	WELDING_BREAKOFF_STATE weldingBreakOffState;  //º¸½ÓÖÐ¶Ï×´Ì¬
 	uint16_t check_sum;					//check sum
 }ROBOT_STATE_PKG;
 

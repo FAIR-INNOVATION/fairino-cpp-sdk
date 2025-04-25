@@ -1,6 +1,15 @@
 #ifndef   ROBOTERROR_H_
 #define   ROBOTERROR_H_
 
+#define     ERR_SOCKET_RECV_FAILED                 -16    /* socket recv failed */
+#define     ERR_SOCKET_SEND_FAILED                 -15    /* socket send failed */
+#define     ERR_FILE_OPEN_FAILED                   -14    /* open file failed */
+#define     ERR_FILE_TOO_LARGE                     -13    /* file size too large */
+#define     ERR_UPLOAD_FILE_ERROR                  -12    /* upload file error */
+#define     ERR_FILE_NAME                          -11    /* file name error */
+#define     ERR_DOWN_LOAD_FILE_WRITE_FAILED        -10    /* file download write file failed */
+#define     ERR_DOWN_LOAD_FILE_CHECK_FAILED        -9     /* file download check failed */
+#define     ERR_DOWN_LOAD_FILE_FAILED              -8     /* file download failed */
 #define     ERR_UPLOAD_FILE_NOT_FOUND              -7       //The file to be uploaded does not exist
 #define     ERR_SAVE_FILE_PATH_NOT_FOUND           -6       //The file path does not exist
 #define     ERR_LUA_FILE_NOT_FOUND                 -5       //The lua file does not exist

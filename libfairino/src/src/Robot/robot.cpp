@@ -32,7 +32,7 @@
     #include <Shlwapi.h>
     #include <WS2tcpip.h>
 
-    #define SDK_VERSION "SDK V2.1"
+    #define SDK_VERSION "SDK V2.2"
     #pragma comment(lib, "Shlwapi.lib")
 #else
     #include <stdlib.h>
@@ -42,11 +42,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "2"
-    #define SDK_VERSION_RELEASE "0"
+    #define SDK_VERSION_RELEASE "1"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.2.0.0-robot v3.8.0"
+#define SDK_RELEASE "SDK V2.2.1.0-robot v3.8.1"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -61,8 +61,7 @@
 #define POINT_TABLE_HEAD "/f/b"
 #define POINT_TABLE_TAIL "/b/f"
 
-#define DOWNLOAD_FILE_MAX_SIZE             (1024 * 1024 * 50)
-/* 上传的文件更大，是为了兼容可能上传升级包 */
+#define DOWNLOAD_FILE_MAX_SIZE             (1024 * 1024 * 500)
 #define UPLOAD_FILE_MAX_SIZE               (1024 * 1024 * 500)
 #define DOWNLOAD_FILE_TIME_LIMIT_MS 15000
 #define FILE_HEAD   "/f/b"
@@ -7517,10 +7516,18 @@ errno_t FRRobot::ConveyorTrackEnd()
 
 /**
  * @brief 传动带参数配置
- *
+ * @param [in] para[0] 编码器通道 1~2
+ * @param [in] para[1] 编码器转一圈的脉冲数
+ * @param [in] para[2] 编码器转一圈传送带行走距离
+ * @param [in] para[3] 工件坐标系编号 针对跟踪运动功能选择工件坐标系编号，跟踪抓取、TPD跟踪设为0
+ * @param [in] para[4] 是否配视觉  0 不配  1 配
+ * @param [in] para[5] 速度比  针对传送带跟踪抓取选项（1-100）  其他选项默认为1 
+ * @param [in] followType 跟踪运动类型，0-跟踪运动；1-追检运动
+ * @param [in] startDis 追检抓取需要设置， 跟踪起始距离， -1：自动计算(工件到达机器人下方后自动追检)，单位mm， 默认值0
+ * @param [in] endDis 追检抓取需要设置，跟踪终止距离， 单位mm， 默认值100
  * @return 错误码
  */
-errno_t FRRobot::ConveyorSetParam(float para[6])
+errno_t FRRobot::ConveyorSetParam(float para[6], int followType, int startDis, int endDis)
 {
     if (IsSockError())
     {
@@ -7535,6 +7542,9 @@ errno_t FRRobot::ConveyorSetParam(float para[6])
     {
         param[0][i] = para[i];
     }
+    param[1] = followType;
+    param[2] = startDis;
+    param[3] = endDis;
 
     if (c.execute("ConveyorSetParam", param, result))
     {
@@ -8067,7 +8077,7 @@ errno_t FRRobot::PointTableSwitch(const std::string pointTableName)
     }
     else
     {
-        errcode = ERR_OTHER;
+        errcode = ERR_XMLRPC_CMD_FAILED;
         return errcode;
     }
 }
@@ -8286,7 +8296,7 @@ errno_t FRRobot::PointTableDownLoad(const std::string &pointTableName, const std
         else
         {
             logger_error("download fail.");
-            errcode = ERR_OTHER;
+            errcode = ERR_DOWN_LOAD_FILE_FAILED;
             break;
             ;
         }
@@ -8300,7 +8310,7 @@ errno_t FRRobot::PointTableDownLoad(const std::string &pointTableName, const std
         else
         {
             logger_error("except is: %s, compute is: %s.", except_md5.c_str(), compute_md5.c_str());
-            errcode = ERR_OTHER;
+            errcode = ERR_DOWN_LOAD_FILE_CHECK_FAILED;
             break;
         }
 
@@ -8323,7 +8333,7 @@ errno_t FRRobot::PointTableDownLoad(const std::string &pointTableName, const std
         else
         {
             logger_error("open file fail.");
-            errcode = ERR_OTHER;
+            errcode = ERR_DOWN_LOAD_FILE_WRITE_FAILED;
             input_file.close();
             break;
             ;
@@ -8441,7 +8451,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
     {
         logger_error("file size have over max limit: %d", POINT_TABLE_MAX_SIZE);
         c.close();
-        return ERR_OTHER;
+        return ERR_FILE_TOO_LARGE;
     }
 
     // 点位表名称;
@@ -8524,7 +8534,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
         if (!input_file.is_open())
         {
             logger_error("point table file path is not open.");
-            errcode = ERR_OTHER;
+            errcode = ERR_FILE_OPEN_FAILED;
             break;
         }
         // 获取文件大小;
@@ -8544,7 +8554,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
         if ((send_bytes < 0) || (static_cast<unsigned int>(send_bytes) != send_buf_first.length()))
         {
             logger_error("send head %s fail.", send_buf_first.c_str());
-            errcode = ERR_OTHER;
+            errcode = ERR_SOCKET_SEND_FAILED;
             break;
         }
         logger_info("send head end");
@@ -8562,7 +8572,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
                 logger_error("has send bytes %d", total_send_bytes);
                 logger_error("send buf is: %s.", send_buf.c_str()+total_send_bytes);
                 logger_error("send bytes is %d", send_buf.length() - total_send_bytes);
-                errcode = ERR_OTHER;
+                errcode = ERR_SOCKET_SEND_FAILED;
                 send_point_table_success = false;
                 break;
             }
@@ -8582,7 +8592,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
         if ((send_bytes < 0) || (static_cast<unsigned int>(send_bytes) != send_buf_last.length()))
         {
             logger_error("send last buf : %s fail.", send_buf_last.c_str());
-            errcode = ERR_OTHER;
+            errcode = ERR_SOCKET_SEND_FAILED;
             break;
         }
         logger_info("send buf tail end");
@@ -8595,7 +8605,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
         if (recv_bytes < 0)
         {
             logger_error("recv fail");
-            errcode = ERR_OTHER;
+            errcode = ERR_SOCKET_RECV_FAILED;
             break;
             ;
         }
@@ -8651,7 +8661,7 @@ errno_t FRRobot::PointTableUpdateLua(const std::string &pointTableName, const st
         }
         else
         {
-            errcode = ERR_OTHER;
+            errcode = ERR_XMLRPC_CMD_FAILED;
             break;
         }
 
@@ -8673,7 +8683,7 @@ errno_t FRRobot::PointTableUpdateLua(const std::string &pointTableName, const st
         }
         else
         {
-            errcode = ERR_OTHER;
+            errcode = ERR_XMLRPC_CMD_FAILED;
             break;
             ;
         }
@@ -9534,7 +9544,7 @@ void FRRobot::SetLoggerLevel(int lvl)
 
 /**
  * @brief 下载文件
- * @param [in] fileType 文件类型    0-lua文件
+ * @param [in] fileType 文件类型    0-lua文件,1-控制器日志，2-所有数据源，3-数据备份包
  * @param [in] fileName 文件名称    “test.lua”
  * @param [in] saveFilePath 保存文件路径    “C：//test/”
  * @return 错误码
@@ -9549,12 +9559,12 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
     if(fileName.length() == 0)
     {
         logger_error("file name can not be empty.");
-        return ERR_OTHER;
+        return ERR_FILE_NAME;
     }
     if(saveFilePath.length() == 0)
     {
         logger_error("file path can not be empty.");
-        return ERR_OTHER;
+        return ERR_SAVE_FILE_PATH_NOT_FOUND;
     }
 
 #ifdef WIN32
@@ -9606,7 +9616,7 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
         return ERR_XMLRPC_CMD_FAILED;
     }
 
-    std::this_thread::sleep_for(chrono::seconds(2));
+    //std::this_thread::sleep_for(chrono::seconds(2));
     // 发起网络连接，客户端;
     fr_network::socket_fd fd = fr_network::get_socket_fd();
     logger_info("get socker fd %d", fd);
@@ -9642,7 +9652,7 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
         c.close();
         return ERR_SOCKET_COM_FAILED;
     }
-    std::this_thread::sleep_for(chrono::seconds(2));
+    //std::this_thread::sleep_for(chrono::seconds(2));
 
     // 超时时间15s；内容上限50M;
     char recv_buf[1024 * 8] = {0};
@@ -9722,12 +9732,12 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
             }
 
             // 找md5值 和 数据长度;
-            if (find_head && (!find_size_md5) && (total_bytes > 12 + 32))
+            if (find_head && (!find_size_md5) && (total_bytes > 14 + 32))
             {
-                string str_tmp = total_buf.substr(4, 8);
+                string str_tmp = total_buf.substr(4, 10);
                 except_bytes = stoi(str_tmp);
 
-                except_md5 = total_buf.substr(12, 32);
+                except_md5 = total_buf.substr(14, 32);
                 find_size_md5 = true;
 
                 logger_info("except bytes is: %d.", except_bytes);
@@ -9744,15 +9754,14 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
         // 检查下载，提取点位表;
         if (download_success_finish == true)
         {
-            point_table = total_buf.substr(12 + 32, total_bytes - 12 - 32 - 4);
+            point_table = total_buf.substr(14 + 32, total_bytes - 14 - 32 - 4);
             errcode = ERR_SUCCESS;
         }
         else
         {
             logger_error("download fail.");
-            errcode = ERR_OTHER;
+            errcode = ERR_DOWN_LOAD_FILE_FAILED;
             break;
-            ;
         }
 
         /* 校验md5值 */
@@ -9765,7 +9774,7 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
         else
         {
             logger_error("except is: %s, compute is: %s.", except_md5.c_str(), compute_md5.c_str());
-            errcode = ERR_OTHER;
+            errcode = ERR_DOWN_LOAD_FILE_CHECK_FAILED;
             break;
         }
 
@@ -9782,7 +9791,7 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
         else
         {
             logger_error("open file fail.");
-            errcode = ERR_OTHER;
+            errcode = ERR_DOWN_LOAD_FILE_WRITE_FAILED;
             input_file.close();
             break;
         }
@@ -9834,7 +9843,7 @@ errno_t FRRobot::LuaDownLoad(std::string fileName, std::string savePath)
     if(fileName.size() == 0)
     {
         logger_error("file name can not be empty.");
-        return ERR_OTHER;
+        return ERR_UPLOAD_FILE_NOT_FOUND;
     }
     std::vector<std::string> _file_name = split(fileName, '.');
     /*upload lua*/
@@ -9863,12 +9872,12 @@ errno_t FRRobot::LuaDownLoad(std::string fileName, std::string savePath)
         else{
             logger_error("execute LuaDownLoadPrepare fail.");
             c.close();
-            return ERR_OTHER;
+            return ERR_XMLRPC_CMD_FAILED;
         }
     }
     else{
         logger_error("you can not download %s, file name should be xxx.lua or xxx.tar.gz", fileName.c_str());
-        errcode = ERR_OTHER;
+        errcode = ERR_FILE_NAME;
     }
 
     errcode = FileDownLoad(0, fileName, savePath);
@@ -9891,7 +9900,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     if (filePath.length() == 0)
     {
         logger_error("file path can not be empty.");
-        return ERR_OTHER;
+        return ERR_FILE_NAME;
     }
 
     int errcode = 0;
@@ -9932,12 +9941,12 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         {
             logger_error("get file size fail, size is: %l.",  file_size);
             c.close();
-            return ERR_OTHER;
+            return ERR_UPLOAD_FILE_ERROR;
         }
     }else{
         logger_error("open file fail, error is: %lu.", GetLastError());
         c.close();
-        return ERR_OTHER;
+        return ERR_UPLOAD_FILE_ERROR;
     }
 #else
     FILE *file_p = fopen(save_path, "rb");
@@ -9945,7 +9954,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     {
         logger_error("open file %s fail.", save_path);
         c.close();
-        return ERR_OTHER;
+        return ERR_UPLOAD_FILE_ERROR;
     }
     fseek(file_p, 0, SEEK_END);
     file_size = ftell(file_p);
@@ -9958,7 +9967,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     {
         logger_error("file size have over max limit: %d", UPLOAD_FILE_MAX_SIZE);
         c.close();
-        return ERR_OTHER;
+        return ERR_FILE_TOO_LARGE;
     }
 
     /* 获取点位表名称 */
@@ -9970,7 +9979,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     memset(path_dup, 0, MAX_FILE_PATH_LENGTH);
     memcpy(path_dup, save_path, MAX_FILE_PATH_LENGTH-1);
     point_table_name.append(basename(path_dup));
-    logger_info("point table name is: %s.", point_table_name.c_str());
+    logger_info("name is: %s.", point_table_name.c_str());
 #endif
 
 
@@ -10040,7 +10049,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         if(total_size > send_buf.max_size())
         {
             logger_error("memory is not enough. max size is: %u, total size is: %l", send_buf.max_size(), total_size);
-            errcode = ERR_OTHER;
+            errcode = ERR_FILE_TOO_LARGE;
             break;
         }
         send_buf.resize(file_size, '\0');
@@ -10049,8 +10058,8 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         ifstream input_file(filePath, std::ios::binary);
         if (!input_file.is_open())
         {
-            logger_error("point table file path is not open.");
-            errcode = ERR_OTHER;
+            logger_error("file path is not open.");
+            errcode = ERR_FILE_OPEN_FAILED;
             break;
         }
 
@@ -10079,7 +10088,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         if ((send_bytes < 0) || (static_cast<unsigned int>(send_bytes) != send_buf_first.length()))
         {
             logger_error("send head %s fail.", send_buf_first.c_str());
-            errcode = ERR_OTHER;
+            errcode = ERR_SOCKET_SEND_FAILED;
             break;
         }
         logger_info("send head end");
@@ -10097,7 +10106,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
                 logger_error("has send bytes %d", total_send_bytes);
                 logger_error("send buf is: %s.", send_buf.c_str()+total_send_bytes);
                 logger_error("send bytes is %d", send_buf.length() - total_send_bytes);
-                errcode = ERR_OTHER;
+                errcode = ERR_SOCKET_SEND_FAILED;
                 send_point_table_success = false;
                 break;
             }
@@ -10118,7 +10127,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         if ((send_bytes < 0 && errno != 0) || (static_cast<unsigned int>(send_bytes) != send_buf_last.length()))
         {
             logger_error("send last buf : %s fail, send bytes %d   errno is %s", send_buf_last.c_str(), send_bytes, strerror(errno));
-            errcode = ERR_OTHER;
+            errcode = ERR_SOCKET_SEND_FAILED;
             break;
         }
         logger_info("send buf tail end");
@@ -10131,7 +10140,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         if (recv_bytes < 0)
         {
             logger_error("recv fail");
-            errcode = ERR_OTHER;
+            errcode = ERR_SOCKET_RECV_FAILED;
             break;
         }
         logger_info("recv %d, %s", recv_bytes, recv_buf);
@@ -10183,7 +10192,7 @@ errno_t FRRobot::LuaUpload(std::string filePath)
         {
             c.close();
             logger_error("format of path is wrong, should be like /home/fd/xxx.tar.gz");
-            return ERR_OTHER;
+            return ERR_FILE_NAME;
         }
         std::string filename = filePath.substr(pos + 1);
 
@@ -10203,8 +10212,8 @@ errno_t FRRobot::LuaUpload(std::string filePath)
             return errcode;
         }else{
             logger_error("execute LuaUpLoadUpdate fail.");
-            c.close();
-            return ERR_OTHER;
+            c.close(); 
+            return ERR_XMLRPC_CMD_FAILED;
         }
     }else{
         logger_error("upload file fail. errcode is: %d.", errcode);
@@ -10229,7 +10238,7 @@ errno_t FRRobot::FileDelete(int fileType, std::string fileName)
     if (fileName.length() == 0)
     {
         logger_error("file path can not be empty.");
-        return ERR_OTHER;
+        return ERR_FILE_NAME;
     }
 
     int errcode = 0;
@@ -15040,7 +15049,7 @@ errno_t FRRobot::SoftwareUpgrade(std::string filePath, bool block)
         else {
             logger_error("execute SoftwareUpgrade fail.");
             c.close();
-            return ERR_OTHER;
+            return ERR_XMLRPC_CMD_FAILED;
         }
     }
     else {
@@ -16305,7 +16314,7 @@ errno_t FRRobot::AxleLuaUpload(std::string filePath)
         if (std::string::npos == pos)
         {
             logger_error("format of path is wrong, should be like /home/fd/xxx.tar.gz");
-            return ERR_OTHER;
+            return ERR_UPLOAD_FILE_NOT_FOUND;
         }
         std::string filename = filePath.substr(pos + 1);
         std::string fileFullName = "/tmp/" + filename;
@@ -17416,6 +17425,336 @@ errno_t FRRobot::CustomCollisionDetectionEnd()
     return errcode;
 }
 
+
+/**
+ * @brief 加速度平滑开启
+ * @param  [in] saveFlag 是否断电保存
+ * @return  错误码
+ */
+errno_t FRRobot::AccSmoothStart(bool saveFlag)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = saveFlag? 1 : 0;
+
+    if (c.execute("AccSmoothStart", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    if ((robot_state_pkg->main_code != 0 || robot_state_pkg->sub_code != 0) && errcode == 0)
+    {
+        errcode = 14;
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief 加速度平滑关闭
+ * @param  [in] saveFlag 是否断电保存
+ * @return  错误码
+ */
+errno_t FRRobot::AccSmoothEnd(bool saveFlag)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = saveFlag ? 1 : 0;
+
+    if (c.execute("AccSmoothEnd", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief  控制器日志下载
+ * @param [in] savePath 保存文件路径"D://zDown/"
+ * @return  错误码
+ */
+errno_t FRRobot::RbLogDownload(std::string savePath)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("RbLogDownloadPrepare", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode) {
+            logger_error("RbLogDownloadPrepare fail.");
+            c.close();
+            return errcode;
+        }
+        logger_info("RbLogDownloadPrepare success.");
+    }
+    else 
+    {
+        logger_error("execute RbLogDownloadPrepare fail.");
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    string fileName = "rblog.tar.gz";
+    errcode = FileDownLoad(1, fileName, savePath);
+    if (errcode != 0)
+    {
+        remove((savePath + "rblog.tar.gz").c_str());
+    }
+    return errcode;
+}
+
+/**
+ * @brief 所有数据源下载
+ * @param [in] savePath 保存文件路径"D://zDown/"
+ * @return  错误码
+ */
+errno_t FRRobot::AllDataSourceDownload(std::string savePath)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("AllDataSourceDownloadPrepare", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode) {
+            logger_error("AllDataSourceDownloadPrepare fail.");
+            c.close();
+            return errcode;
+        }
+        logger_info("AllDataSourceDownloadPrepare success.");
+    }
+    else
+    {
+        logger_error("execute AllDataSourceDownloadPrepare fail.");
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    string fileName = "alldatasource.tar.gz";
+    errcode = FileDownLoad(2, fileName, savePath);
+    if (errcode != 0)
+    {
+        remove((savePath + "alldatasource.tar.gz").c_str());
+    }
+    return errcode;
+}
+
+/**
+ * @brief 数据备份包下载
+ * @param [in] savePath 保存文件路径"D://zDown/"
+ * @return  错误码
+ */
+errno_t FRRobot::DataPackageDownload(std::string savePath)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("DataPackageDownloadPrepare", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode) {
+            logger_error("DataPackageDownloadPrepare fail.");
+            c.close();
+            return errcode;
+        }
+        logger_info("DataPackageDownloadPrepare success.");
+    }
+    else
+    {
+        logger_error("execute DataPackageDownloadPrepare fail.");
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    string fileName = "fr_user_data.tar.gz";
+    errcode = FileDownLoad(3, fileName, savePath);
+    if (errcode != 0)
+    {
+        remove((savePath + "fr_user_data.tar.gz").c_str());
+    }
+    return errcode;
+}
+
+/**
+ * @brief 获取控制箱SN码
+ * @param [out] SNCode 控制箱SN码
+ * @return 错误码
+ */
+errno_t FRRobot::GetRobotSN(std::string& SNCode)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetRobotSN", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 == errcode)
+        {
+            SNCode = (std::string)result[1];
+        }
+        else
+        {
+            logger_error("GetRobotSN fail, errcode is: %d\n", errcode);
+        }
+    }
+    else
+    {
+        errcode = ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 关闭机器人操作系统
+ * @return 错误码
+ */
+errno_t FRRobot::ShutDownRobotOS()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("ShutDownRobotOS", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 传送带通讯输入检测
+ * @param [in] timeout 等待超时时间ms
+ * @return 错误码
+ */
+errno_t FRRobot::ConveyorComDetect(int timeout)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = timeout;
+
+    if (c.execute("ConveyorComDetect", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 传送带通讯输入检测触发
+ * @return 错误码
+ */
+errno_t FRRobot::ConveyorComDetectTrigger()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    static int cnt = 0;
+
+    memset(g_sendbuf, 0, BUFFER_SIZE * sizeof(char));
+    sprintf(g_sendbuf, "/f/bIII%dIII1149III25IIIConveyorComDetectTrigger()III/b/f", cnt);
+    cnt++;
+    is_sendcmd = true;
+
+    logger_info("ConveryComDetectTrigger().");
+    return errcode;
+}
 
 
 /* 根据字符分割字符串 */
