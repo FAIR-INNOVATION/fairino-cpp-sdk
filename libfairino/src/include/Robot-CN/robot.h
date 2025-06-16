@@ -134,6 +134,7 @@ public:
 	 * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
 	 * @param  [in] ovl  速度缩放因子，范围[0~100]
 	 * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+	 * @param  [in] blendMode 过渡方式；0-内切过渡；1-角点过渡
 	 * @param  [in] epos  扩展轴位置，单位mm
 	 * @param  [in] search  0-不焊丝寻位，1-焊丝寻位
 	 * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
@@ -142,8 +143,27 @@ public:
      * @param  [in] speedPercent  允许降速阈值百分比[0-100]，默认10%
 	 * @return  错误码
 	 */
-	errno_t MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int overSpeedStrategy = 0, int speedPercent = 10);
+	errno_t MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int overSpeedStrategy = 0, int speedPercent = 10);
 
+	/**
+	 * @brief  笛卡尔空间直线运动
+	 * @param  [in] joint_pos  目标关节位置,单位deg
+	 * @param  [in] desc_pos   目标笛卡尔位姿
+	 * @param  [in] tool  工具坐标号，范围[0~14]
+	 * @param  [in] user  工件坐标号，范围[0~14]
+	 * @param  [in] vel  速度百分比，范围[0~100]
+	 * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+	 * @param  [in] ovl  速度缩放因子，范围[0~100]
+	 * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+	 * @param  [in] epos  扩展轴位置，单位mm
+	 * @param  [in] search  0-不焊丝寻位，1-焊丝寻位
+	 * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+	 * @param  [in] offset_pos  位姿偏移量
+	 * @param  [in] overSpeedStrategy  超速处理策略，1-标准；2-超速时报错停止；3-自适应降速，默认为0
+	 * @param  [in] speedPercent  允许降速阈值百分比[0-100]，默认10%
+	 * @return  错误码
+	 */
+	errno_t MoveL(JointPos* joint_pos, DescPose* desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos* epos, uint8_t search, uint8_t offset_flag, DescPose* offset_pos, int overSpeedStrategy = 0, int speedPercent = 10);
 	/**
 	 * @brief  笛卡尔空间圆弧运动
 	 * @param  [in] joint_pos_p  路径点关节位置,单位deg
@@ -1863,12 +1883,13 @@ public:
 	 * @param [in] weaveCircleRadio 圆形摆动-回调比率(0-100%)
 	 * @param [in] weaveStationary 摆动位置等待，0-等待时间内位置继续移动；1-等待时间内位置静止
 	 * @param [in] weaveYawAngle 摆动方向方位角(绕摆动Z轴旋转)，单位°
+	 * @param [in] weaveRotAngle 摆动方向侧倾角(绕摆动X轴偏转)，单位°
 	 * @return 错误码
 	 */
 	errno_t WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency, 
                             int weaveIncStayTime, double weaveRange, double weaveLeftRange, 
                             double weaveRightRange, int additionalStayTime, int weaveLeftStayTime, 
-                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle);
+                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle, double weaveRotAngle = 0);
 
 	/**
 	 * @brief 即时设置摆动参数
@@ -2172,9 +2193,10 @@ public:
 	* @param [in] reconnectEnable	通讯断开自动重连使能 0-不使能 1-使能
 	* @param [in] reconnectPeriod	重连周期间隔(ms)
 	* @param [in] reconnectNum	重连次数
+	* @param [in] selfConnect 断电重启是否自动建立连接；0-不建立连接；1-建立连接
 	* @return 错误码
 	*/
-	errno_t ExtDevSetUDPComParam(std::string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum);
+	errno_t ExtDevSetUDPComParam(std::string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum, int selfConnect = 1);
 
 	/**
 	 * @brief 获取UDP扩展轴通讯参数
@@ -2885,17 +2907,18 @@ public:
 
 	 /**
 	  * @brief 设置机器人碰撞检测方法
-	  * @param  [in] method 碰撞检测方法：0-电流模式；1-双编码器；2-电流和双编码器同时开启
+	  * @param [in] method 碰撞检测方法：0-电流模式；1-双编码器；2-电流和双编码器同时开启
+	  * @param [in] thresholdMode 碰撞等级阈值方式；0-碰撞等级固定阈值方式；1-自定义碰撞检测阈值
 	  * @return  错误码
 	  */
-		errno_t SetCollisionDetectionMethod(int method);
+	errno_t SetCollisionDetectionMethod(int method, int thresholdMode = 0);
 
 	 /**
 	  * @brief 设置静态下碰撞检测开始关闭
 	  * @param  [in] status 0-关闭；1-开启
 	  * @return  错误码
 	  */
-		errno_t SetStaticCollisionOnOff(int status);
+	errno_t SetStaticCollisionOnOff(int status);
 
 	 /**
 	  * @brief 关节扭矩功率检测
@@ -3249,9 +3272,10 @@ public:
 	/**
 	* @brief 开始Ptp运动FIR滤波
 	* @param [in] maxAcc 最大加速度极值(deg/s2)
+	* @param [in] maxJek 统一关节急动度极值(deg/s3)
 	* @return 错误码
 	*/
-	errno_t PtpFIRPlanningStart(double maxAcc);
+	errno_t PtpFIRPlanningStart(double maxAcc, double maxJek = 1000);
 
 	/**
 	* @brief 关闭Ptp运动FIR滤波
@@ -3380,10 +3404,13 @@ public:
 
 	/**
 	 * @brief 摆动渐变开始
-	 * @param [in] weaveNum 摆动编号
+	 * @param [in] weaveChangeFlag 1-变摆动参数；2-变摆动参数+焊接速度
+	 * @param [in] weaveNum 摆动编号 
+	 * @param [in] velStart 焊接开始速度，(cm/min)
+	 * @param [in] velEnd 焊接结束速度，(cm/min)
 	 * @return 错误码
 	 */
-	errno_t WeaveChangeStart(int weaveNum);
+	errno_t WeaveChangeStart(int weaveChangeFlag, int weaveNum, double velStart, double velEnd);
 
 	/**
 	 * @brief 摆动渐变结束
@@ -3487,6 +3514,90 @@ public:
 	 * @return 错误码
 	 */
 	errno_t ConveyorComDetectTrigger();
+
+	/**
+	 * @brief 电弧跟踪焊机电流反馈AI通道选择
+	 * @param [in]  channel 通道；0-扩展AI0；1-扩展AI1；2-扩展AI2；3-扩展AI3；4-控制箱AI0；5-控制箱AI1
+	 * @return 错误码
+	 */
+	errno_t ArcWeldTraceAIChannelCurrent(int channel);
+
+	/**
+	 * @brief 电弧跟踪焊机电压反馈AI通道选择
+	 * @param [in]  channel 通道；0-扩展AI0；1-扩展AI1；2-扩展AI2；3-扩展AI3；4-控制箱AI0；5-控制箱AI1
+	 * @return 错误码
+	 */
+	errno_t ArcWeldTraceAIChannelVoltage(int channel);
+
+	/**
+	 * @brief 电弧跟踪焊机电流反馈转换参数
+	 * @param [in] AILow AI通道下限，默认值0V，范围[0-10V]
+	 * @param [in] AIHigh AI通道上限，默认值10V，范围[0-10V]
+	 * @param [in] currentLow AI通道下限对应焊机电流值，默认值0V，范围[0-200V]
+	 * @param [in] currentHigh AI通道上限对应焊机电流值，默认值100V，范围[0-200V]
+	 * @return 错误码
+	 */
+	errno_t ArcWeldTraceCurrentPara(float AILow, float AIHigh, float currentLow, float currentHigh);
+
+	/**
+	 * @brief 电弧跟踪焊机电压反馈转换参数
+	 * @param [in] AILow AI通道下限，默认值0V，范围[0-10V]
+	 * @param [in] AIHigh AI通道上限，默认值10V，范围[0-10V]
+	 * @param [in] voltageLow AI通道下限对应焊机电压值，默认值0V，范围[0-200V]
+	 * @param [in] voltageHigh AI通道上限对应焊机电压值，默认值100V，范围[0-200V]
+	 * @return 错误码
+	 */
+	errno_t ArcWeldTraceVoltagePara(float AILow, float AIHigh, float voltageLow, float voltageHigh);
+
+	/**
+	 * @brief 设置焊接电压渐变开始
+	 * @param [in] IOType 控制类型；0-控制箱IO；1-数字通信协议(UDP);2-数字通信协议(ModbusTCP)
+	 * @param [in] voltageStart 起始焊接电压(V)
+	 * @param [in] voltageEnd 终止焊接电压(V)
+	 * @param [in] AOIndex 控制箱AO端口号(0-1)
+	 * @param [in] blend 是否平滑 0-不平滑；1-平滑
+	 * @return 错误码
+	 */
+	errno_t WeldingSetVoltageGradualChangeStart(int IOType, double voltageStart, double voltageEnd, int AOIndex, int blend);
+
+	/**
+	 * @brief 设置焊接电压渐变结束
+	 * @return 错误码
+	 */
+	errno_t WeldingSetVoltageGradualChangeEnd();
+
+	/**
+	 * @brief 设置焊接电流渐变开始
+	 * @param [in] IOType 控制类型；0-控制箱IO；1-数字通信协议(UDP);2-数字通信协议(ModbusTCP)
+	 * @param [in] voltageStart 起始焊接电流(A)
+	 * @param [in] voltageEnd 终止焊接电流(A)
+	 * @param [in] AOIndex 控制箱AO端口号(0-1)
+	 * @param [in] blend 是否平滑 0-不平滑；1-平滑
+	 * @return 错误码
+	 */
+	errno_t WeldingSetCurrentGradualChangeStart(int IOType, double currentStart, double currentEnd, int AOIndex, int blend);
+
+	/**
+	 * @brief 设置焊接电流渐变结束
+	 * @return 错误码
+	 */
+	errno_t WeldingSetCurrentGradualChangeEnd();
+
+	/**
+	 * @brief 获取SmartTool按钮状态
+	 * @param [out] state SmartTool手柄按钮状态;(bit0:0-通信正常；1-通信掉线；bit1-撤销操作；bit2-清空程序；
+	bit3-A键；bit4-B键；bit5-C键；bit6-D键；bit7-E键；bit8-IO键；bit9-手自动；bit10开始)
+	 * @return 错误码
+	 */
+	errno_t GetSmarttoolBtnState(int& state);
+
+	/**
+	 * @brief 获取扩展轴坐标系
+	 * @param [out] coord 扩展轴坐标系
+	 * @return 错误码
+	 */
+	errno_t ExtAxisGetCoord(DescPose& coord);
+
 
 	/**
 	* @brief  设置与机器人通讯重连参数

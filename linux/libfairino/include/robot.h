@@ -134,13 +134,33 @@ public:
     *@param  [in] acc  Acceleration percentage, range [0~100], not open for now
     *@param  [in] ovl  Velocity scaling factor, range[0~100]
     *@param  [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm    
-    *@param  [in] epos  Position of expansion shaft, unit: mm
+    *@param  [in] blendMode transition mode; 0- Internal cutting transition 1- Corner transition
+	*@param  [in] epos  Position of expansion shaft, unit: mm
     *@param  [in] search  0- no wire seeking, 1- wire seeking
     *@param  [in] offset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
     *@param  [in] offset_pos  The pose offset
     *@return  Error code
 	 */	
-	errno_t MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int overSpeedStrategy = 0, int speedPercent = 10);
+	errno_t MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int overSpeedStrategy = 0, int speedPercent = 10);
+
+	/**
+	*@brief  Rectilinear motion in Cartesian space
+	*@param  [in] joint_pos  Target joint location, unit: deg
+	*@param  [in] desc_pos   Target Cartesian position
+	*@param  [in] tool  Tool coordinate number, range [0~14]
+	*@param  [in] user  Workpiece coordinate number, range [0~14]
+	*@param  [in] vel  Percentage of speed, range [0~100]
+	*@param  [in] acc  Acceleration percentage, range [0~100], not open for now
+	*@param  [in] ovl  Velocity scaling factor, range[0~100]
+	*@param  [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm
+	*@param  [in] epos  Position of expansion shaft, unit: mm
+	*@param  [in] search  0- no wire seeking, 1- wire seeking
+	*@param  [in] offset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
+	*@param  [in] offset_pos  The pose offset
+	*@return  Error code
+	*/
+	errno_t MoveL(JointPos* joint_pos, DescPose* desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos* epos, uint8_t search, uint8_t offset_flag, DescPose* offset_pos, int overSpeedStrategy = 0, int speedPercent = 10);
+
 
 	/**
     *@brief  Circular arc motion in Cartesian space
@@ -1857,12 +1877,14 @@ public:
 	 * @param [in] weaveRightStayTime weave right residence time(ms)
 	 * @param [in] weaveCircleRadio Circular wiggle-pullback ratio(0-100%)
 	 * @param [in] weaveStationary weave position wait, 0- position continue to move within the waiting time; 1- The position is stationary during the waiting time
+	 * @param [in] weaveYawAngle Swing direction azimuth Angle (rotation around the z-axis of swing), unit °
+	 * @param [in] weaveRotAngle Swing direction lateral Angle (deflection around the X-axis of the swing), unit °
 	 * @return Error code
 	 */
 	errno_t WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency, 
                             int weaveIncStayTime, double weaveRange, double weaveLeftRange, 
                             double weaveRightRange, int additionalStayTime, int weaveLeftStayTime, 
-                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle);
+                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle, double weaveRotAngle = 0);
 
 	/**
 	 * @brief Set weave parameters in real time
@@ -2159,9 +2181,10 @@ public:
 	* @param [in] reconnectEnable	 Automatic reconnection when communication is disconnected Enable;0-Disable, 1-Enable
 	* @param [in] reconnectPeriod	 Reconnection period(ms)
 	* @param [in] reconnectNum Reconnection times
+	* @param [in] selfConnect Whether the connection is automatically established after restarting the robot
 	* @return error code
 	*/
-	errno_t ExtDevSetUDPComParam(std::string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum);
+	errno_t ExtDevSetUDPComParam(std::string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum, int selfConnect);
 
 	/**
 	* @brief Get the UDP extension axis communication parameter configuration
@@ -2861,9 +2884,10 @@ public:
 	 /**
 	  * @brief sets the collision detection method of the robot
 	  * @param [in] method Collision detection method: 0- current mode; 1- Dual encoder; 2- Current and dual encoder turn on simultaneously
+	  * @param [in] thresholdMode Collision level threshold method 0-Collision level fixed threshold mode 1- Customize collision detection thresholds
 	  * @return  error code
 	  */
-		errno_t SetCollisionDetectionMethod(int method);
+		errno_t SetCollisionDetectionMethod(int method, int thresholdMode = 0);
 
 	 /**
 	  * @brief Indicates that collision detection is disabled in static mode
@@ -3224,9 +3248,10 @@ public:
 	/**
 	* @brief Start Ptp motion FIR filtering
 	* @param [in] maxAcc Maximum acceleration(deg/s2)
+	* @param [in] maxJek Unify the extreme values of joint urgency (deg/s3)
 	* @return error code
 	*/
-	errno_t PtpFIRPlanningStart(double maxAcc);
+	errno_t PtpFIRPlanningStart(double maxAcc, double maxJek = 1000);
 
 	/**
 	* @brief Stop Ptp motion FIR filtering
@@ -3355,10 +3380,13 @@ public:
 
 	/**
 	 * @brief Wobble gradient begins
-	 * @param [in] weaveNum Swing number
+	 * @param [in] weaveChangeFlag 1- Variable swing parameters; 2- Variable swing parameters + welding speed
+	 * @param [in] weaveNum swing number
+	 * @param [in] velStart welding start speed, (cm/min)
+	 * @param [in] velEnd welding end speed, (cm/min)
 	 * @return Error code
 	 */
-	errno_t WeaveChangeStart(int weaveNum);
+	errno_t WeaveChangeStart(int weaveChangeFlag, int weaveNum, double velStart, double velEnd);
 
 	/**
 	 * @brief swing gradient ends
@@ -3462,6 +3490,89 @@ public:
 	 * @return Error code
 	 */
 	errno_t ConveyorComDetectTrigger();
+
+	/**
+	 * @brief Selection of AI channels for current feedback in arc tracking
+	 * @param [in]  channel channels；0-Aux AI0；1-Aux AI1；2-Aux AI2；3-Aux AI3；4-Control Box AI0；5-Control Box AI1
+	 * @return Error code
+	 */
+	errno_t ArcWeldTraceAIChannelCurrent(int channel);
+
+	/**
+	 * @brief Selection of AI channels for voltage feedback in arc tracking
+	 * @param [in]  channel channels；0-Aux AI0；1-Aux AI1；2-Aux AI2；3-Aux AI3；4-Control Box AI0；5-Control Box AI1
+	 * @return Error code
+	 */
+	errno_t ArcWeldTraceAIChannelVoltage(int channel);
+
+	/**
+	 * @brief Current feedback conversion parameters of arc tracking
+     * @param [in] AILow AI channel lower limit, default value 0V, range [0-10V]
+     * @param [in] AIHigh AI channel upper limit, default value 10V, range [0-10V]
+     * @param [in] The lower limit of the currentLow AI channel corresponds to the current value of the welding machine. The default value is 0V, and the range is [0-200V]
+	 * @param [in] The upper limit of the currentLow AI channel corresponds to the current value of the welding machine. The default value is 0V, and the range is [0-200V]
+	 * @return Error code
+	 */
+	errno_t ArcWeldTraceCurrentPara(float AILow, float AIHigh, float currentLow, float currentHigh);
+
+	/**
+	 * @brief Voltage feedback Conversion Parameters of Arc Tracking Welding machine
+	 * @param [in] AILow AI channel lower limit, default value 0V, range [0-10V]
+	 * @param [in] AIHigh AI channel upper limit, default value 10V, range [0-10V]
+	 * @param [in] The lower limit of the voltageLow AI channel corresponds to the welding machine voltage value. The default value is 0V, and the range is [0-200V]
+	 * @param [in] The upper limit of the voltageHigh AI channel corresponds to the voltage value of the welding machine. The default value is 100V, and the range is [0-200V]
+	 * @return Error code
+	 */
+	errno_t ArcWeldTraceVoltagePara(float AILow, float AIHigh, float voltageLow, float voltageHigh);
+
+	/**
+	 * @brief Set the welding voltage to start gradually
+	 * @param [in] IOType control type; 0- Control Box IO 1- Digital Communication Protocol (UDP) 2- Digital Communication Protocol (ModbusTCP)
+	 * @param [in] voltageStart Initial Welding Voltage (V)
+	 * @param [in] voltageEnd Stop welding Voltage (V)
+	 * @param [in] AOIndex control box AO port number (0-1)
+	 * @param [in] Is blend smooth? 0- Not smooth; 1- Smooth
+     * @return Error code
+	 */
+	errno_t WeldingSetVoltageGradualChangeStart(int IOType, double voltageStart, double voltageEnd, int AOIndex, int blend);
+
+	/**
+	 * @brief Set the welding voltage gradient to end
+	 * @return Error code
+	 */
+	errno_t WeldingSetVoltageGradualChangeEnd();
+
+	/**
+	 * @brief Set the welding current to start gradually
+	 * @param [in] IOType control type; 0- Control Box IO 1- Digital Communication Protocol (UDP) 2- Digital Communication Protocol (ModbusTCP)
+	 * @param [in] voltageStart Initial welding Current (A)
+	 * @param [in] voltageEnd Stop welding current (A)
+	 * @param [in] AOIndex control box AO port number (0-1)
+	 * @param [in] Is blend smooth? 0- Not smooth; 1- Smooth
+	 * @return Error code
+	 */
+	errno_t WeldingSetCurrentGradualChangeStart(int IOType, double currentStart, double currentEnd, int AOIndex, int blend);
+
+	/**
+	 * @brief Set the welding current gradient to end
+	 * @return Error code
+	 */
+	errno_t WeldingSetCurrentGradualChangeEnd();
+
+	/**
+	* @brief Get the status of the SmartTool button
+    * @param [out] state SmartTool handle button status; (bit0:0- Communication is normal; 1- Communication disconnection; bit1- Undo; bit2- Clear the program;
+      bit3-A key; bit4-B key; bit5-C key; bit6-D key; bit7-E key; bit8-IO key; bit9- Manual automatic; bit10-Start
+    * @return error code
+    */
+	errno_t GetSmarttoolBtnState(int& state);
+
+	/**
+	 * @brief Get the extended axis coordinate system
+	 * @param [out] coord extended axis coordinate system
+	 * @return error code
+	 */
+	errno_t ExtAxisGetCoord(DescPose& coord);
 
 	/**
 	* @brief  Set communication reconnection parameters with the robot

@@ -300,6 +300,8 @@ typedef struct _ROBOT_STATE_PKG
 	uint8_t gripperRotSpeed;			//Percentage of the current rotation speed of the rotary clamp
 	uint8_t gripperRotTorque;			//Percentage of the current rotating torque of the rotating clamp
 	WELDING_BREAKOFF_STATE weldingBreakOffState;  //º¸½ÓÖÐ¶Ï×´Ì¬
+	double jt_tgt_tor[6];               //target joint torque
+	int smartToolState;                 //SmartTool btn status  
 	uint16_t check_sum;					//check sum
 }ROBOT_STATE_PKG;
 

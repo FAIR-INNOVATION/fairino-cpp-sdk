@@ -32,7 +32,7 @@
     #include <Shlwapi.h>
     #include <WS2tcpip.h>
 
-    #define SDK_VERSION "SDK V2.2"
+    #define SDK_VERSION "SDK V2.1"
     #pragma comment(lib, "Shlwapi.lib")
 #else
     #include <stdlib.h>
@@ -42,11 +42,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "2"
-    #define SDK_VERSION_RELEASE "1"
+    #define SDK_VERSION_RELEASE "2"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.2.1.0-robot v3.8.1"
+#define SDK_RELEASE "SDK V2.2.2.0-robot v3.8.2"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -165,7 +165,7 @@ void FRRobot::RobotInstCmdSendRoutineThread()
         }
         else
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            Sleep(1);
         }
     }
 
@@ -259,8 +259,7 @@ void FRRobot::RobotTaskRoutineThread()
             }
         }
 
-        // Sleep(8);
-        std::this_thread::sleep_for(std::chrono::milliseconds(8));
+        Sleep(8);
     }
 
     s_isFirst = 0;
@@ -297,7 +296,7 @@ errno_t FRRobot::RPC(const char *ip)
     thread cmdsendThread(&FRRobot::RobotInstCmdSendRoutineThread, this);
     cmdsendThread.detach();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    Sleep(2000);
     if (IsSockError())
     {
         logger_info("RPC Fail.");
@@ -310,7 +309,7 @@ errno_t FRRobot::RPC(const char *ip)
     thread taskRoutineThread(&FRRobot::RobotTaskRoutineThread, this);
     taskRoutineThread.detach();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    Sleep(1000);
     logger_info("RPC SUCCESS.");
     rpc_done = true;
     return g_sock_com_err;
@@ -327,7 +326,7 @@ errno_t FRRobot::CloseRPC()
     robot_realstate_exit = 1;
     robot_task_exit = 1;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    Sleep(500);
 
     if (rtClient != nullptr)
     {
@@ -732,6 +731,7 @@ errno_t FRRobot::MoveJ(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
  * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
  * @param  [in] ovl  速度缩放因子，范围[0~100]
  * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+ * @param  [in] blendMode 过渡方式；0-内切过渡；1-角点过渡
  * @param  [in] epos  扩展轴位置，单位mm
  * @param  [in] search  0-不焊丝寻位，1-焊丝寻位
  * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
@@ -740,7 +740,7 @@ errno_t FRRobot::MoveJ(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
  * @param  [in] speedPercent  允许降速阈值百分比[0-100]，默认10%
  * @return  错误码
  */
-errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int overSpeedStrategy, int speedPercent)
+errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int overSpeedStrategy, int speedPercent)
 {
     if (IsSockError())
     {
@@ -798,18 +798,148 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
     param[5] = acc;
     param[6] = ovl;
     param[7] = blendR;
-    param[8][0] = epos->ePos[0];
-    param[8][1] = epos->ePos[1];
-    param[8][2] = epos->ePos[2];
-    param[8][3] = epos->ePos[3];
-    param[9] = search;
-    param[10] = offset_flag;
-    param[11][0] = offset_pos->tran.x;
-    param[11][1] = offset_pos->tran.y;
-    param[11][2] = offset_pos->tran.z;
-    param[11][3] = offset_pos->rpy.rx;
-    param[11][4] = offset_pos->rpy.ry;
-    param[11][5] = offset_pos->rpy.rz;
+    param[8] = blendMode;
+    param[9][0] = epos->ePos[0];
+    param[9][1] = epos->ePos[1];
+    param[9][2] = epos->ePos[2];
+    param[9][3] = epos->ePos[3];
+    param[10] = search;
+    param[11] = offset_flag;
+    param[12][0] = offset_pos->tran.x;
+    param[12][1] = offset_pos->tran.y;
+    param[12][2] = offset_pos->tran.z;
+    param[12][3] = offset_pos->rpy.rx;
+    param[12][4] = offset_pos->rpy.ry;
+    param[12][5] = offset_pos->rpy.rz;
+
+    if (c.execute("MoveL", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    if (overSpeedStrategy > 1)
+    {
+        XmlRpcValue overSpeedProtectParam, overSpeedProtectResult;
+        if (c.execute("JointOverSpeedProtectEnd", overSpeedProtectParam, overSpeedProtectResult))
+        {
+            errcode = int(overSpeedProtectResult);
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        if (errcode != 0)
+        {
+            return errcode;
+        }
+    }
+
+    c.close();
+
+    if ((robot_state_pkg->main_code != 0 || robot_state_pkg->sub_code != 0) && errcode == 0)
+    {
+        errcode = 14;
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief  笛卡尔空间直线运动
+ * @param  [in] joint_pos  目标关节位置,单位deg
+ * @param  [in] desc_pos   目标笛卡尔位姿
+ * @param  [in] tool  工具坐标号，范围[1~15]
+ * @param  [in] user  工件坐标号，范围[1~15]
+ * @param  [in] vel  速度百分比，范围[0~100]
+ * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+ * @param  [in] epos  扩展轴位置，单位mm
+ * @param  [in] search  0-不焊丝寻位，1-焊丝寻位
+ * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+ * @param  [in] offset_pos  位姿偏移量
+ * @param  [in] overSpeedStrategy  超速处理策略，1-标准；2-超速时报错停止；3-自适应降速，默认为0
+ * @param  [in] speedPercent  允许降速阈值百分比[0-100]，默认10%
+ * @return  错误码
+ */
+errno_t FRRobot::MoveL(JointPos* joint_pos, DescPose* desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos* epos, uint8_t search, uint8_t offset_flag, DescPose* offset_pos, int overSpeedStrategy, int speedPercent)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    int errcode = 0;
+
+    XmlRpcClient c(serverUrl, 20003);
+
+    if (overSpeedStrategy > 1)
+    {
+        XmlRpcValue overSpeedProtectParam, overSpeedProtectResult;
+        overSpeedProtectParam[0] = overSpeedStrategy;
+        overSpeedProtectParam[1] = speedPercent;
+        if (c.execute("JointOverSpeedProtectStart", overSpeedProtectParam, overSpeedProtectResult))
+        {
+            errcode = int(overSpeedProtectResult);
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        if (errcode != 0)
+        {
+            c.close();
+            return errcode;
+        }
+    }
+
+    XmlRpcValue param, result;
+
+    param[0][0] = joint_pos->jPos[0];
+    param[0][1] = joint_pos->jPos[1];
+    param[0][2] = joint_pos->jPos[2];
+    param[0][3] = joint_pos->jPos[3];
+    param[0][4] = joint_pos->jPos[4];
+    param[0][5] = joint_pos->jPos[5];
+    param[1][0] = desc_pos->tran.x;
+    param[1][1] = desc_pos->tran.y;
+    param[1][2] = desc_pos->tran.z;
+    param[1][3] = desc_pos->rpy.rx;
+    param[1][4] = desc_pos->rpy.ry;
+    param[1][5] = desc_pos->rpy.rz;
+    param[2] = tool;
+    param[3] = user;
+    param[4] = vel;
+    param[5] = acc;
+    param[6] = ovl;
+    param[7] = blendR;
+    param[8] = 0;
+    param[9][0] = epos->ePos[0];
+    param[9][1] = epos->ePos[1];
+    param[9][2] = epos->ePos[2];
+    param[9][3] = epos->ePos[3];
+    param[10] = search;
+    param[11] = offset_flag;
+    param[12][0] = offset_pos->tran.x;
+    param[12][1] = offset_pos->tran.y;
+    param[12][2] = offset_pos->tran.z;
+    param[12][3] = offset_pos->rpy.rx;
+    param[12][4] = offset_pos->rpy.ry;
+    param[12][5] = offset_pos->rpy.rz;
 
     if (c.execute("MoveL", param, result))
     {
@@ -8151,7 +8281,7 @@ errno_t FRRobot::PointTableDownLoad(const std::string &pointTableName, const std
         return ERR_XMLRPC_CMD_FAILED;
     }
 
-    std::this_thread::sleep_for(chrono::seconds(2));
+    Sleep(2000);
     // 发起网络连接，客户端;
     fr_network::socket_fd fd = fr_network::get_socket_fd();
 
@@ -8186,7 +8316,7 @@ errno_t FRRobot::PointTableDownLoad(const std::string &pointTableName, const std
         c.close();
         return ERR_SOCKET_COM_FAILED;
     }
-    std::this_thread::sleep_for(chrono::seconds(2));
+    Sleep(2000);
 
     // 超时时间10s；内容上限2M;
     char recv_buf[1024 * 8] = {0};
@@ -8485,7 +8615,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
         c.close();
         return ERR_XMLRPC_CMD_FAILED;
     }
-    std::this_thread::sleep_for(chrono::seconds(2));
+    Sleep(2000);
 
     // 发起网络连接;
     fr_network::socket_fd fd = fr_network::get_socket_fd();
@@ -8520,7 +8650,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
         c.close();
         return ERR_SOCKET_COM_FAILED;
     }
-    std::this_thread::sleep_for(chrono::seconds(2));
+    Sleep(2000);
 
     // 发送 send_buf_first, send_buf, send_buf_last;
     do
@@ -8665,7 +8795,7 @@ errno_t FRRobot::PointTableUpdateLua(const std::string &pointTableName, const st
             break;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        Sleep(2000);
         // 再更新;
         param.clear();
         result.clear();
@@ -9016,7 +9146,7 @@ errno_t FRRobot::WeldingSetVoltage(int ioType, double voltage, int AOIndex, int 
 errno_t FRRobot::WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency, 
                             int weaveIncStayTime, double weaveRange, double weaveLeftRange, 
                             double weaveRightRange, int additionalStayTime, int weaveLeftStayTime, 
-                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle)
+                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle, double weaveRotAngle)
 {
     if (IsSockError())
     {
@@ -9039,6 +9169,7 @@ errno_t FRRobot::WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency
     param[10] = weaveCircleRadio;
     param[11] = weaveStationary;
     param[12] = weaveYawAngle;
+    param[13] = weaveRotAngle;
 
     if (c.execute("WeaveSetPara", param, result))
     {
@@ -9351,7 +9482,7 @@ errno_t FRRobot::SegmentWeldStart(DescPose* startDesePos, DescPose* endDesePos, 
                     int tmpTool = 0;
                     int tmpUser = 0;
                     GetSegmentWeldPoint(*startDesePos, *endDesePos, distance, tmpWeldDesc, tmpJoint, tmpTool, tmpUser);
-                    errcode = MoveL(&tmpJoint, &tmpWeldDesc, tmpTool, tmpUser, vel, acc, ovl, blendR, epos, search, 0, &endOffPose);
+                    errcode = MoveL(&tmpJoint, &tmpWeldDesc, tmpTool, tmpUser, vel, acc, ovl, blendR, 0, epos, search, 0, &endOffPose);
                     if(0 != errcode)
                     {
                         ARCEnd(weldIOType, arcNum, weldTimeout);
@@ -9406,7 +9537,7 @@ errno_t FRRobot::SegmentWeldStart(DescPose* startDesePos, DescPose* endDesePos, 
                     int tmpTool = 0;
                     int tmpUser = 0;
                     GetSegmentWeldPoint(*startDesePos, *endDesePos, weldNum* weldLength + noWeldNum * noWeldLength, tmpWeldDesc, tmpJoint, tmpTool, tmpUser);
-                    errcode = MoveL(&tmpJoint, &tmpWeldDesc, tmpTool, tmpUser, vel, acc, ovl, blendR, epos, search, 0, &endOffPose);
+                    errcode = MoveL(&tmpJoint, &tmpWeldDesc, tmpTool, tmpUser, vel, acc, ovl, blendR, 0, epos, search, 0, &endOffPose);
                     if(0 != errcode)
                     {
                         ARCEnd(weldIOType, arcNum, weldTimeout);
@@ -9447,7 +9578,7 @@ errno_t FRRobot::SegmentWeldStart(DescPose* startDesePos, DescPose* endDesePos, 
                     int tmpTool = 0;
                     int tmpUser = 0;
                     GetSegmentWeldPoint(*startDesePos, *endDesePos, distance, tmpWeldDesc, tmpJoint, tmpTool, tmpUser);
-                    errcode = MoveL(&tmpJoint, &tmpWeldDesc, tmpTool, tmpUser, vel, acc, ovl, blendR, epos, search, 0, &endOffPose);
+                    errcode = MoveL(&tmpJoint, &tmpWeldDesc, tmpTool, tmpUser, vel, acc, ovl, blendR, 0, epos, search, 0, &endOffPose);
                     if(0 != errcode)
                     {
                         logger_error("execute moveL fail %d.", errcode);
@@ -9462,7 +9593,7 @@ errno_t FRRobot::SegmentWeldStart(DescPose* startDesePos, DescPose* endDesePos, 
                     int tmpTool = 0;
                     int tmpUser = 0;
                     GetSegmentWeldPoint(*startDesePos, *endDesePos, weldNum* weldLength + noWeldNum * noWeldLength, tmpWeldDesc, tmpJoint, tmpTool, tmpUser);
-                    errcode = MoveL(&tmpJoint, &tmpWeldDesc, tmpTool, tmpUser, vel, acc, ovl, blendR, epos, search, 0, &endOffPose);
+                    errcode = MoveL(&tmpJoint, &tmpWeldDesc, tmpTool, tmpUser, vel, acc, ovl, blendR, 0, epos, search, 0, &endOffPose);
                     if(0 != errcode)
                     {
                         logger_error("execute movel fail %d.", errcode);
@@ -9616,7 +9747,6 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
         return ERR_XMLRPC_CMD_FAILED;
     }
 
-    //std::this_thread::sleep_for(chrono::seconds(2));
     // 发起网络连接，客户端;
     fr_network::socket_fd fd = fr_network::get_socket_fd();
     logger_info("get socker fd %d", fd);
@@ -9652,7 +9782,6 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
         c.close();
         return ERR_SOCKET_COM_FAILED;
     }
-    //std::this_thread::sleep_for(chrono::seconds(2));
 
     // 超时时间15s；内容上限50M;
     char recv_buf[1024 * 8] = {0};
@@ -10015,7 +10144,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         fr_network::close_fd(fd);
         return ERR_OTHER;
     }
-    int timeout = 4000;
+    int timeout = 400000;
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(int));
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(int));
 #else
@@ -10026,7 +10155,8 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof tv);
 #endif
-    std::this_thread::sleep_for(std::chrono::microseconds(30));
+
+    Sleep(30);
      /* 发起网络连接 */
     errcode = fr_network::connect(fd, robot_ip, UPLOAD_POINT_TABLE_PORT);
     logger_info("connect error code is: %d.", errcode);
@@ -10110,6 +10240,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
                 send_point_table_success = false;
                 break;
             }
+
             total_send_bytes += send_bytes;
             fileUploadPercent = total_send_bytes * 100.0 / send_buf.length();
         }
@@ -11133,9 +11264,10 @@ errno_t FRRobot::MoveToolAOStop()
 * @param [in] reconnectEnable	通讯断开自动重连使能 0-不使能 1-使能
 * @param [in] reconnectPeriod	重连周期间隔(ms)
 * @param [in] reconnectNum	重连次数
+* @param [in] selfConnect 断电重启是否自动建立连接；0-不建立连接；1-建立连接
 * @return 错误码
 */
-errno_t FRRobot::ExtDevSetUDPComParam(string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum)
+errno_t FRRobot::ExtDevSetUDPComParam(string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum, int selfConnect)
 {
     if (IsSockError())
     {
@@ -11154,6 +11286,7 @@ errno_t FRRobot::ExtDevSetUDPComParam(string ip, int port, int period, int lossP
     param[6] = reconnectEnable;
     param[7] = reconnectPeriod;
     param[8] = reconnectNum;
+    param[9] = selfConnect;
 
     if (c.execute("ExtDevSetUDPComParam", param, result))
     {
@@ -12467,7 +12600,7 @@ errno_t FRRobot::ExtAxisSyncMoveL(JointPos joint_pos, DescPose desc_pos, int too
     }
 
     c.close();
-    errcode = MoveL(&joint_pos, &desc_pos, tool, user, vel, acc, ovl, blendR, &epos, 0, offset_flag, &offset_pos);
+    errcode = MoveL(&joint_pos, &desc_pos, tool, user, vel, acc, ovl, blendR, 0, &epos, 0, offset_flag, &offset_pos);
     return errcode;
 }
 
@@ -14443,10 +14576,11 @@ errno_t FRRobot::SetExtDIWeldBreakOffRecover(int reWeldDINum, int abortWeldDINum
 
 /**
  * @brief 设置机器人碰撞检测方法
- * @param  [in] method 碰撞检测方法：0-电流模式；1-双编码器；2-电流和双编码器同时开启
- * @return  错误码
+ * @param [in] method 碰撞检测方法：0-电流模式；1-双编码器；2-电流和双编码器同时开启
+ * @param [in] thresholdMode 碰撞等级阈值方式；0-碰撞等级固定阈值方式；1-自定义碰撞检测阈值
+ * @return 错误码
  */
-errno_t FRRobot::SetCollisionDetectionMethod(int method)
+errno_t FRRobot::SetCollisionDetectionMethod(int method, int thresholdMode)
 {
     if (IsSockError())
     {
@@ -14457,6 +14591,7 @@ errno_t FRRobot::SetCollisionDetectionMethod(int method)
     XmlRpcValue param, result;
 
     param[0] = method;
+    param[1] = thresholdMode;
 
     if (c.execute("SetCollisionDetectionMethod", param, result))
     {
@@ -16428,9 +16563,10 @@ errno_t FRRobot::SingularAvoidEnd()
 /**
 * @brief 开始Ptp运动FIR滤波
 * @param [in] maxAcc 最大加速度极值(deg/s2)
+* @param [in] maxJek 统一关节急动度极值(deg/s3)
 * @return 错误码
 */
-errno_t FRRobot::PtpFIRPlanningStart(double maxAcc)
+errno_t FRRobot::PtpFIRPlanningStart(double maxAcc, double maxJek)
 {
     if (IsSockError())
     {
@@ -16441,6 +16577,7 @@ errno_t FRRobot::PtpFIRPlanningStart(double maxAcc)
     XmlRpcValue param, result;
 
     param[0] = maxAcc;
+    param[1] = maxJek;
 
     if (c.execute("PtpFIRPlanningStart", param, result))
     {
@@ -17184,10 +17321,13 @@ errno_t FRRobot::LaserTrackingSearchStop()
 
 /**
  * @brief  摆动渐变开始
- * @param  [in] weaveNum 摆动编号
+ * @param [in] weaveChangeFlag 1-变摆动参数；2-变摆动参数+焊接速度
+ * @param [in] weaveNum 摆动编号 
+ * @param [in] velStart 焊接开始速度，(cm/min)
+ * @param [in] velEnd 焊接结束速度，(cm/min)
  * @return  错误码
  */
-errno_t FRRobot::WeaveChangeStart(int weaveNum)
+errno_t FRRobot::WeaveChangeStart(int weaveChangeFlag, int weaveNum, double velStart, double velEnd)
 {
     if (IsSockError())
     {
@@ -17197,7 +17337,10 @@ errno_t FRRobot::WeaveChangeStart(int weaveNum)
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
 
-    param[0] = weaveNum;
+    param[0] = weaveChangeFlag;
+    param[1] = weaveNum;
+    param[2] = velStart;
+    param[3] = velEnd;
 
     if (c.execute("WeaveChangeStart", param, result))
     {
@@ -17651,7 +17794,7 @@ errno_t FRRobot::GetRobotSN(std::string& SNCode)
         errcode = int(result[0]);
         if (0 == errcode)
         {
-            SNCode = (std::string)result[1];
+            SNCode = (string)result[1];
         }
         else
         {
@@ -17748,13 +17891,384 @@ errno_t FRRobot::ConveyorComDetectTrigger()
     static int cnt = 0;
 
     memset(g_sendbuf, 0, BUFFER_SIZE * sizeof(char));
-    sprintf(g_sendbuf, "/f/bIII%dIII1149III25IIIConveyorComDetectTrigger()III/b/f", cnt);
+    sprintf(g_sendbuf, "/f/bIII%dIII1149III26IIIConveyorComDetectTrigger()III/b/f", cnt);
     cnt++;
     is_sendcmd = true;
 
     logger_info("ConveryComDetectTrigger().");
     return errcode;
 }
+
+/**
+ * @brief 电弧跟踪焊机电流反馈AI通道选择
+ * @param [in]  channel 通道；0-扩展AI0；1-扩展AI1；2-扩展AI2；3-扩展AI3；4-控制箱AI0；5-控制箱AI1
+ * @return 错误码
+ */
+errno_t FRRobot::ArcWeldTraceAIChannelCurrent(int channel)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = channel;
+
+    if (c.execute("ArcWeldTraceAIChannelCurrent", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 电弧跟踪焊机电压反馈AI通道选择
+ * @param [in]  channel 通道；0-扩展AI0；1-扩展AI1；2-扩展AI2；3-扩展AI3；4-控制箱AI0；5-控制箱AI1
+ * @return 错误码
+ */
+errno_t FRRobot::ArcWeldTraceAIChannelVoltage(int channel)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = channel;
+
+    if (c.execute("ArcWeldTraceAIChannelVoltage", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 电弧跟踪焊机电流反馈转换参数
+ * @param [in] AILow AI通道下限，默认值0V，范围[0-10V]
+ * @param [in] AIHigh AI通道上限，默认值10V，范围[0-10V]
+ * @param [in] currentLow AI通道下限对应焊机电流值，默认值0V，范围[0-200V]
+ * @param [in] currentHigh AI通道上限对应焊机电流值，默认值100V，范围[0-200V]
+ * @return 错误码
+ */
+errno_t FRRobot::ArcWeldTraceCurrentPara(float AILow, float AIHigh, float currentLow, float currentHigh)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = AILow;
+    param[1] = AIHigh;
+    param[2] = currentLow;
+    param[3] = currentHigh;
+
+    if (c.execute("ArcWeldTraceCurrentPara", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 电弧跟踪焊机电压反馈转换参数
+ * @param [in] AILow AI通道下限，默认值0V，范围[0-10V]
+ * @param [in] AIHigh AI通道上限，默认值10V，范围[0-10V]
+ * @param [in] voltageLow AI通道下限对应焊机电压值，默认值0V，范围[0-200V]
+ * @param [in] voltageHigh AI通道上限对应焊机电压值，默认值100V，范围[0-200V]
+ * @return 错误码
+ */
+errno_t FRRobot::ArcWeldTraceVoltagePara(float AILow, float AIHigh, float voltageLow, float voltageHigh)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = AILow;
+    param[1] = AIHigh;
+    param[2] = voltageLow;
+    param[3] = voltageHigh;
+
+    if (c.execute("ArcWeldTraceVoltagePara", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置焊接电压渐变开始
+ * @param [in] IOType 控制类型；0-控制箱IO；1-数字通信协议(UDP);2-数字通信协议(ModbusTCP)
+ * @param [in] voltageStart 起始焊接电压(V)
+ * @param [in] voltageEnd 终止焊接电压(V)
+ * @param [in] AOIndex 控制箱AO端口号(0-1)
+ * @param [in] blend 是否平滑 0-不平滑；1-平滑
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingSetVoltageGradualChangeStart(int IOType, double voltageStart, double voltageEnd, int AOIndex, int blend)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = IOType;
+    param[1] = (double)voltageStart;
+    param[2] = (double)voltageEnd;
+    param[3] = AOIndex;
+    param[4] = blend;
+
+    if (c.execute("WeldingSetVoltageGradualChangeStart", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置焊接电压渐变结束
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingSetVoltageGradualChangeEnd()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("WeldingSetVoltageGradualChangeEnd", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置焊接电流渐变开始
+ * @param [in] IOType 控制类型；0-控制箱IO；1-数字通信协议(UDP);2-数字通信协议(ModbusTCP)
+ * @param [in] voltageStart 起始焊接电流(A)
+ * @param [in] voltageEnd 终止焊接电流(A)
+ * @param [in] AOIndex 控制箱AO端口号(0-1)
+ * @param [in] blend 是否平滑 0-不平滑；1-平滑
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingSetCurrentGradualChangeStart(int IOType, double currentStart, double currentEnd, int AOIndex, int blend)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = IOType;
+    param[1] = currentStart;
+    param[2] = currentEnd;
+    param[3] = AOIndex;
+    param[4] = blend;
+
+    if (c.execute("WeldingSetCurrentGradualChangeStart", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置焊接电流渐变结束
+ * @return 错误码
+ */
+errno_t FRRobot::WeldingSetCurrentGradualChangeEnd()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("WeldingSetCurrentGradualChangeEnd", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+* @brief 获取SmartTool按钮状态
+* @param [out] state SmartTool手柄按钮状态;(bit0:0-通信正常；1-通信掉线；bit1-撤销操作；bit2-清空程序；
+bit3-A键；bit4-B键；bit5-C键；bit6-D键；bit7-E键；bit8-IO键；bit9-手自动；bit10开始)
+* @return 错误码
+*/
+errno_t FRRobot::GetSmarttoolBtnState(int& state)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    state = robot_state_pkg->smartToolState;
+
+    return 0;
+}
+
+/**
+ * @brief 获取扩展轴坐标系
+ * @param [out] coord 扩展轴坐标系
+ * @return 错误码
+ */
+errno_t FRRobot::ExtAxisGetCoord(DescPose& coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("ExtAxisGetCoord", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 == errcode)
+        {
+            coord.tran.x = (double)result[1];
+            coord.tran.y = (double)result[2];
+            coord.tran.z = (double)result[3];
+            coord.rpy.rx = (double)result[4];
+            coord.rpy.ry = (double)result[5];
+            coord.rpy.rz = (double)result[6];
+        }
+        else
+        {
+            logger_error("ExtAxisGetCoord fail, errcode is: %d\n", errcode);
+        }
+    }
+    else
+    {
+        errcode = ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
 
 
 /* 根据字符分割字符串 */
@@ -17794,7 +18308,7 @@ bool FRRobot::IsSockError()
     while (rtClient->GetReConnState())
     {
         //如果正在重连，就等待重连结果
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        Sleep(100);
     }
 
     if (g_sock_com_err != ERR_SUCCESS)
@@ -17834,7 +18348,11 @@ errno_t FRRobot::SetReConnectParam(bool enable, int reconnectTime, int period)
 
 errno_t FRRobot::Sleep(int ms)
 {
+#ifdef WIN32
     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+#else
+    usleep(ms * 1000);
+#endif
     return 0;
 }
 
