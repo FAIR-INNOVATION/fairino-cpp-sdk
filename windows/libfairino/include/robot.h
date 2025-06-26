@@ -206,10 +206,12 @@ public:
     *@param  [in] epos_t  Position of expansion shaft, unit: mm
     *@param  [in] ovl  Velocity scaling factor, range[0~100]   
     *@param  [in] offset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
-    *@param  [in] offset_pos  The pose offset     
+    *@param  [in] offset_pos  The pose offset  
+    *@param  [in] oacc Percentage of acceleration
+	*@param  [in] blendR -1: Block; 0-1000: Smooth radius
     *@return  Error code
 	 */		
-	errno_t  Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, float ovl, uint8_t offset_flag, DescPose *offset_pos);
+	errno_t Circle(JointPos* joint_pos_p, DescPose* desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos* epos_p, JointPos* joint_pos_t, DescPose* desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos* epos_t, float ovl, uint8_t offset_flag, DescPose* offset_pos, double oacc = 100.0, double blendR = -1);
 	
 	/**
     *@brief  Spiral motion in Cartesian space
@@ -250,9 +252,10 @@ public:
     *@param  [in] cmdT Instruction delivery period, unit: s, recommended range [0.001~0.0016]
     *@param  [in] filterT Filtering time (unit: s), temporarily disabled. The default value is 0
     *@param  [in] gain  The proportional amplifier at the target position, not yet open, defaults to 0
+	*@param  [in] id servoJ command ID,default:0
     *@return  Error code
-	 */
-	errno_t ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain);
+	*/
+	errno_t ServoJ(JointPos* joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id = 0);
 
 	/**
     *@brief  Cartesian space servo mode motion
@@ -913,7 +916,7 @@ public:
     *@param  [out] torques Joint torque
     *@return  Error code
 	 */
-	errno_t  GetJointTorques(uint8_t flag, float torques[6]);
+	errno_t GetJointTorques(uint8_t flag, float torques[6]);
 	
 	/**
     *@brief  Gets the weight of the current load
@@ -2184,7 +2187,7 @@ public:
 	* @param [in] selfConnect Whether the connection is automatically established after restarting the robot
 	* @return error code
 	*/
-	errno_t ExtDevSetUDPComParam(std::string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum, int selfConnect);
+	errno_t ExtDevSetUDPComParam(std::string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum, int selfConnect = 1);
 
 	/**
 	* @brief Get the UDP extension axis communication parameter configuration
@@ -2587,6 +2590,23 @@ public:
 	  * @return  error code
 	  */
 	 errno_t EndForceDragControl(int status, int asaptiveFlag, int interfereDragFlag, int ingularityConstraintsFlag, std::vector<double> M, std::vector<double> B, std::vector<double> K, std::vector<double> F, double Fmax, double Vmax);
+	 
+	 /**
+	  * @brief  Force sensor assists drag
+	  * @param  [in] status Control status, 0- off; 1- On
+	  * @param  [in] asaptiveFlag Adaptive on flag, 0- off; 1- On
+	  * @param  [in] interfereDragFlag Interference drag flag, 0- off; 1- On
+	  * @param  [in] ingularityConstraintsFlag Singularity strategy, 0- evade; 1- Crossing
+	  * @param  [in] forceCollisionFlag Robot collision detection mark during assisted dragging 0- Close 1- Open
+	  * @param  [in] M Inertia coefficient
+	  * @param  [in] B Damping coefficient
+	  * @param  [in] K Stiffness coefficient
+	  * @param  [in] F Drag the six-dimensional force threshold
+	  * @param  [in] Fmax Maximum towing power limit
+	  * @param  [in] Vmax Maximum joint speed limit
+	  * @return  error code
+	  */
+	 errno_t EndForceDragControl(int status, int asaptiveFlag, int interfereDragFlag, int ingularityConstraintsFlag, int forceCollisionFlag, std::vector<double> M, std::vector<double> B, std::vector<double> K, std::vector<double> F, double Fmax, double Vmax);
 
 
 	 /**
@@ -3573,6 +3593,22 @@ public:
 	 * @return error code
 	 */
 	errno_t ExtAxisGetCoord(DescPose& coord);
+
+	/**
+	 * @brief Set the monitoring parameters for the temperature and fan current of the wide-voltage control box
+	 * @param [in] enable 0-not enable; 1-Enable monitoring
+	 * @param [in] period Monitoring period (unit: s), range 1-100
+	 * @return error code
+	 */
+	errno_t SetWideBoxTempFanMonitorParam(int enable, int period);
+
+	/**
+	 * @brief Get the monitoring parameters for the temperature and fan current of the wide-voltage control box
+	 * @param [out] enable enable 0-not enable; 1-Enable monitoring
+	 * @param [out] period period Monitoring period (unit: s), range 1-100
+	 * @return error code
+	 */
+	errno_t GetWideBoxTempFanMonitorParam(int& enable, int& period);
 
 	/**
 	* @brief  Set communication reconnection parameters with the robot
