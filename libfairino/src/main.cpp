@@ -87,11 +87,23 @@ int DragControl(FRRobot* robot)
     vector <double> B = { 150.0, 150.0, 150.0, 5.0, 5.0, 1.0 };
     vector <double> K = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     vector <double> F = { 10.0, 10.0, 10.0, 1.0, 1.0, 1.0 };
-    robot->EndForceDragControl(1, 0, 0, 0, M, B, K, F, 50, 100);
-
+    int rtn = robot->EndForceDragControl(1, 0, 0, 0, 1, M, B, K, F, 50, 100);
+    printf("force drag control start rtn is %d\n", rtn);
     robot->Sleep(5000);
 
-    robot->EndForceDragControl(0, 0, 0, 0, M, B, K, F, 50, 100);
+    rtn = robot->EndForceDragControl(0, 0, 0, 0, 1, M, B, K, F, 50, 100);
+    printf("force drag control end rtn is %d\n", rtn);
+
+    rtn = robot->ResetAllError();
+    printf("ResetAllError rtn is %d\n", rtn);
+
+    robot->EndForceDragControl(1, 0, 0, 0, 1, M, B, K, F, 50, 100);
+    printf("force drag control start again rtn is %d\n", rtn);
+    robot->Sleep(5000);
+
+    rtn = robot->EndForceDragControl(0, 0, 0, 0, 1, M, B, K, F, 50, 100);
+    printf("force drag control end again rtn is %d\n", rtn);
+
 }
 
 int SixDiaDrag(FRRobot* robot)
@@ -2377,72 +2389,208 @@ void AxleSensorConfig(FRRobot* robot)
 
  int TestBlend(FRRobot* robot)
  {
-     DescPose DP1 = { -324.688, -512.411, 319.936, 177.834, -13.926, -123.378 };
-     JointPos JP1 = {47.944, -74.115, 99.306, -129.280, -90.062, -98.421};
-
-     DescPose DP2 = { -388.074, -328.779, 340.076, -159.121, 16.169, -174.291 };
-     JointPos JP2 = {23.798, -86.390, 105.682, -100.633, -65.192, -70.820};
-
-     DescPose DP3 = { -492.692, -49.563, 375.256, 161.781, -14.476, 159.830 };
-     JointPos JP3 = {-1.812, -89.883, 108.067, -116.040, -111.809, -70.825};
-
-     DescPose DP4 = { -432.689, -287.194, 305.739, -177.999, 1.920, -177.450 };
-     JointPos JP4 = {21.721, -83.395, 108.235, -113.684, -87.480, -70.821};
-
-     DescPose DP5 = { -232.690, -287.193, 305.746, -177.999, 1.919, -177.450 };
-     JointPos JP5 = {34.158, -105.217, 128.305, -112.503, -87.290, -58.372};
-
-     DescPose DP6 = { -232.695, -487.192, 305.744, -177.999, 1.919, -177.452 };
-     JointPos JP6 = { 53.031, -80.893, 105.748, -115.179, -87.247, -39.476 };
-
-     JointPos JP7 = { 38.933, -66.532, 86.532, -109.644, -87.251, -53.590 };
-     DescPose DP7 = {-432.695, -487.196, 305.749, -177.999, 1.918, -177.452};
-
-     JointPos JP8 = { 42.245, -82.011, 99.838, -116.087, -69.438, -70.824 };
-     DescPose DP8 = {-315.138, -471.802, 373.506, -157.941, -1.233, -155.671};
-
-     DescPose DP9 = { -513.450, -302.627, 402.163, 171.249, -16.204, -176.411 };
-     JointPos JP9 = {22.919, -78.425, 92.035, -116.080, -103.583, -70.913};
-
-     DescPose DP10 = { -428.141, -188.113, 351.314, 176.576, -19.670, 142.831 };
-     JointPos JP10 = { 14.849, -92.942, 114.901, -121.601, -107.553, -38.881 };
-
-     DescPose DP11 = { -587.412, -70.091, 370.337, 177.676, -23.575, 127.293 };
-     JointPos JP11 = { 0.209, -77.444, 96.217, -121.606, -110.075, -38.879 };
-
-     JointPos JP12 = { -21.947, -88.425, 108.395, -111.062, -77.881, -38.879 };
-     DescPose DP12 = { -498.493, 67.966, 345.644, -171.472, 8.710, 107.699 };
-
      ExaxisPos exaxisPos = { 0, 0, 0, 0 };
      DescPose offdese = { 0, 0, 0, 0, 0, 0 };
 
+     JointPos JP1 = {55.203, -69.138, 75.617, -103.969, -83.549, -0.001};
+     DescPose DP1 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP2 = {57.646, -61.846, 59.286, -69.645, -99.735, 3.824};
+     DescPose DP2 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP3 = {57.304, -61.380, 58.260, -67.641, -97.447, 2.685};
+     DescPose DP3 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP4 = {57.297, -61.373, 58.250, -67.637, -97.448, 2.677};
+     DescPose DP4 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP5 = {23.845, -108.202, 111.300, -80.971, -106.753, -30.246};
+     DescPose DP5 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP6 = {23.845, -108.202, 111.300, -80.971, -106.753, -30.246};
+     DescPose DP6 = { 0, 0, 0, 0, 0, 0 };
      robot->GetForwardKin(&JP1, &DP1);
      robot->GetForwardKin(&JP2, &DP2);
      robot->GetForwardKin(&JP3, &DP3);
-     robot->GetForwardKin(&JP4, &DP4); 
+     robot->GetForwardKin(&JP4, &DP4);
      robot->GetForwardKin(&JP5, &DP5);
      robot->GetForwardKin(&JP6, &DP6);
+     robot->MoveJ(&JP1, &DP1, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot->MoveJ(&JP2, &DP2, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveJ(&JP3, &DP3, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveJ(&JP4, &DP4, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveJ(&JP5, &DP5, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveJ(&JP6, &DP6, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+
+
+     JointPos JP7 = { -10.503, -93.654, 111.333, -84.702, -103.479, -30.179 };
+     DescPose DP7 = { 0, 0, 0, 0, 0, 0 };
+
+     JointPos JP8 = { -10.503, -93.654, 111.333, -84.702, -103.479, -30.179 };
+     DescPose DP8 = { 0, 0, 0, 0, 0, 0 };
+     
+     JointPos JP9 = {-10.503, -93.654, 111.333, -84.702, -103.479, -30.179};
+     DescPose DP9 = { 0, 0, 0, 0, 0, 0 };
+     
+     JointPos JP10 = { -30.623, -74.158, 89.844, -91.942, -97.060, -30.180 };
+     DescPose DP10 = { 0, 0, 0, 0, 0, 0 };
+     
+     JointPos JP11 = { -34.797, -72.641, 93.917, -104.961, -84.449, -30.287 };
+     DescPose DP11 = { 0, 0, 0, 0, 0, 0 };
+
+     JointPos JP12 = { -17.454, -58.309, 82.054, -111.034, -109.900, -30.241 };
+     DescPose DP12 = { 0, 0, 0, 0, 0, 0 };
+
+     JointPos JP13 = { -4.930, -72.469, 100.631, -109.906, -76.760, -10.947 };
+     DescPose DP13 = { 0, 0, 0, 0, 0, 0 };
      robot->GetForwardKin(&JP7, &DP7);
      robot->GetForwardKin(&JP8, &DP8);
      robot->GetForwardKin(&JP9, &DP9);
      robot->GetForwardKin(&JP10, &DP10);
      robot->GetForwardKin(&JP11, &DP11);
      robot->GetForwardKin(&JP12, &DP12);
+     robot->GetForwardKin(&JP13, &DP13);
+     robot->MoveJ(&JP7, &DP7, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveL(&JP8, &DP8, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveJ(&JP9, &DP9, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveL(&JP10, &DP10, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveJ(&JP11, &DP11, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveC(&JP12, &DP12, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP13, &DP13, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, 20);
 
-     robot->MoveJ(&JP1, &DP1, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
-     robot->MoveJ(&JP2, &DP2, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
-     robot->MoveJ(&JP3, &DP3, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
-     robot->MoveJ(&JP4, &DP4, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     JointPos JP14 = { 9.586, -66.925, 85.589, -99.109, -103.403, -30.280 };
+     DescPose DP14 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP15 = { 23.056, -59.187, 76.487, -102.155, -77.560, -30.250 };
+     DescPose DP15 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP16 = { 28.028, -71.754, 91.463, -102.182, -102.361, -30.253 };
+     DescPose DP16 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP17 = { 38.974, -62.622, 79.068, -102.543, -101.630, -30.253 };
+     DescPose DP17 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP18 = { -34.797, -72.641, 93.917, -104.961, -84.449, -30.287 };
+     DescPose DP18 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP19 = { -17.454, -58.309, 82.054, -111.034, -109.900, -30.241 };
+     DescPose DP19 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP20 = { -4.930, -72.469, 100.631, -109.906, -76.760, -10.947 };
+     DescPose DP20 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP21 = { 3.021, -76.365, 81.332, -98.130, -68.530, -30.284 };
+     DescPose DP21 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP22 = { 12.532, -94.241, 106.254, -87.131, -102.719, -30.227 };
+     DescPose DP22 = { 0, 0, 0, 0, 0, 0 };
 
-     robot->MoveL(&JP5, &DP5, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
-     robot->MoveL(&JP6, &DP6, 0, 0, 100, 100, 100, 20, 1, &exaxisPos, 0, 0, &offdese);
-     robot->MoveL(&JP7, &DP7, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->GetForwardKin(&JP14, &DP14);
+     robot->GetForwardKin(&JP15, &DP15);
+     robot->GetForwardKin(&JP16, &DP16);
+     robot->GetForwardKin(&JP17, &DP17);
+     robot->GetForwardKin(&JP18, &DP18);
+     robot->GetForwardKin(&JP19, &DP19);
+     robot->GetForwardKin(&JP20, &DP20);
+     robot->GetForwardKin(&JP21, &DP21);
+     robot->GetForwardKin(&JP22, &DP22);
 
-     robot->MoveJ(&JP8, &DP8, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
-     robot->MoveC(&JP9, &DP9, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP10, &DP10, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, 30);
-     robot->MoveC(&JP11, &DP11, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP12, &DP12, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+     robot->MoveJ(&JP14, &DP14, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->Circle(&JP15, &DP15, 0, 0, 100, 100, &exaxisPos, &JP16, &DP16, 0, 0, 100, 100, &exaxisPos, 100, 0, &offdese, 100, 20);
+     robot->MoveJ(&JP17, &DP17, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveL(&JP18, &DP18, 0, 0, 100, 100, 100, 100, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveC(&JP19, &DP19, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP20, &DP20, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, 20);
+     robot->MoveC(&JP21, &DP21, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP22, &DP22, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, 20);
+
+     JointPos JP23 = { 9.586, -66.925, 85.589, -99.109, -103.403, -30.280 };
+     DescPose DP23 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP24 = { 23.056, -59.187, 76.487, -102.155, -77.560, -30.250 };
+     DescPose DP24 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP25 = { 28.028, -71.754, 91.463, -102.182, -102.361, -30.253 };
+     DescPose DP25 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP26 = { -11.207, -81.555, 110.050, -108.983, -74.292, -30.249 };
+     DescPose DP26 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP27 = { 18.930, -70.987, 100.659, -115.974, -115.465, -30.231 };
+     DescPose DP27 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP28 = { 32.493, -65.561, 86.053, -109.669, -103.427, -30.267 };
+     DescPose DP28 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP29 = { 21.954, -87.113, 123.299, -109.730, -72.157, -9.013 };
+     DescPose DP29 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP30= { 19.084, -69.127, 104.304, -109.629, -106.997, -9.011 };
+     DescPose DP30= { 0, 0, 0, 0, 0, 0 };
+     JointPos JP31 = { 38.654, -60.146, 93.485, -109.637, -87.023, -8.989 };
+     DescPose DP31 = { 0, 0, 0, 0, 0, 0 };
+
+     robot->GetForwardKin(&JP23, &DP23);
+     robot->GetForwardKin(&JP24, &DP24);
+     robot->GetForwardKin(&JP25, &DP25);
+     robot->GetForwardKin(&JP26, &DP26);
+     robot->GetForwardKin(&JP27, &DP27);
+     robot->GetForwardKin(&JP28, &DP28);
+     robot->GetForwardKin(&JP29, &DP29);
+     robot->GetForwardKin(&JP30, &DP30);
+     robot->GetForwardKin(&JP31, &DP31);
 
 
+     robot->MoveL(&JP23, &DP23, 0, 0, 100, 100, 100, 20, 1, &exaxisPos, 0, 0, &offdese);
+     robot->Circle(&JP24, &DP24, 0, 0, 100, 100, &exaxisPos, &JP25, &DP25, 0, 0, 100, 100, &exaxisPos, 100, 0, &offdese, 100, 20);
+     robot->Circle(&JP26, &DP26, 0, 0, 100, 100, &exaxisPos, &JP27, &DP27, 0, 0, 100, 100, &exaxisPos, 100, 0, &offdese, 100, 20);
+     robot->MoveC(&JP28, &DP28, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP29, &DP29, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, 20);
+     robot->Circle(&JP30, &DP30, 0, 0, 100, 100, &exaxisPos, &JP31, &DP31, 0, 0, 100, 100, &exaxisPos, 100, 0, &offdese, 100, 20);
+
+     JointPos JP32 = { 38.654, -60.146, 93.485, -109.637, -87.023, -8.989 };
+     DescPose DP32 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP33 = { 55.203, -69.138, 75.617, -103.969, -83.549, -0.001 };
+     DescPose DP33 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP34 = { 57.646, -61.846, 59.286, -69.645, -99.735, 3.824 };
+     DescPose DP34 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP35 = { 57.304, -61.380, 58.260, -67.641, -97.447, 2.685 };
+     DescPose DP35 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP36 = { 57.297, -61.373, 58.250, -67.637, -97.448, 2.677 };
+     DescPose DP36 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP37 = { 23.845, -108.202, 111.300, -80.971, -106.753, -30.246 };
+     DescPose DP37 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP38 = { 23.845, -108.202, 111.300, -80.971, -106.753, -30.246 };
+     DescPose DP38 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP39 = { -10.503, -93.654, 111.333, -84.702, -103.479, -30.179 };
+     DescPose DP39 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP40 = { -30.623, -74.158, 89.844, -91.942, -97.060, -30.180 };
+     DescPose DP40 = { 0, 0, 0, 0, 0, 0 };
+
+     robot->GetForwardKin(&JP32, &DP32);
+     robot->GetForwardKin(&JP33, &DP33);
+     robot->GetForwardKin(&JP34, &DP34);
+     robot->GetForwardKin(&JP35, &DP35);
+     robot->GetForwardKin(&JP36, &DP36);
+     robot->GetForwardKin(&JP37, &DP37);
+     robot->GetForwardKin(&JP38, &DP38);
+     robot->GetForwardKin(&JP39, &DP39);
+     robot->GetForwardKin(&JP40, &DP40);
+
+     robot->MoveL(&JP32, &DP32, 0, 0, 100, 100, 100, 20, 1, &exaxisPos, 0, 0, &offdese);
+     robot->MoveJ(&JP33, &DP33, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot->MoveL(&JP34, &DP34, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveL(&JP35, &DP35, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveL(&JP36, &DP36, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveL(&JP37, &DP37, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveL(&JP38, &DP38, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveL(&JP39, &DP39, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveJ(&JP40, &DP40, 0, 0, 100, 100, 100, &exaxisPos, 20, 0, &offdese);
+
+     JointPos JP50 = { -34.797, -72.641, 93.917, -104.961, -84.449, -30.287 };
+     DescPose DP50 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP41 = { -17.454, -58.309, 82.054, -111.034, -109.900, -30.241 };
+     DescPose DP41 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP42 = { -4.930, -72.469, 100.631, -109.906, -76.760, -10.947 };
+     DescPose DP42 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP43 = { 9.586, -66.925, 85.589, -99.109, -103.403, -30.280 };
+     DescPose DP43 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP44 = { 23.056, -59.187, 76.487, -102.155, -77.560, -30.250 };
+     DescPose DP44 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP45 = { 28.028, -71.754, 91.463, -102.182, -102.361, -30.253 };
+     DescPose DP45 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP46 = { 38.974, -62.622, 79.068, -102.543, -101.630, -30.253 };
+     DescPose DP46 = { 0, 0, 0, 0, 0, 0 };
+
+     robot->GetForwardKin(&JP50, &DP50);
+     robot->GetForwardKin(&JP41, &DP41);
+     robot->GetForwardKin(&JP42, &DP42);
+     robot->GetForwardKin(&JP43, &DP43);
+     robot->GetForwardKin(&JP44, &DP44);
+     robot->GetForwardKin(&JP45, &DP45);
+     robot->GetForwardKin(&JP46, &DP46);
+
+     robot->MoveL(&JP50, &DP50, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveC(&JP41, &DP41, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP42, &DP42, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, 20);
+     robot->MoveL(&JP43, &DP43, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
+     robot->Circle(&JP44, &DP44, 0, 0, 100, 100, &exaxisPos, &JP45, &DP45, 0, 0, 100, 100, &exaxisPos, 100, 0, &offdese, 100, 20);
+     robot->MoveL(&JP46, &DP46, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
      return 0;
  }
  ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2635,7 +2783,7 @@ void AxleSensorConfig(FRRobot* robot)
      rtn = robot.MoveJ(&j2, &desc_pos2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
      printf("movej errcode:%d\n", rtn);
 
-     rtn = robot.Circle(&j3, &desc_pos3, tool, user, vel, acc, &epos, &j1, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos);
+     rtn = robot.Circle(&j3, &desc_pos3, tool, user, vel, acc, &epos, &j1, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, 100, -1);
      printf("circle errcode:%d\n", rtn);
 
      rtn = robot.MoveCart(&desc_pos4, tool, user, vel, acc, ovl, blendT, -1);
@@ -2691,53 +2839,54 @@ void AxleSensorConfig(FRRobot* robot)
      return 0;
  }
 
- int TestServoJ(void)
- {
-     ROBOT_STATE_PKG pkg = {};
-     FRRobot robot;
+int TestServoJ(void)
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
 
-     robot.LoggerInit();
-     robot.SetLoggerLevel(1);
-     int rtn = robot.RPC("192.168.58.2");
-     if (rtn != 0)
-     {
-         return -1;
-     }
-     robot.SetReConnectParam(true, 30000, 500);
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
 
-     JointPos j(0, 0, 0, 0, 0, 0);
-     ExaxisPos epos(0, 0, 0, 0);
+    JointPos j(0, 0, 0, 0, 0, 0);
+    ExaxisPos epos(0, 0, 0, 0);
 
-     float vel = 0.0;
-     float acc = 0.0;
-     float cmdT = 0.008;
-     float filterT = 0.0;
-     float gain = 0.0;
-     uint8_t flag = 0;
-     int count = 500;
-     float dt = 0.1;
+    float vel = 0.0;
+    float acc = 0.0;
+    float cmdT = 0.008;
+    float filterT = 0.0;
+    float gain = 0.0;
+    uint8_t flag = 0;
+    int count = 500;
+    float dt = 0.1;
+    int cmdID = 0;
+    int ret = robot.GetActualJointPosDegree(flag, &j);
+    if (ret == 0)
+    {
+        cmdID += 1;
+        robot.ServoMoveStart();
+        while (count)
+        {
+            robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID);
+            j.jPos[0] += dt;
+            count -= 1;
+            robot.WaitMs(cmdT * 1000);
+        }
+        robot.ServoMoveEnd();
+    }
+    else
+    {
+        printf("GetActualJointPosDegree errcode:%d\n", ret);
+    }
 
-     int ret = robot.GetActualJointPosDegree(flag, &j);
-     if (ret == 0)
-     {
-         robot.ServoMoveStart();
-         while (count)
-         {
-             robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain);
-             j.jPos[0] += dt;
-             count -= 1;
-             robot.WaitMs(cmdT * 1000);
-         }
-         robot.ServoMoveEnd();
-     }
-     else
-     {
-         printf("GetActualJointPosDegree errcode:%d\n", ret);
-     }
-
-     robot.CloseRPC();
-     return 0;
- }
+    robot.CloseRPC();
+    return 0;
+}
 
  int TestServoCart(void)
  {
@@ -5594,7 +5743,7 @@ void AxleSensorConfig(FRRobot* robot)
      vector <double> B = { 150.0, 150.0, 150.0, 5.0, 5.0, 1.0 };
      vector <double> K = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
      vector <double> F = { 10.0, 10.0, 10.0, 1.0, 1.0, 1.0 };
-     robot.EndForceDragControl(1, 0, 0, 0, M, B, K, F, 50, 100);
+     robot.EndForceDragControl(1, 0, 0, 0, 1, M, B, K, F, 50, 100);
 
      robot.Sleep(5000);
 
@@ -5603,7 +5752,7 @@ void AxleSensorConfig(FRRobot* robot)
      robot.GetForceAndTorqueDragState(dragState, sixDimensionalDragState);
      printf("the drag state is %d %d \n", dragState, sixDimensionalDragState);
 
-     robot.EndForceDragControl(0, 0, 0, 0, M, B, K, F, 50, 100);
+     robot.EndForceDragControl(0, 0, 0, 0, 1, M, B, K, F, 50, 100);
 
      robot.CloseRPC();
      return 0;
@@ -6274,7 +6423,7 @@ void AxleSensorConfig(FRRobot* robot)
      return 0;
  }
 
- int main(void)
+ int TestWideVoltageCtrlBoxtemp(void)
  {
      ROBOT_STATE_PKG pkg = {};
      FRRobot robot;
@@ -6282,47 +6431,202 @@ void AxleSensorConfig(FRRobot* robot)
      robot.LoggerInit();
      robot.SetLoggerLevel(1);
      int rtn = robot.RPC("192.168.58.2");
-     TestBlend(&robot);
-     return 0;
-
-     /*int i = 0;
-     while (true)
+     printf("robot rpc rtn is %d\n", rtn);
+     if (rtn != 0)
      {
-         i++;
-         printf("times i %d\n", i);
-         ROBOT_STATE_PKG pkg = {};
-         FRRobot robot;
+         return -1;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
 
-         robot.LoggerInit();
-         robot.SetLoggerLevel(1);
-         int rtn = robot.RPC("192.168.58.2");
+     robot.SetWideBoxTempFanMonitorParam(1, 2);
+     int enable = 0;
+     int period = 0;
+     robot.GetWideBoxTempFanMonitorParam(enable, period);
+     printf("GetWideBoxTempFanMonitorParam enable is %d   period is %d\n", enable, period);
+     for (int i = 0; i < 100; i++)
+     {
+         robot.GetRobotRealTimeState(&pkg);
+         printf("robot ctrl box temp is %f,  fan current is %d\n", pkg.wideVoltageCtrlBoxTemp, pkg.wideVoltageCtrlBoxFanCurrent);
+         robot.Sleep(100);
+     }
 
+     rtn = robot.SetWideBoxTempFanMonitorParam(0, 2);
+     printf("SetWideBoxTempFanMonitorParam rtn is %d\n", rtn);
+     enable = 0;
+     period = 0;
+     robot.GetWideBoxTempFanMonitorParam(enable, period);
+     printf("GetWideBoxTempFanMonitorParam enable is %d   period is %d\n", enable, period);
+     for (int i = 0; i < 100; i++)
+     {
+         robot.GetRobotRealTimeState(&pkg);
+         printf("robot ctrl box temp is %f,  fan current is %d\n", pkg.wideVoltageCtrlBoxTemp, pkg.wideVoltageCtrlBoxFanCurrent);
+         robot.Sleep(100);
+     }
 
-         if (rtn != 0)
-         {
-             return -1;
-         }
-         robot.SetReConnectParam(true, 30000, 500);
+     robot.CloseRPC();
+     robot.Sleep(2000);
 
-
-
-         robot.Mode(0);
-         robot.Sleep(1500);
-         rtn = robot.Mode(1);
-         if (rtn != 0)
-         {
-             break;
-         }
-         robot.Sleep(1500);
-
-         robot.CloseRPC();
-
-         robot.Sleep(2000);
-     }*/
-
-     
      return 0;
  }
+
+ int terty5(FRRobot * robot)
+ {
+     int rtn = robot->LuaUpload("D://zUP/Program5.lua");
+     printf("LuaUpload rtn is %d\n", rtn);
+     robot->ProgramLoad("/fruser/Program5.lua");
+     
+     SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//创建了可识别套接字
+     if (serSocket != -1)
+     {
+         printf("成功创建套接字！%d\n", serSocket);
+     }
+
+     //需要绑定的参数，主要是本地的socket的一些信息。
+     SOCKADDR_IN addr;
+     addr.sin_family = AF_INET;
+     addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip地址
+     addr.sin_port = htons(31000);//绑定端口
+
+     bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));//绑定完成
+     listen(serSocket, 5);//其中第二个参数代表能够接收的最多的连接数
+     printf("等待客户端...\n");
+     SOCKADDR_IN clientsocket;
+     int len = sizeof(SOCKADDR);
+
+     robot->ProgramRun();
+     SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
+     //如果这里不是accept而是conection的话。。就会不断的监听
+     if (serConn)
+     {
+         printf("监听到新的客户端...\n");
+     }
+     while (1)
+     {
+         robot->Sleep(200);
+         char sendBuf[4000] = "";
+         sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//找对对应的IP并且将这行字打印到那里
+         //发送信息
+         send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
+         char receiveBuf[4000] = "";//接收
+         memset(receiveBuf, 0, 4000);
+         int RecvLen;
+         RecvLen = recv(serConn, receiveBuf, 4000, 0);
+         printf("5 recv string is  %s\n", receiveBuf);
+         if (RecvLen <= 0)
+             printf("5 recv length %d  err %s\n", RecvLen, WSAGetLastError());
+         else
+         {
+             string txt = receiveBuf;
+             string::size_type idx = txt.find("ProgramFinish"); //在a中查找b.
+             if (idx == string::npos) //不存在。
+                 cout << "not found\n";
+             else
+             {
+                 cout << "found ProgramFinish\n";
+                 break;
+             }
+         }
+
+     }
+     closesocket(serConn);//关闭
+     //WSACleanup();//释放资源的操作
+
+     rtn = robot->LuaDelete("Program5.lua");
+     printf("LuaDelete rtn is %d\n", rtn);
+     return 0;
+ }
+
+ int terty6(FRRobot* robot)
+ {
+     int rtn = robot->LuaUpload("D://zUP/Program6.lua");
+     printf("LuaUpload rtn is %d\n", rtn);
+     robot->ProgramLoad("/fruser/Program6.lua");
+
+     SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//创建了可识别套接字
+     if (serSocket != -1)
+     {
+         printf("成功创建套接字！%d\n", serSocket);
+     }
+
+     //需要绑定的参数，主要是本地的socket的一些信息。
+     SOCKADDR_IN addr;
+     addr.sin_family = AF_INET;
+     addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip地址
+     addr.sin_port = htons(31000);//绑定端口
+
+     bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));
+     listen(serSocket, 5);
+     printf("等待客户端...\n");
+     SOCKADDR_IN clientsocket;
+     int len = sizeof(SOCKADDR);
+
+     robot->ProgramRun();
+     SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
+     if (serConn)
+     {
+         printf("监听到新的客户端...\n");
+     }
+     while (1)
+     {
+         robot->Sleep(100);
+         char sendBuf[100];
+         sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//找对对应的IP并且将这行字打印到那里
+         send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
+         char receiveBuf[4000] = "";//接收
+         memset(receiveBuf, 0, 4000);
+         int RecvLen;
+         RecvLen = recv(serConn, receiveBuf, 4000, 0);
+         printf("6 recv string is  %s\n", receiveBuf);
+         if (RecvLen <= 0)
+             printf("6 recv length %d   %d\n", RecvLen, WSAGetLastError());
+         else
+         {
+             string txt = receiveBuf;
+             string::size_type idx = txt.find("ProgramFinish"); //在a中查找b.
+             if (idx == string::npos) //不存在。
+                 cout << "not found\n";
+             else
+             {
+                 cout << "found ProgramFinish\n";
+                 break;
+             }
+         }
+
+     }
+     closesocket(serConn);//关闭
+    // WSACleanup();//释放资源的操作
+
+     rtn = robot->LuaDelete("Program6.lua");
+     printf("LuaDelete rtn is %d\n", rtn);
+     return 0;
+ }
+
+ int main(void)
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return -1;
+     }
+
+     while (true)
+     {
+         terty5(&robot);
+         robot.Sleep(4000);
+         terty6(&robot);
+         robot.Sleep(4000);
+     }
+
+     robot.CloseRPC();
+     return 0;
+ }
+
+
+ 
 
  int testSyncMoveJ()
  {
