@@ -301,7 +301,9 @@ typedef struct _ROBOT_STATE_PKG
 	uint8_t gripperRotTorque;			//Percentage of the current rotating torque of the rotating clamp
 	WELDING_BREAKOFF_STATE weldingBreakOffState;  //º¸½ÓÖÐ¶Ï×´Ì¬
 	double jt_tgt_tor[6];               //target joint torque
-	int smartToolState;                 //SmartTool btn status  
+	int smartToolState;                 //SmartTool btn status 
+	float wideVoltageCtrlBoxTemp;        //Wide-voltage control box temperature
+	uint16_t wideVoltageCtrlBoxFanCurrent;   //Wide-voltage control box fan current(mA)
 	uint16_t check_sum;					//check sum
 }ROBOT_STATE_PKG;
 

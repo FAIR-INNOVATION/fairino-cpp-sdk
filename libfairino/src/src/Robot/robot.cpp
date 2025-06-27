@@ -46,7 +46,7 @@
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.2.2.0-robot v3.8.2"
+#define SDK_RELEASE "SDK V2.2.3.0-robot v3.8.3"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -1115,9 +1115,11 @@ errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, i
  *@param  [in] ovl  速度缩放因子，范围[0~100]
  *@param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
  *@param  [in] offset_pos  位姿偏移量
+ *@param  [in] oacc 加速度百分比
+ *@param  [in] blendR -1：阻塞；0~1000：平滑半径
  *@return  错误码
  */
-errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, float ovl, uint8_t offset_flag, DescPose *offset_pos)
+errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, float ovl, uint8_t offset_flag, DescPose *offset_pos, double oacc, double blendR)
 {
     if (IsSockError())
     {
@@ -1173,14 +1175,16 @@ errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, 
     param[7][1] = epos_t->ePos[1];
     param[7][2] = epos_t->ePos[2];
     param[7][3] = epos_t->ePos[3];
-    param[8] = ovl;
-    param[9] = offset_flag;
-    param[10][0] = offset_pos->tran.x;
-    param[10][1] = offset_pos->tran.y;
-    param[10][2] = offset_pos->tran.z;
-    param[10][3] = offset_pos->rpy.rx;
-    param[10][4] = offset_pos->rpy.ry;
-    param[10][5] = offset_pos->rpy.rz;
+    param[8][0] = ovl;
+    param[8][1] = (double)offset_flag;
+    param[9][0] = offset_pos->tran.x;
+    param[9][1] = offset_pos->tran.y;
+    param[9][2] = offset_pos->tran.z;
+    param[9][3] = offset_pos->rpy.rx;
+    param[9][4] = offset_pos->rpy.ry;
+    param[9][5] = offset_pos->rpy.rz;
+    param[10][0] = oacc;
+    param[10][1] = blendR;
 
     if (c.execute("Circle", param, result))
     {
@@ -1357,9 +1361,10 @@ errno_t FRRobot::ServoMoveEnd()
  *@param  [in] cmdT  指令下发周期，单位s，建议范围[0.001~0.0016]
  *@param  [in] filterT 滤波时间，单位s，暂不开放，默认为0
  *@param  [in] gain  目标位置的比例放大器，暂不开放，默认为0
+ *@param  [in] id servoJ指令ID,默认为0
  *@return  错误码
  */
-errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain)
+errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id)
 {
     if (IsSockError())
     {
@@ -1390,6 +1395,7 @@ errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, floa
     param[4] = cmdT;
     param[5] = filterT;
     param[6] = gain;
+    param[7] = id;
 
     if (c.execute("ServoJ", param, result))
     {
@@ -1789,23 +1795,15 @@ errno_t FRRobot::StopMotion()
     {
         return g_sock_com_err;
     }
-
     int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
+    static int cnt = 0;
 
-    if (c.execute("StopMotion", param, result))
-    {
-        errcode = int(result);
-    }
-    else
-    {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
-    }
+    memset(g_sendbuf, 0, BUFFER_SIZE * sizeof(char));
+    sprintf(g_sendbuf, "/f/bIII44III102III4IIISTOPIII/b/f", cnt);
+    cnt++;
+    is_sendcmd = true;
 
-    c.close();
-
+    logger_info("StopMotion.");
     return errcode;
 }
 
@@ -10157,9 +10155,18 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
 #endif
 
     Sleep(30);
-     /* 发起网络连接 */
-    errcode = fr_network::connect(fd, robot_ip, UPLOAD_POINT_TABLE_PORT);
-    logger_info("connect error code is: %d.", errcode);
+    for (int i = 0; i < 100; i++)
+    {
+        errcode = fr_network::connect(fd, robot_ip, UPLOAD_POINT_TABLE_PORT);
+        if (errcode < 0)
+        {
+            Sleep(30);
+        }
+        else
+        {
+            break;
+        }
+    }
     if (errcode < 0)
     {
         logger_error("connect fail.");
@@ -10167,7 +10174,6 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         c.close();
         return ERR_SOCKET_COM_FAILED;
     }
-    /* 等待服务端发起连接 */
  
     /* 发送 头+内容+尾，send_buf_first, send_buf, send_buf_last */
     do
@@ -13068,6 +13074,70 @@ errno_t FRRobot::EndForceDragControl(int status, int asaptiveFlag, int interfere
     }
     param[8] = Fmax;
     param[9] = Vmax;
+
+    if (c.execute("EndForceDragControl", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute EndForceDragControl fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief  力传感器辅助拖动
+ * @param  [in] status 控制状态，0-关闭；1-开启
+ * @param  [in] asaptiveFlag 自适应开启标志，0-关闭；1-开启
+ * @param  [in] interfereDragFlag 干涉区拖动标志，0-关闭；1-开启
+ * @param  [in] ingularityConstraintsFlag 奇异点策略，0-规避；1-穿越
+ * @param  [in] forceCollisionFlag 辅助拖动时机器人碰撞检测标志；0-关闭；1-开启
+ * @param  [in] M 惯性系数
+ * @param  [in] B 阻尼系数
+ * @param  [in] K 刚度系数
+ * @param  [in] F 拖动六维力阈值
+ * @param  [in] Fmax 最大拖动力限制
+ * @param  [in] Vmax 最大关节速度限制
+ * @return  错误码
+ */
+errno_t FRRobot::EndForceDragControl(int status, int asaptiveFlag, int interfereDragFlag, int ingularityConstraintsFlag, int forceCollisionFlag, vector<double> M, vector<double> B, vector<double> K, vector<double> F, double Fmax, double Vmax)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = status;
+    param[1] = asaptiveFlag;
+    param[2] = interfereDragFlag;
+    param[3] = ingularityConstraintsFlag;
+    param[4] = forceCollisionFlag;
+    for (int i = 0; i < 6; i++)
+    {
+        param[5][i] = M.at(i);
+        param[6][i] = B.at(i);
+        param[7][i] = K.at(i);
+        param[8][i] = F.at(i);
+    }
+    param[9] = Fmax;
+    param[10] = Vmax;
 
     if (c.execute("EndForceDragControl", param, result))
     {
@@ -18257,6 +18327,81 @@ errno_t FRRobot::ExtAxisGetCoord(DescPose& coord)
         else
         {
             logger_error("ExtAxisGetCoord fail, errcode is: %d\n", errcode);
+        }
+    }
+    else
+    {
+        errcode = ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置宽电压控制箱温度及风扇电流监控参数
+ * @param [in] enable 0-不使能监测；1-使能监测
+ * @param [in] period 监测周期(s),范围1-100
+ * @return 错误码
+ */
+errno_t FRRobot::SetWideBoxTempFanMonitorParam(int enable, int period)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = enable;
+    param[1] = period;
+
+    if (c.execute("SetWideBoxTempFanMonitorParam", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 获取宽电压控制箱温度及风扇电流监控参数
+ * @param [out] enable 0-不使能监测；1-使能监测
+ * @param [out] period 监测周期(s),范围1-100
+ * @return 错误码
+ */
+errno_t FRRobot::GetWideBoxTempFanMonitorParam(int& enable, int& period)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetWideBoxTempFanMonitorParam", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 == errcode)
+        {
+            enable = (int)result[1];
+            period = (int)result[2];
+        }
+        else
+        {
+            logger_error("GetWideBoxTempFanMonitorParam fail, errcode is: %d\n", errcode);
         }
     }
     else
