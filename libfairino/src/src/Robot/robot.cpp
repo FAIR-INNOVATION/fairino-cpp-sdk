@@ -25,12 +25,12 @@
 #include <FRTcpClient.h>
 
 
-
 #ifdef WIN32
     #include <fileapi.h>
     #include <handleapi.h>
     #include <Shlwapi.h>
     #include <WS2tcpip.h>
+    #include <filesystem>
 
     #define SDK_VERSION "SDK V2.1"
     #pragma comment(lib, "Shlwapi.lib")
@@ -46,7 +46,7 @@
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.2.3.0-robot v3.8.3"
+#define SDK_RELEASE "SDK V2.2.4.0-robot v3.8.4"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -9771,8 +9771,19 @@ errno_t FRRobot::FileDownLoad(int fileType, std::string fileName, std::string sa
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof tv);
 #endif
 
-    errcode = fr_network::connect(fd, robot_ip, DOWNLOAD_POINT_TABLE_PORT);
-    logger_info("connect error code is %d ", errcode);
+    for (int i = 0; i < 100; i++)
+    {
+        errcode = fr_network::connect(fd, robot_ip, DOWNLOAD_POINT_TABLE_PORT);
+        if (errcode < 0)
+        {
+            Sleep(30);
+        }
+        else
+        {
+            break;
+        }
+    }
+
     if ((errcode < 0))
     {
         logger_error("connect fail, %s. error code is: %d", strerror(errno), errcode);
@@ -11604,9 +11615,10 @@ errno_t FRRobot::ExtAxisServoOn(int axisID, int status)
  * @brief UDP扩展轴运动
  * @param [in] pos 目标位置
  * @param [in] ovl 速度百分比
+ * @param [in] blend 平滑参数(mm或ms)
  * @return 错误码
  */
-errno_t FRRobot::ExtAxisMove(ExaxisPos pos, double ovl)
+errno_t FRRobot::ExtAxisMove(ExaxisPos pos, double ovl, double blend)
 {
     if (IsSockError())
     {
@@ -11626,6 +11638,7 @@ errno_t FRRobot::ExtAxisMove(ExaxisPos pos, double ovl)
     param[3] = pos.ePos[2];
     param[4] = pos.ePos[3];
     param[5] = ovl;
+    param[6] = blend;
 
     if (c.execute("ExtAxisMoveJ", param, result))
     {
@@ -12531,6 +12544,7 @@ errno_t FRRobot::ExtAxisSyncMoveJ(JointPos joint_pos, DescPose desc_pos, int too
     param[3] = epos.ePos[2];
     param[4] = epos.ePos[3];
     param[5] = ovl;
+    param[6] = blendT;
 
     if (c.execute("ExtAxisMoveJ", param, result))
     {
@@ -12588,6 +12602,7 @@ errno_t FRRobot::ExtAxisSyncMoveL(JointPos joint_pos, DescPose desc_pos, int too
     param[3] = epos.ePos[2];
     param[4] = epos.ePos[3];
     param[5] = ovl;
+    param[6] = blendR;
 
     if (c.execute("ExtAxisMoveJ", param, result))
     {
@@ -12654,6 +12669,7 @@ errno_t FRRobot::ExtAxisSyncMoveC(JointPos joint_pos_p, DescPose desc_pos_p, int
     param[3] = epos_t.ePos[2];
     param[4] = epos_t.ePos[3];
     param[5] = ovl;
+    param[6] = blendR;
 
     if (c.execute("ExtAxisMoveJ", param, result))
     {
@@ -18414,6 +18430,416 @@ errno_t FRRobot::GetWideBoxTempFanMonitorParam(int& enable, int& period)
     return errcode;
 }
 
+/**
+ * @brief 设置焦点标定点
+ * @param [in] pointNum 焦点标定点编号 1-8
+ * @param [in] point 标定点坐标
+ * @return 错误码
+ */
+errno_t FRRobot::SetFocusCalibPoint(int pointNum, DescPose point)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = pointNum;
+    param[1] = point.tran.x;
+    param[2] = point.tran.y;
+    param[3] = point.tran.z;
+    param[4] = point.rpy.rx;
+    param[5] = point.rpy.ry;
+    param[6] = point.rpy.rz;
+
+    if (c.execute("SetFocusCalibPoint", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 计算焦点标定结果
+ * @param [in] pointNum 标定点个数
+ * @param [out] resultPos 标定结果XYZ
+ * @param [out] accuracy 标定精度误差
+ * @return 错误码
+ */
+errno_t FRRobot::ComputeFocusCalib(int pointNum, DescTran& resultPos, float& accuracy)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = pointNum;
+
+    if (c.execute("ComputeFocusCalib", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 == errcode)
+        {
+            resultPos.x = (double)result[1];
+            resultPos.y = (double)result[2];
+            resultPos.z = (double)result[3];
+            accuracy = (double)result[4];
+        }
+        else
+        {
+            logger_error("ComputeFocusCalib fail, errcode is: %d\n", errcode);
+        }
+    }
+    else
+    {
+        errcode = ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 开启焦点跟随
+ * @param [in] kp 比例参数，默认50.0
+ * @param [in] kpredict 前馈参数，默认19.0
+ * @param [in] aMax 最大角加速度限制，默认1440°/s^2
+ * @param [in] vMax 最大角速度限制，默认180°/s
+ * @param [in] type 锁定X轴指向(0-参考输入矢量；1-水平；2-垂直)
+ * @return 错误码
+ */
+errno_t FRRobot::FocusStart(double kp, double kpredict, double aMax, double vMax, int type)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = kp;
+    param[1] = kpredict;
+    param[2] = aMax;
+    param[3] = vMax;
+    param[4] = type;
+
+    if (c.execute("FocusStart", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 停止焦点跟随
+ * @return 错误码
+ */
+errno_t FRRobot::FocusEnd()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("FocusEnd", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置焦点坐标
+ * @param [in] pos 焦点坐标XYZ
+ * @return 错误码
+ */
+errno_t FRRobot::SetFocusPosition(DescTran pos)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = pos.x;
+    param[1] = pos.y;
+    param[2] = pos.z;
+
+    if (c.execute("SetFocusPosition", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置编码器升级
+ * @param [in] path 本地升级包全路径(D://zUP/XXXXX.bin)
+ * @return 错误码
+ */
+errno_t FRRobot::SetEncoderUpgrade(std::string path)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("SetEncoderUpgrade", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置关节固件升级
+ * @param [in] type 升级文件类型；1-升级固件；2-升级从站配置文件
+ * @param [in] path 本地升级包全路径(D://zUP/XXXXX.bin)
+ * @return 错误码
+ */
+errno_t FRRobot::SetJointFirmwareUpgrade(int type, std::string path)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = FileUpLoad(2, path);
+    if (0 == errcode)
+    {
+        logger_info("JointFirmware Upload success!");
+
+        /* 提取文件名称 */
+        size_t pos = path.find_last_of("/\\");
+        if (std::string::npos == pos)
+        {
+            logger_error("format of path is wrong, should be like /home/fd/xxx.tar.gz");
+            return ERR_FILE_NAME;
+        }
+        std::string filename = path.substr(pos + 1);
+        string pathInRobot = "/tmp/" + filename;
+
+        for (int i = 1; i < 7; i++)
+        {
+            errcode = SlaveFileWrite(1, i, pathInRobot);
+            if (errcode != 0)
+            {
+                return errcode;
+            }
+        }
+    }
+    else {
+        logger_error("JointFirmware Upgrade fail. errcode is: %d.", errcode);
+    }
+    return errcode;
+}
+
+/**
+ * @brief 设置控制箱固件升级
+ * @param [in] type 升级文件类型；1-升级固件；2-升级从站配置文件
+ * @param [in] path 本地升级包全路径(D://zUP/XXXXX.bin)
+ * @return 错误码
+ */
+errno_t FRRobot::SetCtrlFirmwareUpgrade(int type, std::string path)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = FileUpLoad(2, path);
+    if (0 == errcode)
+    {
+        logger_info("CtrlFirmware Upload success!");
+
+        /* 提取文件名称 */
+        size_t pos = path.find_last_of("/\\");
+        if (std::string::npos == pos)
+        {
+            logger_error("format of path is wrong, should be like /home/fd/xxx.tar.gz");
+            return ERR_FILE_NAME;
+        }
+        std::string filename = path.substr(pos + 1);
+        string pathInRobot = "/tmp/" + filename;
+    }
+    else {
+        logger_error("CtrlFirmware Upgrade fail. errcode is: %d.", errcode);
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief 设置末端固件升级
+ * @param [in] type 升级文件类型；1-升级固件；2-升级从站配置文件
+ * @param [in] path 本地升级包全路径(D://zUP/XXXXX.bin)
+ * @return 错误码
+ */
+errno_t FRRobot::SetEndFirmwareUpgrade(int type, std::string path)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = FileUpLoad(2, path);
+    if (0 == errcode)
+    {
+        logger_info("EndFirmware Upload success!");
+
+        /* 提取文件名称 */
+        size_t pos = path.find_last_of("/\\");
+        if (std::string::npos == pos)
+        {
+            logger_error("format of path is wrong, should be like /home/fd/xxx.tar.gz");
+            return ERR_FILE_NAME;
+        }
+        std::string filename = path.substr(pos + 1);
+        string pathInRobot = "/tmp/" + filename;
+        errcode = SlaveFileWrite(type, 7, pathInRobot);
+    }
+    else {
+        logger_error("EndFirmware Upgrade fail. errcode is: %d.", errcode);
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief 关节全参数配置文件升级
+ * @param [in] path 本地升级包全路径(D://zUP/XXXXX.bin)
+ * @return 错误码
+ */
+errno_t FRRobot::JointAllParamUpgrade(std::string path)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = FileUpLoad(5, path);
+    if (0 == errcode)
+    {
+        logger_info("JointAllParam Upload success!");
+
+        int errcode = 0;
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("JointAllParamUpgrade", param, result))
+        {
+            errcode = int(result);
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+
+        return errcode;
+    }
+    else {
+        logger_error("EndFirmware Upgrade fail. errcode is: %d.", errcode);
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief 设置机器人型号
+ * @param [in] type 机器人型号
+ * @return 错误码
+ */
+errno_t FRRobot::SetRobotType(int type)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = type;
+
+    if (c.execute("SetRobotType", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
 
 
 /* 根据字符分割字符串 */

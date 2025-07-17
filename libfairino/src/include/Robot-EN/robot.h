@@ -694,7 +694,7 @@ public:
 	/**
     *@brief Set collision level
     *@param  [in]  mode  0- grade, 1- percentage
-    *@param  [in]  level Collision threshold, grade range [], percentage range [0~1]
+    *@param  [in]  level Collision threshold, grade range [1-10], percentage range [0~1]
     *@param  [in]  config 0- Do not update the configuration file. 1- Update the configuration file
     *@return  Error code
 	 */
@@ -2256,9 +2256,10 @@ public:
 	* @brief UDP extension axis movement
 	* @param [in] pos target position
 	* @param [in] ovl Speed percentage
+	* @param [in] blend Smooth parameter (mm or ms)
 	* @return error code
 	*/
-	errno_t ExtAxisMove(ExaxisPos pos, double ovl);
+	errno_t ExtAxisMove(ExaxisPos pos, double ovl, double blend = -1);
 
 	/**
 	* @brief Set extended DO
@@ -3609,6 +3610,92 @@ public:
 	 * @return error code
 	 */
 	errno_t GetWideBoxTempFanMonitorParam(int& enable, int& period);
+
+	/**
+	 * @brief Set the focus calibration point
+	 * @param [in] pointNum Focus calibration point number 1-8
+	 * @param [in] point Coordinate of the calibration point
+	 * @return error code
+	 */
+	errno_t SetFocusCalibPoint(int pointNum, DescPose point);
+
+	/**
+	 * @brief Calculate the focus calibration result
+	 * @param [in] pointNum The number of calibration points
+	 * @param [out] resultPos Calibration result XYZ
+	 * @param [out] accuracy Calibration accuracy error
+	 * @return error code
+	 */
+	errno_t ComputeFocusCalib(int pointNum, DescTran& resultPos, float& accuracy);
+
+	/**
+	 * @brief Enable focus following
+	 * @param [in] kp Proportional parameter, default50.0
+	 * @param [in] kpredict Feedforward parameter, default 19.0
+	 * @param [in] aMax Maximum angular acceleration limit, default 1440°/s^2
+	 * @param [in] vMax Maximum angular velocity limit, default 180°/s
+	 * @param [in] type Lock the X-axis pointing (0- reference input vector; 1-level; 2- Vertical
+	 * @return error code
+	 */
+	errno_t FocusStart(double kp, double kpredict, double aMax, double vMax, int type);
+
+	/**
+	 * @brief Stop focusing following
+	 * @return error code
+	 */
+	errno_t FocusEnd();
+
+	/**
+	 * @brief Set the focus coordinates
+	 * @param [in] pos Focal coordinate XYZ
+	 * @return error code
+	 */
+	errno_t SetFocusPosition(DescTran pos);
+
+	/**
+	 * @brief Set the encoder upgrade
+	 * @param [in] path Full path of local upgrade package(D://zUP/XXXXX.bin)
+	 * @return error code
+	 */
+	errno_t SetEncoderUpgrade(std::string path);
+
+	/**
+	 * @brief Set the joint firmware upgrade
+	 * @param [in] type Upgrade file type; 1- Upgrade the firmware (the robot needs to be put into boot mode before use); 2- Upgrade the slave station configuration file (Disable the robot before use)
+	 * @param [in] path Full path of local upgrade package(D://zUP/XXXXX.bin)
+	 * @return error code
+	 */
+	errno_t SetJointFirmwareUpgrade(int type, std::string path);
+
+	/**
+	 * @brief Set the control box firmware upgrade
+	 * @param [in] type Upgrade file type; 1- Upgrade the firmware (the robot needs to be put into boot mode before use); 2- Upgrade the slave station configuration file (Disable the robot before use)
+	 * @param [in] path Full path of local upgrade package(D://zUP/XXXXX.bin)
+	 * @return error code
+	 */
+	errno_t SetCtrlFirmwareUpgrade(int type, std::string path);
+
+	/**
+	 * @brief Set robot end firmware upgrade
+	 * @param [in] type Upgrade file type; 1- Upgrade the firmware (the robot needs to be put into boot mode before use); 2- Upgrade the slave station configuration file (Disable the robot before use)
+	 * @param [in] path path Full path of local upgrade package(D://zUP/XXXXX.bin)
+	 * @return error code
+	 */
+	errno_t SetEndFirmwareUpgrade(int type, std::string path);
+
+	/**
+	 * @brief Joint full parameter profile upgrade(Disable the robot before use)
+	 * @param [in] path Full path of local upgrade package(D://zUP/XXXXX.db)
+	 * @return error code
+	 */
+	errno_t JointAllParamUpgrade(std::string path);
+
+	/**
+	 * @brief Set the type of the robot(Disable the robot before use)
+	 * @param [in] type Robot type
+	 * @return error code
+	 */
+	errno_t SetRobotType(int type);
 
 	/**
 	* @brief  Set communication reconnection parameters with the robot

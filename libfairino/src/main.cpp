@@ -2593,6 +2593,115 @@ void AxleSensorConfig(FRRobot* robot)
      robot->MoveL(&JP46, &DP46, 0, 0, 100, 100, 100, 20, 0, &exaxisPos, 0, 0, &offdese);
      return 0;
  }
+
+ int TestBlendFIR(FRRobot* robot)
+ {
+     ExaxisPos exaxisPos = { 0, 0, 0, 0 };
+     DescPose offdese = { 0, 0, 0, 0, 0, 0 };
+
+     //JointPos JP31 = { 43.849, -71.535, 109.564, -135.187, -89.016, 18.225 };
+     //DescPose DP31 = { 0, 0, 0, 0, 0, 0 };
+     //JointPos JP32 = { 67.950, -31.106, 58.618, -135.151, -89.017, 18.226 };
+     //DescPose DP32 = { 0, 0, 0, 0, 0, 0 };
+     //JointPos JP33 = { 67.950, -31.106, 58.618, -135.151, -89.017, 18.226 };
+     //DescPose DP33 = { 0, 0, 0, 0, 0, 0 };
+     //JointPos JP34 = { 105.694, -125.732, 124.263, -105.860, -90.554, 18.230 };
+     //DescPose DP34 = { 0, 0, 0, 0, 0, 0 };
+     //JointPos JP35 = { 97.159, -26.141, 53.021, -120.936, -103.329, 18.230 };
+     //DescPose DP35 = { 0, 0, 0, 0, 0, 0 };
+     //robot->GetForwardKin(&JP31, &DP31);
+     //robot->GetForwardKin(&JP32, &DP32);
+     //robot->GetForwardKin(&JP33, &DP33);
+     //robot->GetForwardKin(&JP34, &DP34);
+     //robot->GetForwardKin(&JP35, &DP35);
+     //robot->LinArcFIRPlanningStart(2000, 10000, 720, 1440);
+     //robot->MoveL(&JP31, &DP31, 0, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);
+     //robot->MoveL(&JP32, &DP32, 0, 0, 100, 100, 100, 300, 0, &exaxisPos, 0, 0, &offdese);
+     //robot->MoveL(&JP33, &DP33, 0, 0, 100, 100, 100, 300, 0, &exaxisPos, 0, 0, &offdese);
+     //robot->MoveL(&JP34, &DP34, 0, 0, 100, 100, 100, 300, 0, &exaxisPos, 0, 0, &offdese);
+     //robot->MoveL(&JP35, &DP35, 0, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);
+     //robot->LinArcFIRPlanningEnd();
+
+     JointPos JP1 = { 43.849, -71.535, 109.564, -135.187, -89.016, 18.225 };
+     DescPose DP1 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP2 = { 67.950, -31.106, 58.618, -135.151, -89.017, 18.226 };
+     DescPose DP2 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP3 = { 97.159, -26.141, 53.021, -120.936, -103.329, 18.230 };
+     DescPose DP3 = { 0, 0, 0, 0, 0, 0 };
+     robot->GetForwardKin(&JP1, &DP1);
+     robot->GetForwardKin(&JP2, &DP2);
+     robot->GetForwardKin(&JP3, &DP3);
+     robot->PtpFIRPlanningStart(200, 1000);
+     robot->MoveJ(&JP1, &DP1, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveJ(&JP2, &DP2, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->MoveJ(&JP3, &DP3, 0, 0, 100, 100, 100, &exaxisPos, 200, 0, &offdese);
+     robot->PtpFIRPlanningEnd();
+     
+     JointPos JP4 = { 138.430, -103.926, 135.390, -120.507, -116.912, 18.198 };
+     DescPose DP4 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP5 = { 122.158, -69.748, 92.480, -120.510, -116.988, 18.175 };
+     DescPose DP5 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP6 = { 70.960, -53.189, 85.689, -123.253, -116.780, 18.175 };
+     DescPose DP6 = { 0, 0, 0, 0, 0, 0 };
+     
+     robot->GetForwardKin(&JP4, &DP4);
+     robot->GetForwardKin(&JP5, &DP5);
+     robot->GetForwardKin(&JP6, &DP6);
+     robot->LinArcFIRPlanningStart(2000, 10000, 720, 1440);
+     robot->MoveL(&JP4, &DP4, 0, 0, 100, 100, 100, 200, 0, &exaxisPos, 0, 0, &offdese);
+     robot->MoveC(&JP5, &DP5, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP6, &DP6, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+     robot->LinArcFIRPlanningEnd();
+
+
+     JointPos JP7 = { 138.430, -103.926, 135.390, -120.507, -116.912, 18.198 };
+     DescPose DP7 = { 0, 0, 0, 0, 0, 0 };
+
+     JointPos JP8 = { 122.158, -69.748, 92.480, -120.510, -116.988, 18.175 };
+     DescPose DP8 = { 0, 0, 0, 0, 0, 0 };
+
+     JointPos JP9 = { 70.960, -53.189, 85.689, -123.253, -116.780, 18.175 };
+     DescPose DP9 = { 0, 0, 0, 0, 0, 0 };
+
+     JointPos JP10 = { 38.619, -93.376, 100.695, -79.572, -116.773, 18.172 };
+     DescPose DP10 = { 0, 0, 0, 0, 0, 0 };
+
+     JointPos JP11 = { 110.873, -113.738, 126.180, -79.561, -116.964, 18.173 };
+     DescPose DP11 = { 0, 0, 0, 0, 0, 0 };
+
+     robot->GetForwardKin(&JP7, &DP7);
+     robot->GetForwardKin(&JP8, &DP8);
+     robot->GetForwardKin(&JP9, &DP9);
+     robot->GetForwardKin(&JP10, &DP10);
+     robot->GetForwardKin(&JP11, &DP11);
+
+     robot->LinArcFIRPlanningStart(2000, 10000, 720, 1440);
+     robot->MoveJ(&JP7, &DP7, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot->MoveC(&JP8, &DP8, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP9, &DP9, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, 50);
+     robot->MoveC(&JP10, &DP10, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP11, &DP11, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+     robot->LinArcFIRPlanningEnd();
+
+     JointPos JP12 = { 138.430, -103.926, 135.390, -120.507, -116.912, 18.198 };
+     DescPose DP12 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP13 = { 122.158, -69.748, 92.480, -120.510, -116.988, 18.175 };
+     DescPose DP13 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP14 = { 70.960, -53.189, 85.689, -123.253, -116.780, 18.175 };
+     DescPose DP14 = { 0, 0, 0, 0, 0, 0 };
+     JointPos JP15 = { 38.619, -93.376, 100.695, -79.572, -116.773, 18.172 };
+     DescPose DP15 = { 0, 0, 0, 0, 0, 0 };
+     robot->GetForwardKin(&JP12, &DP12);
+     robot->GetForwardKin(&JP13, &DP13);
+     robot->GetForwardKin(&JP14, &DP14);
+     robot->GetForwardKin(&JP15, &DP15);
+
+     
+     robot->MoveL(&JP12, &DP12, 0, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);
+     robot->LinArcFIRPlanningStart(2000, 10000, 720, 1440);
+     robot->MoveC(&JP13, &DP13, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &JP14, &DP14, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, 400);
+     robot->MoveL(&JP15, &DP15, 0, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);
+     robot->LinArcFIRPlanningEnd();
+    
+     return 0;
+ }
  ///////////////////////////////////////////////////////////////////////////////////////////////////
  int TestRobotCtrl(void)
  {
@@ -6469,142 +6578,143 @@ int TestServoJ(void)
      return 0;
  }
 
- int terty5(FRRobot * robot)
- {
-     int rtn = robot->LuaUpload("D://zUP/Program5.lua");
-     printf("LuaUpload rtn is %d\n", rtn);
-     robot->ProgramLoad("/fruser/Program5.lua");
-     
-     SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//创建了可识别套接字
-     if (serSocket != -1)
-     {
-         printf("成功创建套接字！%d\n", serSocket);
-     }
+ //int terty5(FRRobot * robot)
+ //{
+ //    int rtn = robot->LuaUpload("D://zUP/Program5.lua");
+ //    printf("LuaUpload rtn is %d\n", rtn);
+ //    robot->ProgramLoad("/fruser/Program5.lua");
+ //    
+ //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//创建了可识别套接字
+ //    if (serSocket != -1)
+ //    {
+ //        printf("成功创建套接字！%d\n", serSocket);
+ //    }
 
-     //需要绑定的参数，主要是本地的socket的一些信息。
-     SOCKADDR_IN addr;
-     addr.sin_family = AF_INET;
-     addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip地址
-     addr.sin_port = htons(31000);//绑定端口
+ //    //需要绑定的参数，主要是本地的socket的一些信息。
+ //    SOCKADDR_IN addr;
+ //    addr.sin_family = AF_INET;
+ //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip地址
+ //    addr.sin_port = htons(31000);//绑定端口
 
-     bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));//绑定完成
-     listen(serSocket, 5);//其中第二个参数代表能够接收的最多的连接数
-     printf("等待客户端...\n");
-     SOCKADDR_IN clientsocket;
-     int len = sizeof(SOCKADDR);
+ //    bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));//绑定完成
+ //    listen(serSocket, 5);//其中第二个参数代表能够接收的最多的连接数
+ //    printf("等待客户端...\n");
+ //    SOCKADDR_IN clientsocket;
+ //    int len = sizeof(SOCKADDR);
 
-     robot->ProgramRun();
-     SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
-     //如果这里不是accept而是conection的话。。就会不断的监听
-     if (serConn)
-     {
-         printf("监听到新的客户端...\n");
-     }
-     while (1)
-     {
-         robot->Sleep(200);
-         char sendBuf[4000] = "";
-         sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//找对对应的IP并且将这行字打印到那里
-         //发送信息
-         send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
-         char receiveBuf[4000] = "";//接收
-         memset(receiveBuf, 0, 4000);
-         int RecvLen;
-         RecvLen = recv(serConn, receiveBuf, 4000, 0);
-         printf("5 recv string is  %s\n", receiveBuf);
-         if (RecvLen <= 0)
-             printf("5 recv length %d  err %s\n", RecvLen, WSAGetLastError());
-         else
-         {
-             string txt = receiveBuf;
-             string::size_type idx = txt.find("ProgramFinish"); //在a中查找b.
-             if (idx == string::npos) //不存在。
-                 cout << "not found\n";
-             else
-             {
-                 cout << "found ProgramFinish\n";
-                 break;
-             }
-         }
+ //    robot->ProgramRun();
+ //    SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
+ //    //如果这里不是accept而是conection的话。。就会不断的监听
+ //    if (serConn)
+ //    {
+ //        printf("监听到新的客户端...\n");
+ //    }
+ //    while (1)
+ //    {
+ //        robot->Sleep(200);
+ //        char sendBuf[4000] = "";
+ //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//找对对应的IP并且将这行字打印到那里
+ //        //发送信息
+ //        send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
+ //        char receiveBuf[4000] = "";//接收
+ //        memset(receiveBuf, 0, 4000);
+ //        int RecvLen;
+ //        RecvLen = recv(serConn, receiveBuf, 4000, 0);
+ //        printf("5 recv string is  %s\n", receiveBuf);
+ //        if (RecvLen <= 0)
+ //            printf("5 recv length %d  err %s\n", RecvLen, WSAGetLastError());
+ //        else
+ //        {
+ //            string txt = receiveBuf;
+ //            string::size_type idx = txt.find("ProgramFinish"); //在a中查找b.
+ //            if (idx == string::npos) //不存在。
+ //                cout << "not found\n";
+ //            else
+ //            {
+ //                cout << "found ProgramFinish\n";
+ //                break;
+ //            }
+ //        }
 
-     }
-     closesocket(serConn);//关闭
-     //WSACleanup();//释放资源的操作
+ //    }
+ //    closesocket(serConn);//关闭
+ //    //WSACleanup();//释放资源的操作
 
-     rtn = robot->LuaDelete("Program5.lua");
-     printf("LuaDelete rtn is %d\n", rtn);
-     return 0;
- }
+ //    rtn = robot->LuaDelete("Program5.lua");
+ //    printf("LuaDelete rtn is %d\n", rtn);
+ //    return 0;
+ //}
 
- int terty6(FRRobot* robot)
- {
-     int rtn = robot->LuaUpload("D://zUP/Program6.lua");
-     printf("LuaUpload rtn is %d\n", rtn);
-     robot->ProgramLoad("/fruser/Program6.lua");
+ //int terty6(FRRobot* robot)
+ //{
+ //    int rtn = robot->LuaUpload("D://zUP/Program6.lua");
+ //    printf("LuaUpload rtn is %d\n", rtn);
+ //    robot->ProgramLoad("/fruser/Program6.lua");
 
-     SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//创建了可识别套接字
-     if (serSocket != -1)
-     {
-         printf("成功创建套接字！%d\n", serSocket);
-     }
+ //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//创建了可识别套接字
+ //    if (serSocket != -1)
+ //    {
+ //        printf("成功创建套接字！%d\n", serSocket);
+ //    }
 
-     //需要绑定的参数，主要是本地的socket的一些信息。
-     SOCKADDR_IN addr;
-     addr.sin_family = AF_INET;
-     addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip地址
-     addr.sin_port = htons(31000);//绑定端口
+ //    //需要绑定的参数，主要是本地的socket的一些信息。
+ //    SOCKADDR_IN addr;
+ //    addr.sin_family = AF_INET;
+ //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip地址
+ //    addr.sin_port = htons(31000);//绑定端口
 
-     bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));
-     listen(serSocket, 5);
-     printf("等待客户端...\n");
-     SOCKADDR_IN clientsocket;
-     int len = sizeof(SOCKADDR);
+ //    bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));
+ //    listen(serSocket, 5);
+ //    printf("等待客户端...\n");
+ //    SOCKADDR_IN clientsocket;
+ //    int len = sizeof(SOCKADDR);
 
-     robot->ProgramRun();
-     SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
-     if (serConn)
-     {
-         printf("监听到新的客户端...\n");
-     }
-     while (1)
-     {
-         robot->Sleep(100);
-         char sendBuf[100];
-         sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//找对对应的IP并且将这行字打印到那里
-         send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
-         char receiveBuf[4000] = "";//接收
-         memset(receiveBuf, 0, 4000);
-         int RecvLen;
-         RecvLen = recv(serConn, receiveBuf, 4000, 0);
-         printf("6 recv string is  %s\n", receiveBuf);
-         if (RecvLen <= 0)
-             printf("6 recv length %d   %d\n", RecvLen, WSAGetLastError());
-         else
-         {
-             string txt = receiveBuf;
-             string::size_type idx = txt.find("ProgramFinish"); //在a中查找b.
-             if (idx == string::npos) //不存在。
-                 cout << "not found\n";
-             else
-             {
-                 cout << "found ProgramFinish\n";
-                 break;
-             }
-         }
+ //    robot->ProgramRun();
+ //    SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
+ //    if (serConn)
+ //    {
+ //        printf("监听到新的客户端...\n");
+ //    }
+ //    while (1)
+ //    {
+ //        robot->Sleep(100);
+ //        char sendBuf[100];
+ //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//找对对应的IP并且将这行字打印到那里
+ //        send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
+ //        char receiveBuf[4000] = "";//接收
+ //        memset(receiveBuf, 0, 4000);
+ //        int RecvLen;
+ //        RecvLen = recv(serConn, receiveBuf, 4000, 0);
+ //        printf("6 recv string is  %s\n", receiveBuf);
+ //        if (RecvLen <= 0)
+ //            printf("6 recv length %d   %d\n", RecvLen, WSAGetLastError());
+ //        else
+ //        {
+ //            string txt = receiveBuf;
+ //            string::size_type idx = txt.find("ProgramFinish"); //在a中查找b.
+ //            if (idx == string::npos) //不存在。
+ //                cout << "not found\n";
+ //            else
+ //            {
+ //                cout << "found ProgramFinish\n";
+ //                break;
+ //            }
+ //        }
 
-     }
-     closesocket(serConn);//关闭
-    // WSACleanup();//释放资源的操作
+ //    }
+ //    closesocket(serConn);//关闭
+ //   // WSACleanup();//释放资源的操作
 
-     rtn = robot->LuaDelete("Program6.lua");
-     printf("LuaDelete rtn is %d\n", rtn);
-     return 0;
- }
+ //    rtn = robot->LuaDelete("Program6.lua");
+ //    printf("LuaDelete rtn is %d\n", rtn);
+ //    return 0;
+ //}
 
- int main(void)
+ int TestFocus()
  {
      ROBOT_STATE_PKG pkg = {};
      FRRobot robot;
+
      robot.LoggerInit();
      robot.SetLoggerLevel(1);
      int rtn = robot.RPC("192.168.58.2");
@@ -6612,16 +6722,162 @@ int TestServoJ(void)
      {
          return -1;
      }
+     robot.SetReConnectParam(true, 30000, 500);
 
-     while (true)
-     {
-         terty5(&robot);
-         robot.Sleep(4000);
-         terty6(&robot);
-         robot.Sleep(4000);
-     }
+     DescPose p1Desc(186.331, 487.913, 209.850, 149.030, 0.688, -114.347);
+     JointPos p1Joint(-127.876, -75.341, 115.417, -122.741, -59.820, 74.300);
+
+     DescPose p2Desc(69.721, 535.073, 202.882, -144.406, -14.775, -89.012);
+     JointPos p2Joint(-101.780, -69.828, 110.917, -125.740, -127.841, 74.300);
+
+     DescPose p3Desc(146.861, 578.426, 205.598, 175.997, -36.178, -93.437);
+     JointPos p3Joint(-112.851, -60.191, 86.566, -80.676, -97.463, 74.300);
+
+     DescPose p4Desc(136.284, 509.876, 225.613, 178.987, 1.372, -100.696);
+     JointPos p4Joint(-116.397, -76.281, 113.845, -128.611, -88.654, 74.299);
+
+     DescPose p5Desc(138.395, 505.972, 298.016, 179.134, 2.147, -101.110);
+     JointPos p5Joint(-116.814, -82.333, 109.162, -118.662, -88.585, 74.302);
+
+     DescPose p6Desc(105.553, 454.325, 232.017, -179.426, 0.444, -99.952);
+     JointPos p6Joint(-115.649, -84.367, 122.447, -128.663, -90.432, 74.303);
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 100, 0, 0, 0);
+
+     robot.MoveJ(&p1Joint, &p1Desc, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot.SetTcp4RefPoint(1);
+     robot.MoveJ(&p2Joint, &p2Desc, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot.SetTcp4RefPoint(2);
+     robot.MoveJ(&p3Joint, &p3Desc, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot.SetTcp4RefPoint(3);
+     robot.MoveJ(&p4Joint, &p4Desc, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
+     robot.SetTcp4RefPoint(4);
+
+     DescPose coordRtn = {};
+     rtn = robot.ComputeTcp4(&coordRtn);
+     printf("4 Point ComputeTool        %d  coord is %f %f %f %f %f %f \n", rtn, coordRtn.tran.x, coordRtn.tran.y, coordRtn.tran.z, coordRtn.rpy.rx, coordRtn.rpy.ry, coordRtn.rpy.rz);
+
+     robot.SetToolCoord(1, &coordRtn, 0, 0, 1, 0);
+
+     robot.GetForwardKin(&p1Joint, &p1Desc);
+     robot.GetForwardKin(&p2Joint, &p2Desc);
+     robot.GetForwardKin(&p3Joint, &p3Desc);
+
+     robot.SetFocusCalibPoint(1, p1Desc);
+     robot.SetFocusCalibPoint(2, p2Desc);
+     robot.SetFocusCalibPoint(3, p3Desc);
+
+     DescTran resultPos = {};
+     float accuracy = 0.0;
+     rtn = robot.ComputeFocusCalib(3, resultPos, accuracy);
+     printf("ComputeFocusCalib coord is %d %f %f %f accuracy is %f\n", rtn, resultPos.x, resultPos.y, resultPos.z, accuracy);
+     rtn = robot.SetFocusPosition(resultPos);
+
+     robot.GetForwardKin(&p5Joint, &p5Desc);
+     robot.GetForwardKin(&p6Joint, &p6Desc);
+
+     robot.MoveL(&p5Joint, &p5Desc, 1, 0, 10, 100, 100, -1, 0, &exaxisPos, 0, 1, &offdese);
+     robot.MoveL(&p6Joint, &p6Desc, 1, 0, 10, 100, 100, -1, 0, &exaxisPos, 0, 1, &offdese);
+
+     robot.FocusStart(50, 19, 710, 90, 0);
+     robot.MoveL(&p5Joint, &p5Desc, 1, 0, 10, 100, 100, -1, 0, &exaxisPos, 0, 1, &offdese);
+     robot.MoveL(&p6Joint, &p6Desc, 1, 0, 10, 100, 100, -1, 0, &exaxisPos, 0, 1, &offdese);
+     robot.FocusEnd();
 
      robot.CloseRPC();
+     return 0;
+ }
+
+ int TestFirmWareUpgrade()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return -1;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     robot.RobotEnable(0);
+     robot.Sleep(200);
+     rtn = robot.JointAllParamUpgrade("D://zUP/jointallparametersFR56.0.db");
+     printf("robot JointAllParamUpgrade rtn is %d\n", rtn);
+
+     rtn = robot.SetCtrlFirmwareUpgrade(2, "D://zUP/upgrade/FAIR_Cobot_Cbd_Asix_V2.0.bin");
+     printf("robot SetCtrlFirmwareUpgrade config param rtn is %d\n", rtn);
+
+     rtn = robot.SetEndFirmwareUpgrade(2, "D://zUP/upgrade/FAIR_Cobot_Axle_Asix_V2.4.bin");
+     printf("robot SetEndFirmwareUpgrade config param rtn is %d\n", rtn);
+     
+     robot.SetSysServoBootMode();
+     rtn = robot.SetCtrlFirmwareUpgrade(1, "D://zUP/FR_CTRL_PRIMCU_FV201010_MAIN_U4_T01_20240529.bin");
+     printf("robot SetCtrlFirmwareUpgrade rtn is %d\n", rtn);
+
+     rtn = robot.SetEndFirmwareUpgrade(1, "D://zUP/FR_END_FV201010_MAIN_U01_T01_20250522.bin");
+     printf("robot SetEndFirmwareUpgrade rtn is %d\n", rtn);
+
+     rtn = robot.SetJointFirmwareUpgrade(1, "D://zUP/FR_SERVO_FV502211_MAIN_U7_T07_20250217.bin");
+     printf("robot SetJointFirmwareUpgrade rtn is %d\n", rtn);
+
+     robot.CloseRPC();
+     return 0;
+ }
+
+ void TestExtAxisMoveBlend()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     JointPos joint_pos1 = {-68.732, -99.773, -77.729, -77.167, 100.772, -13.317};
+     JointPos joint_pos2 = { -101.678, -102.823, -77.512, -77.185, 88.388, -13.317 };
+     JointPos joint_pos3 = { -129.905, -99.715, -71.965, -77.209, 81.678, -13.317 };
+     DescPose desc_pos1 = { 103.887, -434.739, 244.938, -162.495, 6.575, -142.948 };
+     DescPose desc_pos2 = {-196.883, -418.054, 218.942, -168.196, -4.388, -178.991};
+     DescPose desc_pos3 = {-396.665, -265.695, 284.380, -160.913, -12.378, 149.770};
+
+     ExaxisPos epos1 = {0.000, 6.996, 0.000, 0.000};
+     ExaxisPos epos2 = {0.000, 20.987, 0.000, 0.000};
+     ExaxisPos epos3 = {-0.000, 30.982, 0.000, 0.000};
+
+     DescPose offset_pos = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+
+     rtn = robot.AccSmoothStart(1);
+     printf("AccSmoothStart rtn is %d\n", rtn);
+     robot.Sleep(1000);
+     rtn = robot.ExtAxisSyncMoveL(joint_pos1, desc_pos1, 1, 0, 100, 100, 100, 100, epos1, 0, offset_pos);
+     printf("ExtAxisSyncMoveL 1 rtn is %d\n", rtn);
+     rtn = robot.ExtAxisSyncMoveL(joint_pos2, desc_pos2, 1, 0, 100, 100, 100, 200, epos2, 0, offset_pos);
+     printf("ExtAxisSyncMoveL 2 rtn is %d\n", rtn);
+     rtn = robot.ExtAxisSyncMoveL(joint_pos3, desc_pos3, 1, 0, 100, 100, 100, 300, epos3, 0, offset_pos);
+     printf("ExtAxisSyncMoveL 3 rtn is %d\n", rtn);
+     robot.Sleep(8000);
+     rtn = robot.AccSmoothEnd(1);
+     printf("AccSmoothEnd rtn is %d\n", rtn);
+
+     robot.CloseRPC();
+     return;
+ }
+
+
+ int main(void)
+ {
+     
+     TestExtAxisMoveBlend();
+
      return 0;
  }
 
