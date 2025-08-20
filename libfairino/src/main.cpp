@@ -214,17 +214,17 @@ int PowerLimitOn(FRRobot* robot)
     robot->GetJointTorques(1, torques);
 
     int count = 100;
-    robot->ServoJTStart(); //   #servoJTï¿½ï¿½Ê¼
+    robot->ServoJTStart(); //   #servoJT¿ªÊ¼
     int error = 0;
     while (count > 0)
     {
-        torques[0] = torques[0] + 0.1;//  #Ã¿ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0.1NMï¿½ï¿½ï¿½Ë¶ï¿½100ï¿½ï¿½
-        error = robot->ServoJT(torques, 0.001);  //# ï¿½Ø½Ú¿Õ¼ï¿½ï¿½Å·ï¿½Ä£Ê½ï¿½Ë¶ï¿½
+        torques[0] = torques[0] + 0.1;//  #Ã¿´Î1ÖáÔö¼Ó0.1NM£¬ÔË¶¯100´Î
+        error = robot->ServoJT(torques, 0.001);  //# ¹Ø½Ú¿Õ¼äËÅ·þÄ£Ê½ÔË¶¯
         count = count - 1;
         robot->Sleep(1);
     }
 
-    error = robot->ServoJTEnd();  //#ï¿½Å·ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½
+    error = robot->ServoJTEnd();  //#ËÅ·þÔË¶¯½áÊø
     return 0;
 }
 
@@ -235,16 +235,16 @@ int TestServoJ1(FRRobot* robot)
     robot->GetJointTorques(1, torques);
 
     int count = 100;
-    robot->ServoJTStart(); //   #servoJTï¿½ï¿½Ê¼
+    robot->ServoJTStart(); //   #servoJT¿ªÊ¼
     int error = 0;
     while (count > 0)
     {
-        error = robot->ServoJT(torques, 0.008);  //# ï¿½Ø½Ú¿Õ¼ï¿½ï¿½Å·ï¿½Ä£Ê½ï¿½Ë¶ï¿½
+        error = robot->ServoJT(torques, 0.008);  //# ¹Ø½Ú¿Õ¼äËÅ·þÄ£Ê½ÔË¶¯
         count = count - 1;
         robot->Sleep(1);
     }
 
-    error = robot->ServoJTEnd();  //#ï¿½Å·ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½
+    error = robot->ServoJTEnd();  //#ËÅ·þÔË¶¯½áÊø
     robot->DragTeachSwitch(1);
     return 0;
 }
@@ -257,17 +257,17 @@ int PowerLimitOff(FRRobot* robot)
     robot->GetJointTorques(1, torques);
 
     int count = 100;
-    robot->ServoJTStart(); //   #servoJTï¿½ï¿½Ê¼
+    robot->ServoJTStart(); //   #servoJT¿ªÊ¼
     int error = 0;
     while (count > 0)
     {
-        torques[0] = torques[0] + 0.1;//  #Ã¿ï¿½ï¿½1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0.1NMï¿½ï¿½ï¿½Ë¶ï¿½100ï¿½ï¿½
-        error = robot->ServoJT(torques, 0.001);  //# ï¿½Ø½Ú¿Õ¼ï¿½ï¿½Å·ï¿½Ä£Ê½ï¿½Ë¶ï¿½
+        torques[0] = torques[0] + 0.1;//  #Ã¿´Î1ÖáÔö¼Ó0.1NM£¬ÔË¶¯100´Î
+        error = robot->ServoJT(torques, 0.001);  //# ¹Ø½Ú¿Õ¼äËÅ·þÄ£Ê½ÔË¶¯
         count = count - 1;
         robot->Sleep(1);
     }
 
-    error = robot->ServoJTEnd();  //#ï¿½Å·ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½
+    error = robot->ServoJTEnd();  //#ËÅ·þÔË¶¯½áÊø
     return 0;
 }
 
@@ -373,26 +373,26 @@ void Wiresearch(FRRobot* robot)
     JointPos jointREF1B = { -133.133, -119.029, -83.326, -70.976, 89.069, 91.401 };
 
     rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-    robot->MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-    robot->MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+    robot->MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //Æðµã
+    robot->MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
     rtn1 = robot->WireSearchWait("REF0");
     rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
     rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-    robot->MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-    robot->MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+    robot->MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //Æðµã
+    robot->MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
     rtn1 = robot->WireSearchWait("REF1");
     rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
     rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-    robot->MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-    robot->MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+    robot->MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //Æðµã
+    robot->MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
     rtn1 = robot->WireSearchWait("RES0");
     rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
     rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-    robot->MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-    robot->MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+    robot->MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //Æðµã
+    robot->MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
     rtn1 = robot->WireSearchWait("RES1");
     rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
@@ -1072,26 +1072,26 @@ void AxleSensorConfig(FRRobot* robot)
      JointPos jointREF1B = { 82.117, -87.146, 116.470, -117.737, -93.145, -61.090 };
 
      rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot->MoveL(&jointREF0A, &descREF0A, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-     robot->MoveL(&jointREF0B, &descREF0B, 1, 0, 10, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+     robot->MoveL(&jointREF0A, &descREF0A, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //Æðµã
+     robot->MoveL(&jointREF0B, &descREF0B, 1, 0, 10, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
      rtn1 = robot->WireSearchWait("REF0");
      rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot->MoveL(&jointREF1A, &descREF1A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-     robot->MoveL(&jointREF1B, &descREF1B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+     robot->MoveL(&jointREF1A, &descREF1A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //Æðµã
+     robot->MoveL(&jointREF1B, &descREF1B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
      rtn1 = robot->WireSearchWait("REF1");
      rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot->MoveL(&jointREF0A, &descREF0A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-     robot->MoveL(&jointREF0B, &descREF0B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+     robot->MoveL(&jointREF0A, &descREF0A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //Æðµã
+     robot->MoveL(&jointREF0B, &descREF0B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
      rtn1 = robot->WireSearchWait("RES0");
      rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot->MoveL(&jointREF1A, &descREF1A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-     robot->MoveL(&jointREF1B, &descREF1B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+     robot->MoveL(&jointREF1A, &descREF1A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //Æðµã
+     robot->MoveL(&jointREF1B, &descREF1B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
      rtn1 = robot->WireSearchWait("RES1");
      rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
@@ -1842,10 +1842,10 @@ void AxleSensorConfig(FRRobot* robot)
      //robot.MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
      //robot.Circle(&midjointPos, &middescPose, tool, 0, 100, 100, &exaxisPos, &endjointPos, &enddescPose, tool, 0, 100, 100, &exaxisPos, 100, -1, &offdese);
 
-     //robot.StartJOG(0, 1, 0, 20.0, 20.0, 30.0);   //ï¿½ï¿½ï¿½Ø½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½StartJOGÎªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½î£¬ï¿½Ë¶ï¿½×´Ì¬ï¿½Â½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¶ï¿½Ö¸ï¿½î£¨ï¿½ï¿½ï¿½ï¿½StartJOGï¿½ï¿½ï¿½á±»ï¿½ï¿½ï¿½ï¿½
+     //robot.StartJOG(0, 1, 0, 20.0, 20.0, 30.0);   //µ¥¹Ø½ÚÔË¶¯£¬StartJOGÎª·Ç×èÈûÖ¸Áî£¬ÔË¶¯×´Ì¬ÏÂ½ÓÊÕÆäËûÔË¶¯Ö¸Áî£¨°üº¬StartJOG£©»á±»¶ªÆú
      //robot.Sleep(500);
-     //robot.StopJOG(1);  //ï¿½ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½Í£Ö¹
-     //robot.ImmStopJOG();  //ï¿½ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½Í£Ö¹
+     //robot.StopJOG(1);  //»úÆ÷ÈËµ¥Öáµã¶¯¼õËÙÍ£Ö¹
+     //robot.ImmStopJOG();  //»úÆ÷ÈËµ¥Öáµã¶¯Á¢¼´Í£Ö¹
 
      //robot.MoveCart(&p1Desc, 0, 0, 100, 100, 100, -1, -1);
 
@@ -2016,10 +2016,10 @@ void AxleSensorConfig(FRRobot* robot)
      char nameA[30] = "/fruser/traj/A.txt";
      char nameB[30] = "/fruser/traj/B.txt";
      
-     //rtn = robot->LoadTrajectoryLA(nameA, 2, 0.0, 0, 1.0, 100.0, 200.0, 1000.0);    //Bï¿½ï¿½ï¿½ï¿½
+     //rtn = robot->LoadTrajectoryLA(nameA, 2, 0.0, 0, 1.0, 100.0, 200.0, 1000.0);    //BÑùÌõ
      //cout << "LoadTrajectoryLA rtn is " << rtn << endl;
-     //robot->LoadTrajectoryLA(nameB, 0, 0, 0, 1, 100, 100, 1000);//Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-     robot->LoadTrajectoryLA(nameA, 1, 2, 0, 2, 100, 200, 1000);    //Ö±ï¿½ï¿½ï¿½ï¿½ï¿½
+     //robot->LoadTrajectoryLA(nameB, 0, 0, 0, 1, 100, 100, 1000);//Ö±ÏßÁ¬½Ó
+     robot->LoadTrajectoryLA(nameA, 1, 2, 0, 2, 100, 200, 1000);    //Ö±ÏßÄâºÏ
      DescPose startPos(0, 0, 0, 0, 0, 0);
      robot->GetTrajectoryStartPose(nameA, &startPos);
      //robot->GetTrajectoryStartPose(nameB, &startPos);
@@ -2198,7 +2198,7 @@ void AxleSensorConfig(FRRobot* robot)
      uint8_t block = 0;
      rtn = 0;
 
-     /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Í´ï¿½×¥È¡ï¿½ï¿½ï¿½ï¿½ */
+     /* ÏÂÃæÊÇÒ»¸ö´«ËÍ´ø×¥È¡Á÷³Ì */
      DescPose startdescPose(139.176, 4.717, 9.088, -179.999, -0.004, -179.990);
      JointPos startjointPos(-34.129, -88.062, 97.839, -99.780, -90.003, -34.140);
      
@@ -2319,8 +2319,8 @@ void AxleSensorConfig(FRRobot* robot)
      robot->WeldingSetCurrentRelation(0, 495, 1, 10, 0);
      robot->WeldingSetVoltageRelation(10, 45, 1, 10, 1);
 
-     robot->WeldingSetVoltage(0, 25, 1, 0);// ----ï¿½ï¿½ï¿½Ãµï¿½Ñ¹
-     robot->WeldingSetCurrent(0, 260, 0, 0);// ----ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½
+     robot->WeldingSetVoltage(0, 25, 1, 0);// ----ÉèÖÃµçÑ¹
+     robot->WeldingSetCurrent(0, 260, 0, 0);// ----ÉèÖÃµçÁ÷
 
      int rtn = robot->ArcWeldTraceAIChannelCurrent(4);
      cout << "ArcWeldTraceAIChannelCurrent rtn is " << rtn << endl;
@@ -2359,8 +2359,8 @@ void AxleSensorConfig(FRRobot* robot)
      robot->WeldingSetCurrentRelation(0, 495, 1, 10, 0);
      robot->WeldingSetVoltageRelation(10, 45, 1, 10, 1);
 
-     //robot->WeldingSetVoltage(0, 25, 1, 0);// ----ï¿½ï¿½ï¿½Ãµï¿½Ñ¹
-     //robot->WeldingSetCurrent(0, 260, 0, 0);// ----ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½
+     //robot->WeldingSetVoltage(0, 25, 1, 0);// ----ÉèÖÃµçÑ¹
+     //robot->WeldingSetCurrent(0, 260, 0, 0);// ----ÉèÖÃµçÁ÷
 
      //return 0;
 
@@ -2898,6 +2898,199 @@ void AxleSensorConfig(FRRobot* robot)
      rtn = robot.MoveCart(&desc_pos4, tool, user, vel, acc, ovl, blendT, -1);
      printf("MoveCart errcode:%d\n", rtn);
 
+     rtn = robot.MoveJ(&j1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+     printf("movej errcode:%d\n", rtn);
+
+     rtn = robot.MoveL(&desc_pos2, tool, user, vel, acc, ovl, blendR, 0, &epos, search, flag, &offset_pos);
+     printf("movel errcode:%d\n", rtn);
+
+     rtn = robot.MoveC(&desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR);
+     printf("movec errcode:%d\n", rtn);
+
+     rtn = robot.MoveJ(&j2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+     printf("movej errcode:%d\n", rtn);
+
+     rtn = robot.Circle(&desc_pos3, tool, user, vel, acc, &epos, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, 100, -1);
+     printf("circle errcode:%d\n", rtn);
+
+     robot.CloseRPC();
+     return 0;
+ }
+
+ int TestMovePhy(void)
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return -1;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     JointPos j1(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+     JointPos j2(-45.615, -106.172, 124.296, -107.151, -91.282, 74.255);
+     JointPos j3(-29.777, -84.536, 109.275, -114.075, -86.655, 74.257);
+     JointPos j4(-31.154, -95.317, 94.276, -88.079, -89.740, 74.256);
+     DescPose desc_pos1(-419.524, -13.000, 351.569, -178.118, 0.314, 3.833);
+     DescPose desc_pos2(-321.222, 185.189, 335.520, -179.030, -1.284, -29.869);
+     DescPose desc_pos3(-487.434, 154.362, 308.576, 176.600, 0.268, -14.061);
+     DescPose desc_pos4(-443.165, 147.881, 480.951, 179.511, -0.775, -15.409);
+     DescPose desc_pos5(-385.268, -386.759, 238.349, 179.619, -2.046, 162.332);
+     DescPose desc_pos6(-257.470, -566.986, 241.908, -177.038, -2.886, -176.577);
+     DescPose desc_pos7(-190.925, -390.644, 240.374, 179.089, 0.019, 177.836);
+     DescPose offset_pos(0, 0, 0, 0, 0, 0);
+     ExaxisPos epos(0, 0, 0, 0);
+
+     int tool = 0;
+     int user = 0;
+     float vel = 100.0;
+     float acc = 200.0;
+     float ovl = 100.0;
+     float blendT = -1.0;
+     float blendR = -1.0;
+     uint8_t flag = 0;
+     uint8_t search = 0;
+
+     robot.SetSpeed(20);
+
+     rtn = robot.MoveL(&desc_pos1, tool, user, vel, acc, ovl, blendR, 0, &epos, search, flag, &offset_pos, -1, 1);
+     printf("movel errcode:%d\n", rtn);
+
+     rtn = robot.MoveC(&desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR, -1, 1);
+     printf("movec errcode:%d\n", rtn);
+
+     rtn = robot.MoveL(&desc_pos5, tool, user, vel, acc, ovl, blendR, 0, &epos, search, flag, &offset_pos, -1, 1);
+     printf("movel errcode:%d\n", rtn);
+
+     rtn = robot.Circle(&desc_pos6, tool, user, vel, acc, &epos, &desc_pos7, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, 100, -1, -1, 1);
+     printf("circle errcode:%d\n", rtn);
+
+
+     rtn = robot.MoveL(&desc_pos1, tool, user, vel, acc, ovl, blendR, 0, &epos, search, flag, &offset_pos, -1, 0);
+     printf("movel errcode:%d\n", rtn);
+
+     rtn = robot.MoveC(&desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR, -1, 0);
+     printf("movec errcode:%d\n", rtn);
+
+     rtn = robot.MoveL(&desc_pos5, tool, user, vel, acc, ovl, blendR, 0, &epos, search, flag, &offset_pos, -1, 0);
+     printf("movel errcode:%d\n", rtn);
+
+     rtn = robot.Circle(&desc_pos6, tool, user, vel, acc, &epos, &desc_pos7, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, 100, -1, -1, 0);
+     printf("circle errcode:%d\n", rtn);
+
+
+     robot.CloseRPC();
+     return 0;
+ }
+
+ int TestMoveAutoKin(void)
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return -1;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     JointPos j1(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+     JointPos j2(-45.615, -106.172, 124.296, -107.151, -91.282, 74.255);
+     JointPos j3(-29.777, -84.536, 109.275, -114.075, -86.655, 74.257);
+     JointPos j4(-31.154, -95.317, 94.276, -88.079, -89.740, 74.256);
+     DescPose desc_pos1(-419.524, -13.000, 351.569, -178.118, 0.314, 3.833);
+     DescPose desc_pos2(-321.222, 185.189, 335.520, -179.030, -1.284, -29.869);
+     DescPose desc_pos3(-487.434, 154.362, 308.576, 176.600, 0.268, -14.061);
+     DescPose desc_pos4(-443.165, 147.881, 480.951, 179.511, -0.775, -15.409);
+     DescPose offset_pos(0, 0, 0, 0, 0, 0);
+     ExaxisPos epos(0, 0, 0, 0);
+
+     int tool = 0;
+     int user = 0;
+     float vel = 100.0;
+     float acc = 100.0;
+     float ovl = 100.0;
+     float blendT = -1.0;
+     float blendR = -1.0;
+     uint8_t flag = 0;
+     uint8_t search = 0;
+
+     robot.SetSpeed(20);
+
+     rtn = robot.MoveJ(&j1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+     printf("movej errcode:%d\n", rtn);
+
+     rtn = robot.MoveL(&desc_pos2, tool, user, vel, acc, ovl, blendR, 0, &epos, search, flag, &offset_pos);
+     printf("movel errcode:%d\n", rtn);
+
+     rtn = robot.MoveC(&desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR);
+     printf("movec errcode:%d\n", rtn);
+
+     rtn = robot.MoveJ(&j2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+     printf("movej errcode:%d\n", rtn);
+
+     rtn = robot.Circle(&desc_pos3, tool, user, vel, acc, &epos, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, 100, -1);
+     printf("circle errcode:%d\n", rtn);
+
+     JointPos j(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+     DescPose desc_pos(-419.524, -13.000, 351.569, -178.118, 0.314, 3.833);
+     DescPose offset_pos1(50, 0, 0, -30, 0, 0);
+     DescPose offset_pos2(50, 0, 0, -5, 0, 0);
+     SpiralParam sp;
+     sp.circle_num = 5;
+     sp.circle_angle = 5.0;
+     sp.rad_init = 50.0;
+     sp.rad_add = 10.0;
+     sp.rotaxis_add = 10.0;
+     sp.rot_direction = 0;
+
+     robot.SetSpeed(20);
+
+     rtn = robot.MoveJ(&j, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos1);
+     printf("movej errcode:%d\n", rtn);
+
+     rtn = robot.NewSpiral(&desc_pos, tool, user, vel, acc, &epos, ovl, flag, &offset_pos2, sp);
+     printf("newspiral errcode:%d\n", rtn);
+
+     JointPos jsp1(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+     JointPos jsp2(-45.615, -106.172, 124.296, -107.151, -91.282, 74.255);
+     JointPos jsp3(-61.954, -84.409, 108.153, -116.316, -91.283, 74.260);
+     JointPos jsp4(-89.575, -80.276, 102.713, -116.302, -91.284, 74.267);
+
+     rtn = robot.MoveJ(&jsp1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+     printf("movej errcode:%d\n", rtn);
+     robot.SplineStart();
+     robot.SplinePTP(&jsp1, tool, user, vel, acc, ovl);
+     robot.SplinePTP(&jsp2, tool, user, vel, acc, ovl);
+     robot.SplinePTP(&jsp3, tool, user, vel, acc, ovl);
+     robot.SplinePTP(&jsp4, tool, user, vel, acc, ovl);
+     robot.SplineEnd();
+
+     JointPos jnsp1(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+
+     DescPose desc_posnsp1(-419.524, -13.000, 351.569, -178.118, 0.314, 3.833);
+     DescPose desc_posnsp2(-321.222, 185.189, 335.520, -179.030, -1.284, -29.869);
+     DescPose desc_posnsp3(-327.622, 402.230, 320.402, -178.067, 2.127, -46.207);
+     DescPose desc_posnsp4(-104.066, 544.321, 327.023, -177.715, 3.371, -73.818);
+     DescPose desc_posnsp5(-33.421, 732.572, 275.103, -177.907, 2.709, -79.482);
+
+     rtn = robot.MoveJ(&jnsp1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+     printf("movej errcode:%d\n", rtn);
+     robot.NewSplineStart(1, 2000);
+     robot.NewSplinePoint(&desc_posnsp1, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplinePoint(&desc_posnsp2, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplinePoint(&desc_posnsp3, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplinePoint(&desc_posnsp4, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplinePoint(&desc_posnsp5, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplineEnd();
+
      robot.CloseRPC();
      return 0;
  }
@@ -2938,10 +3131,10 @@ void AxleSensorConfig(FRRobot* robot)
 
      robot.SetSpeed(20);
 
-     rtn = robot.MoveJ(&j, &desc_pos, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos1);
+     rtn = robot.MoveJ(&j, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos1);
      printf("movej errcode:%d\n", rtn);
 
-     rtn = robot.NewSpiral(&j, &desc_pos, tool, user, vel, acc, &epos, ovl, flag, &offset_pos2, sp);
+     rtn = robot.NewSpiral(&desc_pos, tool, user, vel, acc, &epos, ovl, flag, &offset_pos2, sp);
      printf("newspiral errcode:%d\n", rtn);
 
      robot.CloseRPC();
@@ -3083,6 +3276,15 @@ int TestServoJ(void)
      robot.SplinePTP(&j4, &desc_pos4, tool, user, vel, acc, ovl);
      robot.SplineEnd();
 
+     err1 = robot.MoveJ(&j1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+     printf("movej errcode:%d\n", err1);
+     robot.SplineStart();
+     robot.SplinePTP(&j1, tool, user, vel, acc, ovl);
+     robot.SplinePTP(&j2, tool, user, vel, acc, ovl);
+     robot.SplinePTP(&j3, tool, user, vel, acc, ovl);
+     robot.SplinePTP(&j4, tool, user, vel, acc, ovl);
+     robot.SplineEnd();
+
      robot.CloseRPC();
      return 0;
  }
@@ -3114,7 +3316,6 @@ int TestServoJ(void)
      DescPose offset_pos(0, 0, 0, 0, 0, 0);
      ExaxisPos epos(0, 0, 0, 0);
 
-
      int tool = 0;
      int user = 0;
      float vel = 100.0;
@@ -3133,6 +3334,16 @@ int TestServoJ(void)
      robot.NewSplinePoint(&j3, &desc_pos3, tool, user, vel, acc, ovl, -1, 0);
      robot.NewSplinePoint(&j4, &desc_pos4, tool, user, vel, acc, ovl, -1, 0);
      robot.NewSplinePoint(&j5, &desc_pos5, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplineEnd();
+
+     err1 = robot.MoveJ(&j1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+     printf("movej errcode:%d\n", err1);
+     robot.NewSplineStart(1, 2000);
+     robot.NewSplinePoint(&desc_pos1, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplinePoint(&desc_pos2, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplinePoint(&desc_pos3, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplinePoint(&desc_pos4, tool, user, vel, acc, ovl, -1, 0);
+     robot.NewSplinePoint(&desc_pos5, tool, user, vel, acc, ovl, -1, 0);
      robot.NewSplineEnd();
 
      robot.CloseRPC();
@@ -4320,7 +4531,7 @@ int TestServoJ(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     /* ï¿½ï¿½È¡luaï¿½ï¿½ï¿½ï¿½ */
+     /* »ñÈ¡luaÃû³Æ */
      list<std::string> luaNames;
      rtn = robot.GetLuaList(&luaNames);
      std::cout << "res is: " << rtn << std::endl;
@@ -4330,15 +4541,15 @@ int TestServoJ(void)
          std::cout << it->c_str() << std::endl;
      }
 
-     /* ï¿½ï¿½ï¿½ï¿½lua */
+     /* ÏÂÔØlua */
      rtn = robot.LuaDownLoad("test.lua", "D://zDOWN/");
      printf("LuaDownLoad rtn is %d\n", rtn);
 
-     /* ï¿½Ï´ï¿½lua */
+     /* ÉÏ´«lua */
      rtn = robot.LuaUpload("D://zUP/airlab.lua");
      printf("LuaUpload rtn is %d\n", rtn);
 
-     /* É¾ï¿½ï¿½lua */
+     /* É¾³ýlua */
      rtn = robot.LuaDelete("test.lua");
      printf("LuaDelete rtn is %d\n", rtn);
 
@@ -5262,26 +5473,26 @@ int TestServoJ(void)
      JointPos jointREF1B = { -119.088, -69.676, 98.692, -121.761, -89.219, 74.303 };
 
      rtn0 = robot.WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot.MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-     robot.MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+     robot.MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //Æðµã
+     robot.MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
      rtn1 = robot.WireSearchWait("REF0");
      rtn2 = robot.WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot.WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot.MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-     robot.MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+     robot.MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //Æðµã
+     robot.MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
      rtn1 = robot.WireSearchWait("REF1");
      rtn2 = robot.WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot.WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot.MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-     robot.MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+     robot.MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //Æðµã
+     robot.MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
      rtn1 = robot.WireSearchWait("RES0");
      rtn2 = robot.WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot.WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot.MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //ï¿½ï¿½ï¿½
-     robot.MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //ï¿½ï¿½ï¿½ï¿½ï¿½
+     robot.MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //Æðµã
+     robot.MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //·½Ïòµã
      rtn1 = robot.WireSearchWait("RES1");
      rtn2 = robot.WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
@@ -5595,41 +5806,41 @@ int TestServoJ(void)
      robot.FT_SetZero(0);
      robot.Sleep(1000);
 
-     //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-     uint8_t status = 1;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¿ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½0-ï¿½Ø£ï¿½1-ï¿½ï¿½
-     int sensor_num = 1; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-     float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
-     uint8_t adj_sign = 0;  //ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½Í£×´Ì¬ï¿½ï¿½0-ï¿½Ø±Õ£ï¿½1-ï¿½ï¿½ï¿½ï¿½
-     uint8_t ILC_sign = 0;  //ILCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£×´Ì¬ï¿½ï¿½0-Í£Ö¹ï¿½ï¿½1-Ñµï¿½ï¿½ï¿½ï¿½2-Êµï¿½ï¿½
-     float max_dis = 100.0;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-     float max_ang = 5.0;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½
+     //ºãÁ¦²ÎÊý
+     uint8_t status = 1;  //ºãÁ¦¿ØÖÆ¿ªÆô±êÖ¾£¬0-¹Ø£¬1-¿ª
+     int sensor_num = 1; //Á¦´«¸ÐÆ÷±àºÅ
+     float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //×î´óãÐÖµ
+     uint8_t adj_sign = 0;  //×ÔÊÊÓ¦ÆôÍ£×´Ì¬£¬0-¹Ø±Õ£¬1-¿ªÆô
+     uint8_t ILC_sign = 0;  //ILC¿ØÖÆÆôÍ£×´Ì¬£¬0-Í£Ö¹£¬1-ÑµÁ·£¬2-Êµ²Ù
+     float max_dis = 100.0;  //×î´óµ÷Õû¾àÀë
+     float max_ang = 5.0;  //×î´óµ÷Õû½Ç¶È
 
      ForceTorque ft;
      memset(&ft, 0, sizeof(ForceTorque));
 
-     //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-     int rcs = 0;  //ï¿½Î¿ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½0-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½1-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµ
-     float dr = 0.7;  //Ã¿È¦ï¿½ë¾¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»mm
-     float fFinish = 1.0; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½0~100ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»Nï¿½ï¿½Nm
-     float t = 60000.0; //ï¿½ï¿½ï¿½Ì½ï¿½ï¿½Ê±ï¿½ä£¬ï¿½ï¿½Î»ms
-     float vmax = 3.0; //ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½Î»mm/s
+     //ÂÝÐýÏßÌ½Ë÷²ÎÊý
+     int rcs = 0;  //²Î¿¼×ø±êÏµ£¬0-¹¤¾ß×ø±êÏµ£¬1-»ù×ø±êÏµ
+     float dr = 0.7;  //Ã¿È¦°ë¾¶½ø¸øÁ¿£¬µ¥Î»mm
+     float fFinish = 1.0; //Á¦»òÁ¦¾ØãÐÖµ£¨0~100£©£¬µ¥Î»N»òNm
+     float t = 60000.0; //×î´óÌ½Ë÷Ê±¼ä£¬µ¥Î»ms
+     float vmax = 3.0; //ÏßËÙ¶È×î´óÖµ£¬µ¥Î»mm/s
 
-     //Ö±ï¿½ß²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-     float force_goal = 20.0;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½0~100ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»Nï¿½ï¿½Nm
-     float lin_v = 0.0; //Ö±ï¿½ï¿½ï¿½Ù¶È£ï¿½ï¿½ï¿½Î»mm/s
-     float lin_a = 0.0; //Ö±ï¿½ß¼ï¿½ï¿½Ù¶È£ï¿½ï¿½ï¿½Î»mm/s^2,ï¿½Ý²ï¿½Ê¹ï¿½ï¿½
-     float disMax = 100.0; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë£¬ï¿½ï¿½Î»mm
-     uint8_t linorn = 1; //ï¿½ï¿½ï¿½ë·½ï¿½ï¿½1-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+     //Ö±Ïß²åÈë²ÎÊý
+     float force_goal = 20.0;  //Á¦»òÁ¦¾ØãÐÖµ£¨0~100£©£¬µ¥Î»N»òNm
+     float lin_v = 0.0; //Ö±ÏßËÙ¶È£¬µ¥Î»mm/s
+     float lin_a = 0.0; //Ö±Ïß¼ÓËÙ¶È£¬µ¥Î»mm/s^2,ÔÝ²»Ê¹ÓÃ
+     float disMax = 100.0; //×î´ó²åÈë¾àÀë£¬µ¥Î»mm
+     uint8_t linorn = 1; //²åÈë·½Ïò£¬1-Õý·½Ïò£¬2-¸º·½Ïò
 
-     //ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-     float angVelRot = 2.0;  //ï¿½ï¿½×ªï¿½ï¿½ï¿½Ù¶È£ï¿½ï¿½ï¿½Î»ï¿½ï¿½/s
-     float forceInsertion = 1.0; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½0~100ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»Nï¿½ï¿½Nm
-     int angleMax = 45; //ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½Ç¶È£ï¿½ï¿½ï¿½Î»ï¿½ï¿½
-     uint8_t orn = 1; //ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½1-fz,2-mz
-     float angAccmax = 0.0; //ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½Ç¼ï¿½ï¿½Ù¶È£ï¿½ï¿½ï¿½Î»ï¿½ï¿½/s^2,ï¿½Ý²ï¿½Ê¹ï¿½ï¿½
-     uint8_t rotorn = 1; //ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½1-Ë³Ê±ï¿½ë£¬2-ï¿½ï¿½Ê±ï¿½ï¿½
+     //Ðý×ª²åÈë²ÎÊý
+     float angVelRot = 2.0;  //Ðý×ª½ÇËÙ¶È£¬µ¥Î»¡ã/s
+     float forceInsertion = 1.0; //Á¦»òÁ¦¾ØãÐÖµ£¨0~100£©£¬µ¥Î»N»òNm
+     int angleMax = 45; //×î´óÐý×ª½Ç¶È£¬µ¥Î»¡ã
+     uint8_t orn = 1; //Á¦µÄ·½Ïò£¬1-fz,2-mz
+     float angAccmax = 0.0; //×î´óÐý×ª½Ç¼ÓËÙ¶È£¬µ¥Î»¡ã/s^2,ÔÝ²»Ê¹ÓÃ
+     uint8_t rotorn = 1; //Ðý×ª·½Ïò£¬1-Ë³Ê±Õë£¬2-ÄæÊ±Õë
 
-     uint8_t select1[6] = { 0,0,1,1,1,0 }; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¶ï¿½Ñ¡ï¿½ï¿½[fx,fy,fz,mx,my,mz]ï¿½ï¿½0-ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½1-ï¿½ï¿½Ð§
+     uint8_t select1[6] = { 0,0,1,1,1,0 }; //Áù¸ö×ÔÓÉ¶ÈÑ¡Ôñ[fx,fy,fz,mx,my,mz]£¬0-²»ÉúÐ§£¬1-ÉúÐ§
      ft.fz = -10.0;
      robot.FT_Control(status, sensor_num, select1, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
      rtn = robot.FT_SpiralSearch(rcs, dr, fFinish, t, vmax);
@@ -5637,7 +5848,7 @@ int TestServoJ(void)
      status = 0;
      robot.FT_Control(status, sensor_num, select1, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
-     uint8_t select2[6] = { 1,1,1,0,0,0 };  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¶ï¿½Ñ¡ï¿½ï¿½[fx,fy,fz,mx,my,mz]ï¿½ï¿½0-ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½1-ï¿½ï¿½Ð§
+     uint8_t select2[6] = { 1,1,1,0,0,0 };  //Áù¸ö×ÔÓÉ¶ÈÑ¡Ôñ[fx,fy,fz,mx,my,mz]£¬0-²»ÉúÐ§£¬1-ÉúÐ§
      gain[0] = 0.00005;
      ft.fz = -30.0;
      status = 1;
@@ -5647,7 +5858,7 @@ int TestServoJ(void)
      status = 0;
      robot.FT_Control(status, sensor_num, select2, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
-     uint8_t select3[6] = { 0,0,1,1,1,0 };  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¶ï¿½Ñ¡ï¿½ï¿½[fx,fy,fz,mx,my,mz]ï¿½ï¿½0-ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½1-ï¿½ï¿½Ð§
+     uint8_t select3[6] = { 0,0,1,1,1,0 };  //Áù¸ö×ÔÓÉ¶ÈÑ¡Ôñ[fx,fy,fz,mx,my,mz]£¬0-²»ÉúÐ§£¬1-ÉúÐ§
      ft.fz = -10.0;
      gain[0] = 0.0001;
      status = 1;
@@ -5657,7 +5868,7 @@ int TestServoJ(void)
      status = 0;
      robot.FT_Control(status, sensor_num, select3, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
-     uint8_t select4[6] = { 1,1,1,0,0,0 };  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¶ï¿½Ñ¡ï¿½ï¿½[fx,fy,fz,mx,my,mz]ï¿½ï¿½0-ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½1-ï¿½ï¿½Ð§
+     uint8_t select4[6] = { 1,1,1,0,0,0 };  //Áù¸ö×ÔÓÉ¶ÈÑ¡Ôñ[fx,fy,fz,mx,my,mz]£¬0-²»ÉúÐ§£¬1-ÉúÐ§
      ft.fz = -30.0;
      status = 1;
      robot.FT_Control(status, sensor_num, select4, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
@@ -6250,6 +6461,67 @@ int TestServoJ(void)
      return 0;
  }
 
+ void TestExtAxisSyncMove()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     JointPos joint_safe = { 116.142, -83.505, 53.915, -64.393, -87.817, -49.868 };
+     JointPos joint_pos1 = { 107.108, -93.262, 90.994, -86.002, -89.095, -50.897 };
+     JointPos joint_pos2 = { 101.428, -60.890, 57.914, -63.062, -85.489, -50.897 };
+     JointPos joint_pos3 = { 124.486, -97.485, 95.883, -90.374, -91.062, -49.860 };
+     JointPos joint_pos4 = { 113.734, -76.571, 78.254, -93.291, -91.100, -49.867 };
+     JointPos joint_pos5 = { 116.544, -63.563, 63.923, -88.894, -83.999, -49.869 };
+
+     DescPose desc_safe = { 334.834, -416.117, 377.662, -175.764, -1.640, -103.974 };
+     DescPose desc_pos1 = { 238.956, -408.157, 189.101, 179.611, 1.912, -112.015 };
+     DescPose desc_pos2 = { 236.316, -495.487, 138.006, 167.595, 21.130, -120.956 };
+     DescPose desc_pos3 = { 335.706, -321.654, 188.246, -179.537, -2.195, -95.681 };
+     DescPose desc_pos4 = { 330.540, -517.439, 156.875, -179.804, -1.939, -106.418 };
+     DescPose desc_pos5 = { 430.747, -540.471, 129.780, -176.351, 4.987, -103.505 };
+
+     ExaxisPos eposSafe = { -0.000, 0.000, 0.000, 0.000 };
+     ExaxisPos epos1 = { -0.000, 0.000, 0.000, 0.000 };
+     ExaxisPos epos2 = { -24.972, 0.000, 0.000, 0.000 };
+     ExaxisPos epos3 = { 14.982, 0.000, 0.000, 0.000 };
+     ExaxisPos epos4 = { -10.026,0.000,0.000,0.000 };
+     ExaxisPos epos5 = { -20.015, 0.000, 0.000, 0.000 };
+
+     DescPose offset_pos = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+     int tool = 1, user = 0, vel = 100, acc = 100, ovl = 100, blendT = -1;
+     robot.MoveJ(&joint_safe, tool, user, vel, acc, ovl, &eposSafe, blendT, 0, &offset_pos);
+     robot.ExtAxisMove(eposSafe, 100, -1);
+
+     rtn = robot.ExtAxisSyncMoveJ(joint_pos1, tool, user, vel, acc, ovl, epos1, blendT, 0, offset_pos);
+     rtn = robot.ExtAxisSyncMoveJ(joint_pos2, tool, user, vel, acc, ovl, epos2, blendT, 0, offset_pos);
+     printf("ExtAxisSyncMoveJ  rtn is %d\n", rtn);
+
+     robot.MoveJ(&joint_safe, tool, user, vel, acc, ovl, &eposSafe, blendT, 0, &offset_pos);
+     robot.ExtAxisMove(eposSafe, 100, -1);
+     rtn = robot.ExtAxisSyncMoveJ(joint_pos1, tool, user, vel, acc, ovl, epos1, blendT, 0, offset_pos);
+     rtn = robot.ExtAxisSyncMoveL(desc_pos3, tool, user, vel, acc, ovl, -1, epos3, 0, offset_pos);
+     printf("ExtAxisSyncMoveL  rtn is %d\n", rtn);
+
+     robot.MoveJ(&joint_safe, tool, user, vel, acc, ovl, &eposSafe, blendT, 0, &offset_pos);
+     robot.ExtAxisMove(eposSafe, 100, -1);
+     rtn = robot.ExtAxisSyncMoveJ(joint_pos1, tool, user, vel, acc, ovl, epos1, blendT, 0, offset_pos);
+     rtn = robot.ExtAxisSyncMoveC(desc_pos4, tool, user, vel, acc, epos4, 0, offset_pos, desc_pos5, tool, user, vel, acc, epos5, 0, offset_pos, ovl, -1);
+     printf("ExtAxisSyncMoveC  rtn is %d\n", rtn);
+
+
+     robot.CloseRPC();
+     return;
+ }
+
  int TestTractor(void)
  {
      ROBOT_STATE_PKG pkg = {};
@@ -6532,48 +6804,91 @@ int TestServoJ(void)
      return 0;
  }
 
- int TestWideVoltageCtrlBoxtemp(void)
+ void TestExtAxisStrategy()
  {
      ROBOT_STATE_PKG pkg = {};
      FRRobot robot;
 
      robot.LoggerInit();
      robot.SetLoggerLevel(1);
-     int rtn = robot.RPC("192.168.58.2");
-     printf("robot rpc rtn is %d\n", rtn);
+     int rtn = robot.RPC("192.168.57.2");
      if (rtn != 0)
      {
-         return -1;
+         return;
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     robot.SetWideBoxTempFanMonitorParam(1, 2);
-     int enable = 0;
-     int period = 0;
-     robot.GetWideBoxTempFanMonitorParam(enable, period);
-     printf("GetWideBoxTempFanMonitorParam enable is %d   period is %d\n", enable, period);
-     for (int i = 0; i < 100; i++)
-     {
-         robot.GetRobotRealTimeState(&pkg);
-         printf("robot ctrl box temp is %f,  fan current is %d\n", pkg.wideVoltageCtrlBoxTemp, pkg.wideVoltageCtrlBoxFanCurrent);
-         robot.Sleep(100);
-     }
+     JointPos joint_pos1 = { -22.016, -49.217, 124.714, -161.100, -85.108, -0.333 };
+     JointPos joint_pos2 = { -21.083, -46.613, 110.079, -147.796, -80.757, -0.330 };
+     JointPos joint_pos3 = { -25.572, -60.090, 135.397, -163.889, -82.489, -0.345 };
+     DescPose desc_pos1 = { 2.637, -0.001, 30.673, 178.786, -4.134, 68.326 };
+     DescPose desc_pos2 = { 213.812, -1.440, 47.311, 177.410, 0.166, 68.946 };
+     DescPose desc_pos3 = { 444.342, -12.723, 82.470, -177.701, -1.325, 65.151 };
 
-     rtn = robot.SetWideBoxTempFanMonitorParam(0, 2);
-     printf("SetWideBoxTempFanMonitorParam rtn is %d\n", rtn);
-     enable = 0;
-     period = 0;
-     robot.GetWideBoxTempFanMonitorParam(enable, period);
-     printf("GetWideBoxTempFanMonitorParam enable is %d   period is %d\n", enable, period);
-     for (int i = 0; i < 100; i++)
-     {
-         robot.GetRobotRealTimeState(&pkg);
-         printf("robot ctrl box temp is %f,  fan current is %d\n", pkg.wideVoltageCtrlBoxTemp, pkg.wideVoltageCtrlBoxFanCurrent);
-         robot.Sleep(100);
-     }
+     ExaxisPos epos1 = { 0.001, 0.000, 0.000, 0.000 };
+     ExaxisPos epos2 = { 299.977, 0.000, 0.000, 0.000 };
+     ExaxisPos epos3 = { 399.969, 0.000, 0.000, 0.000 };
+
+     DescPose offset_pos = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+
+     rtn = robot.SetExAxisRobotPlan(0);
+     printf("SetExAxisRobotPlan rtn is %d\n", rtn);
+     robot.Sleep(1000);
+     rtn = robot.ExtAxisSyncMoveL(joint_pos1, desc_pos1, 1, 0, 100, 100, 100, -1, epos1, 0, offset_pos);
+     printf("ExtAxisSyncMoveL 1 rtn is %d\n", rtn);
+     rtn = robot.ExtAxisSyncMoveL(joint_pos2, desc_pos2, 1, 0, 100, 100, 100, -1, epos2, 0, offset_pos);
+     printf("ExtAxisSyncMoveL 2 rtn is %d\n", rtn);
+     rtn = robot.ExtAxisSyncMoveL(joint_pos3, desc_pos3, 1, 0, 100, 100, 100, -1, epos3, 0, offset_pos);
+     printf("ExtAxisSyncMoveL 3 rtn is %d\n", rtn);
+     robot.Sleep(8000);
 
      robot.CloseRPC();
-     robot.Sleep(2000);
+     return;
+ }
+
+ 
+ int TestWideVoltageCtrlBoxtemp(void)
+ {
+     //ROBOT_STATE_PKG pkg = {};
+     //FRRobot robot;
+
+     //robot.LoggerInit();
+     //robot.SetLoggerLevel(1);
+     //int rtn = robot.RPC("192.168.58.2");
+     //printf("robot rpc rtn is %d\n", rtn);
+     //if (rtn != 0)
+     //{
+     //    return -1;
+     //}
+     //robot.SetReConnectParam(true, 30000, 500);
+
+     //robot.SetWideBoxTempFanMonitorParam(1, 2);
+     //int enable = 0;
+     //int period = 0;
+     //robot.GetWideBoxTempFanMonitorParam(enable, period);
+     //printf("GetWideBoxTempFanMonitorParam enable is %d   period is %d\n", enable, period);
+     //for (int i = 0; i < 100; i++)
+     //{
+     //    robot.GetRobotRealTimeState(&pkg);
+     //    printf("robot ctrl box temp is %f,  fan current is %d\n", pkg.wideVoltageCtrlBoxTemp, pkg.wideVoltageCtrlBoxFanCurrent);
+     //    robot.Sleep(100);
+     //}
+
+     //rtn = robot.SetWideBoxTempFanMonitorParam(0, 2);
+     //printf("SetWideBoxTempFanMonitorParam rtn is %d\n", rtn);
+     //enable = 0;
+     //period = 0;
+     //robot.GetWideBoxTempFanMonitorParam(enable, period);
+     //printf("GetWideBoxTempFanMonitorParam enable is %d   period is %d\n", enable, period);
+     //for (int i = 0; i < 100; i++)
+     //{
+     //    robot.GetRobotRealTimeState(&pkg);
+     //    printf("robot ctrl box temp is %f,  fan current is %d\n", pkg.wideVoltageCtrlBoxTemp, pkg.wideVoltageCtrlBoxFanCurrent);
+     //    robot.Sleep(100);
+     //}
+
+     //robot.CloseRPC();
+     //robot.Sleep(2000);
 
      return 0;
  }
@@ -6584,39 +6899,39 @@ int TestServoJ(void)
  //    printf("LuaUpload rtn is %d\n", rtn);
  //    robot->ProgramLoad("/fruser/Program5.lua");
  //    
- //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//ï¿½ï¿½ï¿½ï¿½ï¿½Ë¿ï¿½Ê¶ï¿½ï¿½ï¿½×½ï¿½ï¿½ï¿½
+ //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//´´½¨ÁË¿ÉÊ¶±ðÌ×½Ó×Ö
  //    if (serSocket != -1)
  //    {
- //        printf("ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×½ï¿½ï¿½Ö£ï¿½%d\n", serSocket);
+ //        printf("³É¹¦´´½¨Ì×½Ó×Ö£¡%d\n", serSocket);
  //    }
 
- //    //ï¿½ï¿½Òªï¿½ó¶¨µÄ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Ç±ï¿½ï¿½Øµï¿½socketï¿½ï¿½Ò»Ð©ï¿½ï¿½Ï¢ï¿½ï¿½
+ //    //ÐèÒª°ó¶¨µÄ²ÎÊý£¬Ö÷ÒªÊÇ±¾µØµÄsocketµÄÒ»Ð©ÐÅÏ¢¡£
  //    SOCKADDR_IN addr;
  //    addr.sin_family = AF_INET;
- //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ipï¿½ï¿½Ö·
- //    addr.sin_port = htons(31000);//ï¿½ó¶¨¶Ë¿ï¿½
+ //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ipµØÖ·
+ //    addr.sin_port = htons(31000);//°ó¶¨¶Ë¿Ú
 
- //    bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));//ï¿½ï¿½ï¿½ï¿½ï¿½
- //    listen(serSocket, 5);//ï¿½ï¿½ï¿½ÐµÚ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
- //    printf("ï¿½È´ï¿½ï¿½Í»ï¿½ï¿½ï¿½...\n");
+ //    bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));//°ó¶¨Íê³É
+ //    listen(serSocket, 5);//ÆäÖÐµÚ¶þ¸ö²ÎÊý´ú±íÄÜ¹»½ÓÊÕµÄ×î¶àµÄÁ¬½ÓÊý
+ //    printf("µÈ´ý¿Í»§¶Ë...\n");
  //    SOCKADDR_IN clientsocket;
  //    int len = sizeof(SOCKADDR);
 
  //    robot->ProgramRun();
  //    SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
- //    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï²»ï¿½ï¿½acceptï¿½ï¿½ï¿½ï¿½conectionï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í»á²»ï¿½ÏµÄ¼ï¿½ï¿½ï¿½
+ //    //Èç¹ûÕâÀï²»ÊÇaccept¶øÊÇconectionµÄ»°¡£¡£¾Í»á²»¶ÏµÄ¼àÌý
  //    if (serConn)
  //    {
- //        printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÂµÄ¿Í»ï¿½ï¿½ï¿½...\n");
+ //        printf("¼àÌýµ½ÐÂµÄ¿Í»§¶Ë...\n");
  //    }
  //    while (1)
  //    {
  //        robot->Sleep(200);
  //        char sendBuf[4000] = "";
- //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//ï¿½Ò¶Ô¶ï¿½Ó¦ï¿½ï¿½IPï¿½ï¿½ï¿½Ò½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
- //        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+ //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//ÕÒ¶Ô¶ÔÓ¦µÄIP²¢ÇÒ½«ÕâÐÐ×Ö´òÓ¡µ½ÄÇÀï
+ //        //·¢ËÍÐÅÏ¢
  //        send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
- //        char receiveBuf[4000] = "";//ï¿½ï¿½ï¿½ï¿½
+ //        char receiveBuf[4000] = "";//½ÓÊÕ
  //        memset(receiveBuf, 0, 4000);
  //        int RecvLen;
  //        RecvLen = recv(serConn, receiveBuf, 4000, 0);
@@ -6626,8 +6941,8 @@ int TestServoJ(void)
  //        else
  //        {
  //            string txt = receiveBuf;
- //            string::size_type idx = txt.find("ProgramFinish"); //ï¿½ï¿½aï¿½Ð²ï¿½ï¿½ï¿½b.
- //            if (idx == string::npos) //ï¿½ï¿½ï¿½ï¿½ï¿½Ú¡ï¿½
+ //            string::size_type idx = txt.find("ProgramFinish"); //ÔÚaÖÐ²éÕÒb.
+ //            if (idx == string::npos) //²»´æÔÚ¡£
  //                cout << "not found\n";
  //            else
  //            {
@@ -6637,8 +6952,8 @@ int TestServoJ(void)
  //        }
 
  //    }
- //    closesocket(serConn);//ï¿½Ø±ï¿½
- //    //WSACleanup();//ï¿½Í·ï¿½ï¿½ï¿½Ô´ï¿½Ä²ï¿½ï¿½ï¿½
+ //    closesocket(serConn);//¹Ø±Õ
+ //    //WSACleanup();//ÊÍ·Å×ÊÔ´µÄ²Ù×÷
 
  //    rtn = robot->LuaDelete("Program5.lua");
  //    printf("LuaDelete rtn is %d\n", rtn);
@@ -6651,21 +6966,21 @@ int TestServoJ(void)
  //    printf("LuaUpload rtn is %d\n", rtn);
  //    robot->ProgramLoad("/fruser/Program6.lua");
 
- //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//ï¿½ï¿½ï¿½ï¿½ï¿½Ë¿ï¿½Ê¶ï¿½ï¿½ï¿½×½ï¿½ï¿½ï¿½
+ //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//´´½¨ÁË¿ÉÊ¶±ðÌ×½Ó×Ö
  //    if (serSocket != -1)
  //    {
- //        printf("ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×½ï¿½ï¿½Ö£ï¿½%d\n", serSocket);
+ //        printf("³É¹¦´´½¨Ì×½Ó×Ö£¡%d\n", serSocket);
  //    }
 
- //    //ï¿½ï¿½Òªï¿½ó¶¨µÄ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Ç±ï¿½ï¿½Øµï¿½socketï¿½ï¿½Ò»Ð©ï¿½ï¿½Ï¢ï¿½ï¿½
+ //    //ÐèÒª°ó¶¨µÄ²ÎÊý£¬Ö÷ÒªÊÇ±¾µØµÄsocketµÄÒ»Ð©ÐÅÏ¢¡£
  //    SOCKADDR_IN addr;
  //    addr.sin_family = AF_INET;
- //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ipï¿½ï¿½Ö·
- //    addr.sin_port = htons(31000);//ï¿½ó¶¨¶Ë¿ï¿½
+ //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ipµØÖ·
+ //    addr.sin_port = htons(31000);//°ó¶¨¶Ë¿Ú
 
  //    bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));
  //    listen(serSocket, 5);
- //    printf("ï¿½È´ï¿½ï¿½Í»ï¿½ï¿½ï¿½...\n");
+ //    printf("µÈ´ý¿Í»§¶Ë...\n");
  //    SOCKADDR_IN clientsocket;
  //    int len = sizeof(SOCKADDR);
 
@@ -6673,15 +6988,15 @@ int TestServoJ(void)
  //    SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
  //    if (serConn)
  //    {
- //        printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÂµÄ¿Í»ï¿½ï¿½ï¿½...\n");
+ //        printf("¼àÌýµ½ÐÂµÄ¿Í»§¶Ë...\n");
  //    }
  //    while (1)
  //    {
  //        robot->Sleep(100);
  //        char sendBuf[100];
- //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//ï¿½Ò¶Ô¶ï¿½Ó¦ï¿½ï¿½IPï¿½ï¿½ï¿½Ò½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//ÕÒ¶Ô¶ÔÓ¦µÄIP²¢ÇÒ½«ÕâÐÐ×Ö´òÓ¡µ½ÄÇÀï
  //        send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
- //        char receiveBuf[4000] = "";//ï¿½ï¿½ï¿½ï¿½
+ //        char receiveBuf[4000] = "";//½ÓÊÕ
  //        memset(receiveBuf, 0, 4000);
  //        int RecvLen;
  //        RecvLen = recv(serConn, receiveBuf, 4000, 0);
@@ -6691,8 +7006,8 @@ int TestServoJ(void)
  //        else
  //        {
  //            string txt = receiveBuf;
- //            string::size_type idx = txt.find("ProgramFinish"); //ï¿½ï¿½aï¿½Ð²ï¿½ï¿½ï¿½b.
- //            if (idx == string::npos) //ï¿½ï¿½ï¿½ï¿½ï¿½Ú¡ï¿½
+ //            string::size_type idx = txt.find("ProgramFinish"); //ÔÚaÖÐ²éÕÒb.
+ //            if (idx == string::npos) //²»´æÔÚ¡£
  //                cout << "not found\n";
  //            else
  //            {
@@ -6702,8 +7017,8 @@ int TestServoJ(void)
  //        }
 
  //    }
- //    closesocket(serConn);//ï¿½Ø±ï¿½
- //   // WSACleanup();//ï¿½Í·ï¿½ï¿½ï¿½Ô´ï¿½Ä²ï¿½ï¿½ï¿½
+ //    closesocket(serConn);//¹Ø±Õ
+ //   // WSACleanup();//ÊÍ·Å×ÊÔ´µÄ²Ù×÷
 
  //    rtn = robot->LuaDelete("Program6.lua");
  //    printf("LuaDelete rtn is %d\n", rtn);
@@ -6873,16 +7188,131 @@ int TestServoJ(void)
  }
 
 
- int main(void)
+
+ void test()
  {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return ;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     JointPos j1(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+     JointPos j2(-45.615, -106.172, 124.296, -107.151, -91.282, 74.255);
+     JointPos j3(-29.777, -84.536, 109.275, -114.075, -86.655, 74.257);
+     JointPos j4(-31.154, -95.317, 94.276, -88.079, -89.740, 74.256);
+     DescPose desc_pos1(-419.524, -13.000, 351.569, -178.118, 0.314, 3.833);
+     DescPose desc_pos2(-321.222, 185.189, 335.520, -179.030, -1.284, -29.869);
+     DescPose desc_pos3(-487.434, 154.362, 308.576, 176.600, 0.268, -14.061);
+     DescPose desc_pos4(-443.165, 147.881, 480.951, 179.511, -0.775, -15.409);
+     DescPose offset_pos(0, 0, 0, 0, 0, 0);
+     ExaxisPos epos(0, 0, 0, 0);
+
+     int tool = 0;
+     int user = 0;
+     float vel = 100.0;
+     float acc = 100.0;
+     float ovl = 100.0;
+     float blendT = -1.0;
+     float blendR = -1.0;
+     uint8_t flag = 0;
+     uint8_t search = 0;
+
+     robot.SetSpeed(20);
+
+     for (int i = 0; i < 100; i++)
+     {
+         printf("------------------µÚ  %d  ´Î²âÊÔ------------------\n", i);
+         j1.jPos[0] += 0.01 * i;
+         j1.jPos[1] += 0.01 * i;
+         printf("start pos is %f  %f\n", j1.jPos[0], j1.jPos[1]);
+         rtn = robot.MoveJ(&j1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+         printf("movej errcode:%d\n", rtn);
+
+         robot.GetActualTCPPose(0, &desc_pos2);
+         rtn = robot.MoveL(&desc_pos2, tool, user, vel, acc, ovl, blendR, 0, &epos, search, flag, &offset_pos);
+         printf("movel errcode:%d\n", rtn);
+
+         rtn = robot.MoveC(&desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR);
+         printf("movec errcode:%d\n", rtn);
+
+         rtn = robot.MoveJ(&j2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+         printf("movej errcode:%d\n", rtn);
+
+         rtn = robot.Circle(&desc_pos3, tool, user, vel, acc, &epos, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, 100, -1);
+         printf("circle errcode:%d\n", rtn);
+
+         JointPos j(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+         DescPose desc_pos(-419.524, -13.000, 351.569, -178.118, 0.314, 3.833);
+         DescPose offset_pos1(50, 0, 0, -30, 0, 0);
+         DescPose offset_pos2(50, 0, 0, -5, 0, 0);
+         SpiralParam sp;
+         sp.circle_num = 2;
+         sp.circle_angle = 5.0;
+         sp.rad_init = 10.0;
+         sp.rad_add = 10.0;
+         sp.rotaxis_add = 10.0;
+         sp.rot_direction = 0;
+
+         robot.SetSpeed(20);
+
+         rtn = robot.MoveJ(&j, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos1);
+         printf("movej errcode:%d\n", rtn);
+         desc_pos.tran.x += 0.1 * i;
+         desc_pos.tran.y += 0.1 * i;
+         rtn = robot.NewSpiral(&desc_pos, tool, user, vel, acc, &epos, ovl, flag, &offset_pos2, sp);
+         printf("newspiral errcode:%d\n", rtn);
+
+         JointPos jsp1(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+         JointPos jsp2(-45.615, -106.172, 124.296, -107.151, -91.282, 74.255);
+         JointPos jsp3(-61.954, -84.409, 108.153, -116.316, -91.283, 74.260);
+         JointPos jsp4(-89.575, -80.276, 102.713, -116.302, -91.284, 74.267);
+         jsp1.jPos[0] += 0.1 * i;
+         jsp1.jPos[1] += 0.1 * i;
+         jsp3.jPos[0] += 0.1 * i;
+         jsp3.jPos[1] += 0.1 * i;
+         rtn = robot.MoveJ(&jsp1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+         printf("movej errcode:%d\n", rtn);
+         robot.SplineStart();
+         robot.SplinePTP(&jsp1, tool, user, vel, acc, ovl);
+         robot.SplinePTP(&jsp2, tool, user, vel, acc, ovl);
+         robot.SplinePTP(&jsp3, tool, user, vel, acc, ovl);
+         robot.SplinePTP(&jsp4, tool, user, vel, acc, ovl);
+         robot.SplineEnd();
+
+         JointPos jnsp1(-11.904, -99.669, 117.473, -108.616, -91.726, 74.256);
+
+         DescPose desc_posnsp1(-419.524, -13.000, 351.569, -178.118, 0.314, 3.833);
+         DescPose desc_posnsp2(-321.222, 185.189, 335.520, -179.030, -1.284, -29.869);
+         DescPose desc_posnsp3(-327.622, 402.230, 320.402, -178.067, 2.127, -46.207);
+         DescPose desc_posnsp4(-104.066, 544.321, 327.023, -177.715, 3.371, -73.818);
+         DescPose desc_posnsp5(-33.421, 732.572, 275.103, -177.907, 2.709, -79.482);
+         desc_posnsp1.tran.x += 0.1 * i;
+         desc_posnsp1.tran.y += 0.1 * i;
+         desc_posnsp3.tran.x += 0.1 * i;
+         desc_posnsp3.tran.y += 0.1 * i;
+         rtn = robot.MoveJ(&jnsp1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+         printf("movej errcode:%d\n", rtn);
+         robot.NewSplineStart(1, 2000);
+         robot.NewSplinePoint(&desc_posnsp1, tool, user, vel, acc, ovl, -1, 0);
+         robot.NewSplinePoint(&desc_posnsp2, tool, user, vel, acc, ovl, -1, 0);
+         robot.NewSplinePoint(&desc_posnsp3, tool, user, vel, acc, ovl, -1, 0);
+         robot.NewSplinePoint(&desc_posnsp4, tool, user, vel, acc, ovl, -1, 0);
+         robot.NewSplinePoint(&desc_posnsp5, tool, user, vel, acc, ovl, -1, 0);
+         robot.NewSplineEnd();
+     }
+
      
-     TestExtAxisMoveBlend();
 
-     return 0;
+     robot.CloseRPC();
+     return ;
  }
-
-
- 
 
  int testSyncMoveJ()
  {
@@ -6896,17 +7326,665 @@ int TestServoJ(void)
          return -1;
      }
      robot.SetReConnectParam(true, 30000, 500);
-     robot.SetForwardWireFeed(0, 1);
+     //1.±ê¶¨²¢Ó¦ÓÃ»úÆ÷ÈË¹¤¾ß×ø±êÏµ£¬Äú¿ÉÒÔÊ¹ÓÃËÄµã·¨»òÁùµã·¨½øÐÐ¹¤¾ß×ø±êÏµµÄ±ê¶¨ºÍÓ¦ÓÃ£¬Éæ¼°¹¤¾ß×ø±êÏµ±ê¶¨µÄ½Ó¿ÚÈçÏÂ£º
+     //  int SetToolPoint(int point_num); //ÉèÖÃ¹¤¾ß²Î¿¼µã-Áùµã·¨
+     //  int ComputeTool(ref DescPose tcp_pose); //¼ÆËã¹¤¾ß×ø±êÏµ
+     //  int SetTcp4RefPoint(int point_num);  //ÉèÖÃ¹¤¾ß²Î¿¼µã-ËÄµã·¨
+     //  int ComputeTcp4(ref DescPose tcp_pose);  //¼ÆËã¹¤¾ß×ø±êÏµ-ËÄµã·¨
+     //  int SetToolCoord(int id, DescPose coord, int type, int install); //ÉèÖÃÓ¦ÓÃ¹¤¾ß×ø±êÏµ
+     //  int SetToolList(int id, DescPose coord, int type, int install);  //ÉèÖÃÓ¦ÓÃ¹¤¾ß×ø±êÏµÁÐ±í
+     //2.ÉèÖÃUDPÍ¨ÐÅ²ÎÊý£¬²¢¼ÓÔØUDPÍ¨ÐÅ
+     robot.ExtDevSetUDPComParam("192.168.58.88", 2021, 2, 100, 3, 100, 1, 100, 10);
+     robot.ExtDevLoadUDPDriver();
+     //3.ÉèÖÃÀ©Õ¹Öá²ÎÊý£¬°üÀ¨À©Õ¹ÖáÀàÐÍ¡¢À©Õ¹ÖáÇý¶¯Æ÷²ÎÊý¡¢À©Õ¹ÖáDH²ÎÊý
+     robot.SetAxisDHParaConfig(4, 200, 200, 0, 0, 0, 0, 0, 0); //µ¥Öá±äÎ»»ú¼°DH²ÎÊý
+     robot.SetRobotPosToAxis(1); //À©Õ¹Öá°²×°Î»ÖÃ
+     robot.ExtAxisParamConfig(1, 0, 1, 100, -100, 10, 10, 12, 131072, 0, 1, 0, 0); //ËÅ·þÇý¶¯Æ÷²ÎÊý£¬±¾Ê¾ÀýÎªµ¥Öá±äÎ»»ú£¬Òò´ËÖ»ÐèÒªÉèÖÃÒ»¸öÇý¶¯Æ÷²ÎÊý£¬ÈôÄúÑ¡Ôñ°üº¬¶à¸öÖáµÄÀ©Õ¹ÖáÀàÐÍ£¬ÐèÒªÃ¿Ò»¸öÖáÉèÖÃÇý¶¯Æ÷²ÎÊý
+     //4.ÉèÖÃËùÑ¡µÄÖáÊ¹ÄÜ¡¢»ØÁã
+     robot.ExtAxisServoOn(1, 0);
+     robot.ExtAxisSetHoming(1, 0, 20, 3);
+     //5.½øÐÐÀ©Õ¹Öá×ø±êÏµ±ê¶¨¼°Ó¦ÓÃ
+     DescPose pos = {/* ÊäÈëÄúµÄ±ê¶¨µã×ø±ê */ };
+     robot.SetRefPointInExAxisEnd(pos);
+     robot.PositionorSetRefPoint(1); /*ÄúÐèÒªÍ¨¹ýËÄ¸ö²»Í¬Î»ÖÃµÄµãÀ´±ê¶¨À©Õ¹Öá£¬Òò´ËÐèÒªµ÷ÓÃ´Ë½Ó¿Ú4´Î²ÅÄÜÍê³É±ê¶¨ */
+     DescPose coord = {};
+     robot.PositionorComputeECoordSys(coord); //¼ÆËãÀ©Õ¹Öá±ê¶¨½á¹û
+     robot.ExtAxisActiveECoordSys(1, 1, coord, 1); //½«±ê¶¨½á¹ûÓ¦ÓÃµ½À©Õ¹Öá×ø±êÏµ
+     //6.ÔÚÀ©Õ¹ÖáÉÏ±ê¶¨¹¤¼þ×ø±êÏµ£¬ÄúÐèÒªÓÃµ½ÒÔÏÂ½Ó¿Ú
+     //int SetWObjCoordPoint(int point_num);
+     //int ComputeWObjCoord(int method, ref DescPose wobj_pose);
+     //int SetWObjCoord(int id, DescPose coord);
+     //int SetWObjList(int id, DescPose coord);
+     //7.¼ÇÂ¼ÄúµÄÍ¬²½¹Ø½ÚÔË¶¯ÆðÊ¼µã
+     DescPose startdescPose = {/*ÊäÈëÄúµÄ×ø±ê*/ };
+     JointPos startjointPos = {/*ÊäÈëÄúµÄ×ø±ê*/ };
+     ExaxisPos startexaxisPos = {/* ÊäÈëÄúµÄÀ©Õ¹ÖáÆðÊ¼µã×ø±ê */ };
+     //8.¼ÇÂ¼ÄúµÄÍ¬²½¹Ø½ÚÔË¶¯ÖÕµã×ø±ê
+     DescPose enddescPose = {/*ÊäÈëÄúµÄ×ø±ê*/ };
+     JointPos endjointPos = {/*ÊäÈëÄúµÄ×ø±ê*/ };
+     ExaxisPos endexaxisPos = {/* ÊäÈëÄúµÄÀ©Õ¹ÖáÖÕµã×ø±ê */ };
+     //9.±àÐ´Í¬²½ÔË¶¯³ÌÐò
+     //ÔË¶¯µ½ÆðÊ¼µã£¬¼ÙÉèÓ¦ÓÃµÄ¹¤¾ß×ø±êÏµ¡¢¹¤¼þ×ø±êÏµ¶¼ÊÇ1
+     robot.ExtAxisMove(startexaxisPos, 20);
+     DescPose offdese = { 0, 0, 0, 0, 0, 0 };
+     robot.MoveJ(&startjointPos, &startdescPose, 1, 1, 100, 100, 100, &startexaxisPos, 0, 0, &offdese);
+     //¿ªÊ¼Í¬²½ÔË¶¯
+     robot.ExtAxisSyncMoveJ(endjointPos, enddescPose, 1, 1, 100, 100, 100, endexaxisPos, -1, 0, offdese);
+    
+     robot.MoveJ(&startjointPos, 1, 1, 100, 100, 100, &startexaxisPos, 0, 0, &offdese);
+     //¿ªÊ¼Í¬²½ÔË¶¯
+     robot.ExtAxisSyncMoveJ(endjointPos, 1, 1, 100, 100, 100, endexaxisPos, -1, 0, offdese);
+     robot.CloseRPC();
+ }
+
+
+ int testSyncMoveL()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return -1;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+     //1.±ê¶¨²¢Ó¦ÓÃ»úÆ÷ÈË¹¤¾ß×ø±êÏµ£¬Äú¿ÉÒÔÊ¹ÓÃËÄµã·¨»òÁùµã·¨½øÐÐ¹¤¾ß×ø±êÏµµÄ±ê¶¨ºÍÓ¦ÓÃ£¬Éæ¼°¹¤¾ß×ø±êÏµ±ê¶¨µÄ½Ó¿ÚÈçÏÂ£º
+     //  int SetToolPoint(int point_num); //ÉèÖÃ¹¤¾ß²Î¿¼µã-Áùµã·¨
+     //  int ComputeTool(ref DescPose tcp_pose); //¼ÆËã¹¤¾ß×ø±êÏµ
+     //  int SetTcp4RefPoint(int point_num);  //ÉèÖÃ¹¤¾ß²Î¿¼µã-ËÄµã·¨
+     //  int ComputeTcp4(ref DescPose tcp_pose);  //¼ÆËã¹¤¾ß×ø±êÏµ-ËÄµã·¨
+     //  int SetToolCoord(int id, DescPose coord, int type, int install); //ÉèÖÃÓ¦ÓÃ¹¤¾ß×ø±êÏµ
+     //  int SetToolList(int id, DescPose coord, int type, int install);  //ÉèÖÃÓ¦ÓÃ¹¤¾ß×ø±êÏµÁÐ±í
+     //2.ÉèÖÃUDPÍ¨ÐÅ²ÎÊý£¬²¢¼ÓÔØUDPÍ¨ÐÅ
+     robot.ExtDevSetUDPComParam("192.168.58.88", 2021, 2, 100, 3, 100, 1, 100, 10);
+     robot.ExtDevLoadUDPDriver();
+     //3.ÉèÖÃÀ©Õ¹Öá²ÎÊý£¬°üÀ¨À©Õ¹ÖáÀàÐÍ¡¢À©Õ¹ÖáÇý¶¯Æ÷²ÎÊý¡¢À©Õ¹ÖáDH²ÎÊý
+     robot.SetAxisDHParaConfig(4, 200, 200, 0, 0, 0, 0, 0, 0); //µ¥Öá±äÎ»»ú¼°DH²ÎÊý
+     robot.SetRobotPosToAxis(1); //À©Õ¹Öá°²×°Î»ÖÃ
+     robot.ExtAxisParamConfig(1, 0, 1, 100, -100, 10, 10, 12, 131072, 0, 1, 0, 0); //ËÅ·þÇý¶¯Æ÷²ÎÊý£¬±¾Ê¾ÀýÎªµ¥Öá±äÎ»»ú£¬Òò´ËÖ»ÐèÒªÉèÖÃÒ»¸öÇý¶¯Æ÷²ÎÊý£¬ÈôÄúÑ¡Ôñ°üº¬¶à¸öÖáµÄÀ©Õ¹ÖáÀàÐÍ£¬ÐèÒªÃ¿Ò»¸öÖáÉèÖÃÇý¶¯Æ÷²ÎÊý
+     //4.ÉèÖÃËùÑ¡µÄÖáÊ¹ÄÜ¡¢»ØÁã
+     robot.ExtAxisServoOn(1, 0);
+     robot.ExtAxisSetHoming(1, 0, 20, 3);
+     //5.½øÐÐÀ©Õ¹Öá×ø±êÏµ±ê¶¨¼°Ó¦ÓÃ
+     DescPose pos = {/* ÊäÈëÄúµÄ±ê¶¨µã×ø±ê */ };
+     robot.SetRefPointInExAxisEnd(pos);
+     robot.PositionorSetRefPoint(1); /*ÄúÐèÒªÍ¨¹ýËÄ¸ö²»Í¬Î»ÖÃµÄµãÀ´±ê¶¨À©Õ¹Öá£¬Òò´ËÐèÒªµ÷ÓÃ´Ë½Ó¿Ú4´Î²ÅÄÜÍê³É±ê¶¨ */
+     DescPose coord = {};
+     robot.PositionorComputeECoordSys(coord); //¼ÆËãÀ©Õ¹Öá±ê¶¨½á¹û
+     robot.ExtAxisActiveECoordSys(1, 1, coord, 1); //½«±ê¶¨½á¹ûÓ¦ÓÃµ½À©Õ¹Öá×ø±êÏµ
+     //6.ÔÚÀ©Õ¹ÖáÉÏ±ê¶¨¹¤¼þ×ø±êÏµ£¬ÄúÐèÒªÓÃµ½ÒÔÏÂ½Ó¿Ú
+     //int SetWObjCoordPoint(int point_num);
+     //int ComputeWObjCoord(int method, ref DescPose wobj_pose);
+     //int SetWObjCoord(int id, DescPose coord);
+     //int SetWObjList(int id, DescPose coord);
+     //7.¼ÇÂ¼ÄúµÄÍ¬²½Ö±ÏßÔË¶¯ÆðÊ¼µã
+     DescPose startdescPose = {/*ÊäÈëÄúµÄ×ø±ê*/ };
+     JointPos startjointPos = {/*ÊäÈëÄúµÄ×ø±ê*/ };
+     ExaxisPos startexaxisPos = {/* ÊäÈëÄúµÄÀ©Õ¹ÖáÆðÊ¼µã×ø±ê */ };
+     //8.¼ÇÂ¼ÄúµÄÍ¬²½Ö±ÏßÔË¶¯ÖÕµã×ø±ê
+     DescPose enddescPose = {/*ÊäÈëÄúµÄ×ø±ê*/ };
+     JointPos endjointPos = {/*ÊäÈëÄúµÄ×ø±ê*/ };
+     ExaxisPos endexaxisPos = {/* ÊäÈëÄúµÄÀ©Õ¹ÖáÖÕµã×ø±ê */ };
+     //9.±àÐ´Í¬²½ÔË¶¯³ÌÐò
+     //ÔË¶¯µ½ÆðÊ¼µã£¬¼ÙÉèÓ¦ÓÃµÄ¹¤¾ß×ø±êÏµ¡¢¹¤¼þ×ø±êÏµ¶¼ÊÇ1
+     robot.ExtAxisMove(startexaxisPos, 20);
+     DescPose offdese = { 0, 0, 0, 0, 0, 0 };
+     robot.MoveJ(&startjointPos, &startdescPose, 1, 1, 100, 100, 100, &startexaxisPos, 0, 0, &offdese);
+     //¿ªÊ¼Í¬²½ÔË¶¯
+     robot.ExtAxisSyncMoveL(endjointPos, enddescPose, 1, 1, 100, 100, 100, 0, endexaxisPos, 0, offdese);
+     
+     robot.MoveJ(&startjointPos, 1, 1, 100, 100, 100, &startexaxisPos, 0, 0, &offdese);
+     //¿ªÊ¼Í¬²½ÔË¶¯
+     robot.ExtAxisSyncMoveL(enddescPose, 1, 1, 100, 100, 100, 0, endexaxisPos, 0, offdese);
+     robot.CloseRPC();
+ }
+
+
+ void testSucker()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+     uint8_t ctrl[20];
+     uint8_t state;
+     int pressVlaue;
+     int error;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+     //ÉÏ´«²¢¼ÓÔØ¿ª·ÅÐ­ÒéÎÄ¼þ
+     robot.OpenLuaUpload("E://ÏîÄ¿/ÍâÉèSDK/CtrlDev_sucker.lua");
+     robot.Sleep(2000);
+     robot.SetCtrlOpenLUAName(1, "CtrlDev_sucker.lua");
+     robot.UnloadCtrlOpenLUA(1);
+     robot.LoadCtrlOpenLUA(1);
      robot.Sleep(1000);
-     robot.SetForwardWireFeed(0, 0);
-     robot.SetReverseWireFeed(0, 1);
-     robot.Sleep(1000);
-     robot.SetReverseWireFeed(0, 0);
-     robot.SetAspirated(0, 1);
-     robot.Sleep(1000);
-     robot.SetAspirated(0, 0);
-     robot.WeldingStartReWeldAfterBreakOff();
-     robot.WeldingAbortWeldAfterBreakOff();
+
+     //¿ØÖÆÎüÅÌ¹ã²¥Ä£Ê½ÏÂ£¬°´ÕÕ×î´óÄÜÁ¦Îü¸½
+     ctrl[0] = 1;
+     robot.SetSuckerCtrl(0, 1, ctrl);
+
+     //Ñ­»·¼à¿Ø1ºÅÎüÅÌºÍ12ºÅÎüÅÌµÄ×´Ì¬
+     for (int i = 0; i < 100; i++)
+     {
+         robot.GetSuckerState(1, &state, &pressVlaue, &error);
+         printf("sucker1 state is %d, pressVlaue is %d, error num is %d\n", state, pressVlaue, error);
+         robot.GetSuckerState(12, &state, &pressVlaue, &error);
+         printf("sucker12 state is %d, pressVlaue is %d, error num is %d\n", state, pressVlaue, error);
+         robot.Sleep(100);
+     }
+
+     //µÈ´ý1ºÅÎüÅÌÊÇ·ñÎªÎü¸½µ½ÎïÌåµÄ×´Ì¬£¬µÈ´ýÊ±¼ä100ms
+     int ret = robot.WaitSuckerState(1, 1, 100);
+     printf("WaitSuckerState result is  %d\n", ret);
+
+     //µ¥²¥Ä£Ê½¹Ø±Õ1ºÅºÍ12ºÅÎüÅÌ
+     ctrl[0] = 3;
+     robot.SetSuckerCtrl(1, 1, ctrl);
+     robot.SetSuckerCtrl(12, 1, ctrl);
+
+     robot.CloseRPC();
+ }
+
+ void testFieldBusBoard()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+     uint8_t type = 0, version = 0, connState = 0;
+     uint8_t ctrl[8];
+     int ctrlAO[8];
+     static uint8_t DI[8];
+     static int AI[8];
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+     //ÉÏ´«²¢¼ÓÔØ¿ª·ÅÐ­ÒéÎÄ¼þ
+     robot.OpenLuaUpload("E://ÏîÄ¿/ÍâÉèSDK/CtrlDev_field.lua");
+     robot.Sleep(2000);
+     robot.SetCtrlOpenLUAName(3, "CtrlDev_field.lua");
+     robot.UnloadCtrlOpenLUA(3);
+     robot.LoadCtrlOpenLUA(3);
+     robot.Sleep(8000);
+
+     //»ñÈ¡´ÓÕ¾°å¿¨µÄÐ­ÒéÀàÐÍ¡¢Èí¼þ°æ±¾¡¢ÓëPLCµÄÁ¬½Ó×´Ì¬
+     robot.GetFieldBusConfig(&type, &version, &connState);
+     printf("type is %d, version is %d,connState is %d\n", type, version, connState);
+
+     //Ð´ÈëDO0 = 1¡¢DO1 = 0¡¢DO2 = 1
+     ctrl[0] = 0;
+     ctrl[1] = 1;
+     ctrl[2] = 1;
+     robot.FieldBusSlaveWriteDO(0, 3, ctrl);
+
+     //Ð´ÈëAO2 = 0x1000
+     ctrlAO[0] = 0x1005;
+     robot.FieldBusSlaveWriteAO(2, 1, ctrlAO);
+
+     //Ñ­»·¼à¿ØDI0~DI3 AI0~AI2
+     for (int i = 0; i < 100; i++)
+     {
+         robot.FieldBusSlaveReadDI(0, 4, DI);
+         printf("DI0 is %d, DI1 is %d,DI2 is %d,DI3 is %d\n", DI[0], DI[1], DI[2], DI[3]);
+         robot.FieldBusSlaveReadAI(0, 3, AI);
+         printf("AI0 is %d, AI1 is %d,AI2 is %d\n", AI[0], AI[1], AI[2]);
+         robot.Sleep(10);
+     }
+
+     //µÈ´ýDI0ÊÇ·ñÎª1£¬µÈ´ýÊ±¼ä100ms£¬²¢´òÓ¡½á¹û
+     int ret = robot.FieldBusSlaveWaitDI(0, 1, 100);
+     printf("FieldBusSlaveWaitDI result is  %d\n", ret);
+
+     //µÈ´ýAI0ÊÇ·ñ´óÓÚ400£¬µÈ´ýÊ±¼ä100ms£¬²¢´òÓ¡½á¹û
+     ret = robot.FieldBusSlaveWaitAI(0,0,400.00,100);
+     printf("FieldBusSlaveWaitAI result is  %d\n", ret);
+
+     robot.CloseRPC();
  }
 
  
+ void testSetSuckerCtrl()
+ {
+     FRRobot robot;
+     uint8_t ctrl[20];
+     uint8_t state;
+     int pressVlaue;
+     int error;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     for (int i = 0; i < 5; i++)
+     {
+         printf("------------------µÚ  %d  ´Î²âÊÔ------------------\n", i+1);
+         //¿ØÖÆÎüÅÌ¹ã²¥Ä£Ê½ÏÂ£¬°´ÕÕ×î´óÄÜÁ¦Îü¸½
+         ctrl[0] = 1;
+         robot.SetSuckerCtrl(0, 1, ctrl);
+         printf("sucker boardcast start\n");
+         robot.Sleep(3000);
+         ctrl[0] = 3;
+         robot.SetSuckerCtrl(0, 1, ctrl);
+         printf("sucker boardcast stop\n");
+         robot.Sleep(3000);
+         //µ¥²¥Ä£Ê½²âÊÔ¿ØÖÆÎüÅÌ£¬°´Éè¶¨ÖµÎü¸½
+         ctrl[0] = 2;
+         robot.SetSuckerCtrl(1, 1, ctrl);
+         robot.SetSuckerCtrl(12, 1, ctrl);
+         printf("sucker unicast start\n");
+         robot.Sleep(2000);
+         ctrl[0] = 3;
+         robot.SetSuckerCtrl(1, 1, ctrl);
+         robot.SetSuckerCtrl(12, 1, ctrl);
+         printf("sucker unicast stop\n");
+         robot.Sleep(2000);
+     }
+     robot.CloseRPC();
+ }
+
+ void testGetSuckerState()
+ {
+     FRRobot robot;
+     uint8_t ctrl[20];
+     uint8_t state;
+     int pressVlaue;
+     int error;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     //¿ØÖÆÎüÅÌ¹ã²¥Ä£Ê½ÏÂ£¬°´ÕÕ×î´óÄÜÁ¦Îü¸½
+     ctrl[0] = 1;
+     robot.SetSuckerCtrl(0, 1, ctrl);
+
+     //Ñ­»·¼à¿Ø1ºÅÎüÅÌºÍ12ºÅÎüÅÌµÄ×´Ì¬
+     for (int i = 0; i < 100; i++)
+     {
+         robot.GetSuckerState(1, &state, &pressVlaue, &error);
+         printf("sucker1 state is %d, pressVlaue is %d, error num is %d\n", state, pressVlaue, error);
+         robot.GetSuckerState(12, &state, &pressVlaue, &error);
+         printf("sucker12 state is %d, pressVlaue is %d, error num is %d\n", state, pressVlaue, error);
+         robot.Sleep(100);
+     }
+
+     //µ¥²¥Ä£Ê½¹Ø±Õ1ºÅºÍ12ºÅÎüÅÌ
+     ctrl[0] = 3;
+     robot.SetSuckerCtrl(0, 1, ctrl);
+
+     robot.CloseRPC();
+ }
+
+ void testWaitSuckerState()
+ {
+     FRRobot robot;
+     uint8_t ctrl[20];
+     uint8_t state;
+     int pressVlaue;
+     int error;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     //¿ØÖÆÎüÅÌ¹ã²¥Ä£Ê½ÏÂ£¬°´ÕÕ×î´óÄÜÁ¦Îü¸½
+     ctrl[0] = 1;
+     robot.SetSuckerCtrl(0, 1, ctrl);
+
+     //Ñ­»·¼à¿Ø1ºÅÎüÅÌºÍ12ºÅÎüÅÌµÄ×´Ì¬
+     for (int i = 0; i < 100; i++)
+     {
+         robot.GetSuckerState(1, &state, &pressVlaue, &error);
+         printf("sucker1 state is %d\n", state);
+         robot.GetSuckerState(12, &state, &pressVlaue, &error);
+         printf("sucker12 state is %d\n", state);
+         robot.Sleep(100);
+     }
+
+     //µÈ´ý1ºÅÎüÅÌÊÇ·ñÎªÎü¸½µ½ÎïÌåµÄ×´Ì¬£¬µÈ´ýÊ±¼ä100ms
+     int ret = robot.WaitSuckerState(1, 1, 100);
+     printf("WaitSuckerState1 result is  %d\n", ret);
+     //µÈ´ý12ºÅÎüÅÌÊÇ·ñÎªÎü¸½µ½ÎïÌåµÄ×´Ì¬£¬µÈ´ýÊ±¼ä100ms
+     ret = robot.WaitSuckerState(12, 1, 100);
+     printf("WaitSuckerState12 result is  %d\n", ret);
+     ctrl[0] = 3;
+     robot.SetSuckerCtrl(0, 1, ctrl);
+
+     robot.CloseRPC();
+ }
+
+ void testGetFieldBusConfig()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+     uint8_t type = 0, version = 0, connState = 0;
+     uint8_t ctrl[8];
+     int ctrlAO[8];
+     static uint8_t DI[8];
+     static int AI[8];
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     //»ñÈ¡´ÓÕ¾°å¿¨µÄÐ­ÒéÀàÐÍ¡¢Èí¼þ°æ±¾¡¢ÓëPLCµÄÁ¬½Ó×´Ì¬
+     robot.GetFieldBusConfig(&type, &version, &connState);
+     printf("type is %d, version is %d,connState is %d\n", type, version, connState);
+
+     robot.CloseRPC();
+ }
+
+ void testFieldBusSlaveWriteDOAO()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+     uint8_t type = 0, version = 0, connState = 0;
+     uint8_t ctrl[8];
+     int ctrlAO[8];
+     static uint8_t DI[8];
+     static int AI[8];
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     //Ð´ÈëDO0 = 1¡¢DO1 = 1¡¢DO2 = 0
+     ctrl[0] = 1;
+     ctrl[1] = 0;
+     ctrl[2] = 0;
+     ctrl[3] = 1;
+     robot.FieldBusSlaveWriteDO(0, 4, ctrl);
+
+     //Ð´ÈëAO2 = 0x1001
+     ctrlAO[0] = 0x1002;
+     robot.FieldBusSlaveWriteAO(2, 1, ctrlAO);
+
+     robot.CloseRPC();
+ }
+
+ void testFieldBusSlaveReadDIAI_waitDIAI()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+     uint8_t type = 0, version = 0, connState = 0;
+     uint8_t ctrl[8];
+     int ctrlAO[8];
+     static uint8_t DI[8];
+     static int AI[8];
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+
+     //Ñ­»·¼à¿ØDI0~DI3 AI0~AI2
+     for (int i = 0; i < 100; i++)
+     {
+         robot.FieldBusSlaveReadDI(0, 4, DI);
+         printf("DI0 is %d, DI1 is %d,DI2 is %d,DI3 is %d\n", DI[0], DI[1], DI[2], DI[3]);
+         robot.FieldBusSlaveReadAI(0, 3, AI);
+         printf("AI0 is %d, AI1 is %d,AI2 is %d\n", AI[0], AI[1], AI[2]);
+         robot.Sleep(100);
+     }
+
+     //µÈ´ýDI0ÊÇ·ñÎª1£¬µÈ´ýÊ±¼ä100ms£¬²¢´òÓ¡½á¹û
+     int ret = robot.FieldBusSlaveWaitDI(0, 1, 100);
+     printf("FieldBusSlaveWaitDI result is  %d\n", ret);
+
+     //µÈ´ýAI0ÊÇ·ñ´óÓÚ400£¬µÈ´ýÊ±¼ä100ms£¬²¢´òÓ¡½á¹û
+     ret = robot.FieldBusSlaveWaitAI(0, 0, 500.00, 100);
+     printf("FieldBusSlaveWaitAI result is  %d\n", ret);
+
+     robot.CloseRPC();
+ }
+
+ void testSuckerMove()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+     uint8_t ctrl[20];
+     uint8_t state;
+     int pressVlaue;
+     int error;
+     robot.CloseRPC();
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+     //ÉÏ´«²¢¼ÓÔØ¿ª·ÅÐ­ÒéÎÄ¼þ
+     robot.OpenLuaUpload("E://ÏîÄ¿/ÍâÉèSDK/CtrlDev_sucker.lua");
+     robot.Sleep(2000);
+     robot.SetCtrlOpenLUAName(1, "CtrlDev_sucker.lua");
+     robot.UnloadCtrlOpenLUA(1);
+     robot.LoadCtrlOpenLUA(1);
+     robot.Sleep(1000);
+
+     JointPos j1(76.558, -81.447, 132.913, -145.499, -92.762, -0.485);
+     DescPose desc_pos1(-2.659, -429.194, 170.829, -175.985, -2.789, 166.848);
+
+     JointPos j2(76.559, -90.243, 128.285, -132.076, -92.762, -0.485);
+     DescPose desc_pos2(-2.658, -429.198, 241.123, -175.985, -2.789, 166.848);
+     DescPose offset_pos(0, 0, 0, 0, 0, 0);
+     ExaxisPos epos(0, 0, 0, 0);
+
+     int tool = 0;
+     int user = 0;
+     float vel = 100.0;
+     float acc = 100.0;
+     float ovl = 100.0;
+     float blendT = -1.0;
+     float blendR = 0.0;
+     uint8_t flag = 0;
+     uint8_t search = 0;
+
+     robot.SetSpeed(20);
+
+     while (1)
+     {
+         rtn = robot.MoveJ(&j1, &desc_pos1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+
+         //¿ØÖÆÎüÅÌ¹ã²¥Ä£Ê½ÏÂ£¬°´ÕÕ×î´óÄÜÁ¦Îü¸½
+         ctrl[0] = 2;
+         robot.SetSuckerCtrl(0, 1, ctrl);
+
+         //Ñ­»·¼à¿Ø1ºÅÎüÅÌºÍ12ºÅÎüÅÌµÄ×´Ì¬
+         for (int i = 0; i < 20; i++)
+         {
+             robot.GetSuckerState(1, &state, &pressVlaue, &error);
+             printf("sucker1 state is %d, pressVlaue is %d, error num is %d\n", state, pressVlaue, error);
+             robot.GetSuckerState(12, &state, &pressVlaue, &error);
+             printf("sucker12 state is %d, pressVlaue is %d, error num is %d\n", state, pressVlaue, error);
+             robot.Sleep(100);
+         }
+         //µÈ´ý1ºÅÎüÅÌÊÇ·ñÎªÎü¸½µ½ÎïÌåµÄ×´Ì¬£¬µÈ´ýÊ±¼ä100ms
+         int ret = robot.WaitSuckerState(1, 1, 100);
+         printf("WaitSuckerState result is  %d\n", ret);
+         rtn = robot.MoveJ(&j2, &desc_pos2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
+         if (ret == 0)
+         {
+             printf("sucker1 Îü¸½µ½ÎïÌå\n");
+         }
+         else
+         {
+             printf("sucker1 Î´Îü¸½µ½ÎïÌå\n");
+             continue;
+         }
+
+         
+
+         //µ¥²¥Ä£Ê½¹Ø±Õ1ºÅºÍ12ºÅÎüÅÌ
+         ctrl[0] = 3;
+         robot.SetSuckerCtrl(1, 1, ctrl);
+         robot.SetSuckerCtrl(12, 1, ctrl);
+
+         robot.Sleep(1000);
+     }
+     robot.CloseRPC();
+ }
+
+
+
+ int main(void)
+ {
+     TestMovePhy();
+     return 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return 0;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     DescPose desc_pos1(-279.829, -614.399, 395.140, 177.820, 3.637, 162.725);
+     DescPose desc_pos2(52.877, -577.951, 177.364, 171.148, -8.241, -62.505);
+
+     DescPose offset_pos(0, 0, 0, 0, 0, 0);
+     ExaxisPos epos(0, 0, 0, 0);
+
+     int tool = 0;
+     int user = 0;
+     float vel = 10.0;
+     float acc = 100.0;
+     float ovl = 100.0;
+     float blendT = -1.0;
+     float blendR = -1.0;
+     uint8_t flag = 0;
+     uint8_t search = 0;
+
+     rtn = robot.MoveL(&desc_pos1, tool, user, 100.0, 200.0, ovl, blendR, 0, &epos, search, flag, &offset_pos, -1, 1);
+     printf("movel errcode:%d\n", rtn);
+     rtn = robot.MoveL(&desc_pos2, tool, user, 130.0, 260.0, ovl, blendR, 0, &epos, search, flag, &offset_pos, -1, 1);
+     printf("movel errcode:%d\n", rtn);
+
+     DescPose startdescPose(-57.170, -690.147, 370.969, 176.438, -8.320, 169.881);
+     JointPos startjointPos(78.017, -62.036, 69.561, -94.199, -98.416, -1.360);
+
+     DescPose middescPose(-71.044, -743.395, 375.996, -179.499, -5.398, 168.739);
+     JointPos midjointPos(77.417, -55.000, 58.732, -94.360, -95.385, -1.376);
+
+     DescPose enddescPose(-439.979, -512.743, 396.472, 178.112, 3.625, 146.576);
+     JointPos endjointPos(40.243, -65.402, 70.802, -92.565, -87.055, -16.465);
+
+
+     ExaxisPos exaxisPos(0, 0, 0, 0);
+     DescPose offdese(0, 0, 0, 0, 0, 0);
+
+     robot.MoveL(&startjointPos, &startdescPose, 0, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
+     robot.MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
+
+     robot.CloseRPC();
+     return 0;
+
+     //robot.LuaUpload("D://zUP/airlab.lua");
+     //robot.OpenLuaUpload("D://zUP/CtrlDev_airlab.lua");
+
+     robot.SoftwareUpgrade("D://test/software.tar.gz", false);
+     while (true)
+     {
+         int curState = -1;
+         robot.GetSoftwareUpgradeState(curState);
+         printf("upgrade state is %d\n", curState);
+         robot.Sleep(300);
+     }
+     
+
+     robot.Sleep(1000);
+     return 0;
+
+
+     DescTran directionPoint = { 0,0,0 };
+     rtn = robot.LaserTrackingSearchStart(2, directionPoint, 10, 100, 10000, 4);
+     printf("LaserTrackingSearchStart rtn is %d\n", rtn);
+     robot.LaserTrackingSearchStop();
+     int coordID = 4;
+     DescPose desc = {};
+     JointPos joint = {};
+     ExaxisPos exaxis = {};
+     rtn = robot.LaserRecordPoint(coordID, desc, joint, exaxis);
+     printf("rtn is %d\n", rtn);
+     printf("desc_pos:%f,%f,%f,%f,%f,%f\n", desc.tran.x, desc.tran.y, desc.tran.z, desc.rpy.rx, desc.rpy.ry, desc.rpy.rz);
+     printf("joint_pos:%f,%f,%f,%f,%f,%f\n", joint.jPos[0], joint.jPos[1], joint.jPos[2], joint.jPos[3], joint.jPos[4], joint.jPos[5]);
+     printf("exaxis pos is %f %f %f %f\n", exaxis.ePos[0], exaxis.ePos[1], exaxis.ePos[2], exaxis.ePos[3]);
+     DescPose off = {};
+     robot.MoveJ(&joint,&desc,3, 0, 100, 100, 50, &exaxis, -1, 0, &off);
+     robot.CloseRPC();
+     return 0;
+ }
+
+
+ 
+

@@ -1,6 +1,7 @@
 #include "robot.h"
 #include "robot_types.h"
 #include "robot_error.h"
+#include "Utility.h"
 
 #include "logger.h"
 #include "XmlRpc.h"
@@ -42,11 +43,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "2"
-    #define SDK_VERSION_RELEASE "2"
+    #define SDK_VERSION_RELEASE "5"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.2.4.0-robot v3.8.4"
+#define SDK_RELEASE "SDK V2.2.5.0-robot v3.8.5"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -722,7 +723,47 @@ errno_t FRRobot::MoveJ(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
 }
 
 /**
- * @brief  笛卡尔空间直线运动
+ * @brief  关节空间运动(重载函数 不需要输入笛卡尔位置)
+ * @param  [in] joint_pos  目标关节位置,单位deg
+ * @param  [in] desc_pos   目标笛卡尔位姿
+ * @param  [in] tool  工具坐标号，范围[1~15]
+ * @param  [in] user  工件坐标号，范围[1~15]
+ * @param  [in] vel  速度百分比，范围[0~100]
+ * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] epos  扩展轴位置，单位mm
+ * @param  [in] blendT [-1.0]-运动到位(阻塞)，[0~500.0]-平滑时间(非阻塞)，单位ms
+ * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+ * @param  [in] offset_pos  位姿偏移量
+ * @return  错误码
+ */
+errno_t FRRobot::MoveJ(JointPos* joint_pos, int tool, int user, float vel, float acc, float ovl, ExaxisPos* epos, float blendT, uint8_t offset_flag, DescPose* offset_pos)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    DescPose desc_pos = {};
+    int errcode = GetForwardKin(joint_pos, &desc_pos);
+    if (errcode != 0)
+    {
+        logger_error("MoveJ GetForwardKin failed rtn is %d", errcode);
+        return errcode;
+    }
+    
+    errcode = MoveJ(joint_pos, &desc_pos, tool, user, vel, acc, ovl, epos, blendT, offset_flag, offset_pos);
+
+    return errcode;
+}
+
+/**
+ * @brief  笛卡尔空间直线运动(重载函数1 增加blendMode)
  * @param  [in] joint_pos  目标关节位置,单位deg
  * @param  [in] desc_pos   目标笛卡尔位姿
  * @param  [in] tool  工具坐标号，范围[1~15]
@@ -736,11 +777,12 @@ errno_t FRRobot::MoveJ(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
  * @param  [in] search  0-不焊丝寻位，1-焊丝寻位
  * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
  * @param  [in] offset_pos  位姿偏移量
+ * @param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
  * @param  [in] overSpeedStrategy  超速处理策略，1-标准；2-超速时报错停止；3-自适应降速，默认为0
  * @param  [in] speedPercent  允许降速阈值百分比[0-100]，默认10%
  * @return  错误码
  */
-errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int overSpeedStrategy, int speedPercent)
+errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int velAccParamMode, int overSpeedStrategy, int speedPercent)
 {
     if (IsSockError())
     {
@@ -786,31 +828,33 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
     param[0][3] = joint_pos->jPos[3];
     param[0][4] = joint_pos->jPos[4];
     param[0][5] = joint_pos->jPos[5];
-    param[1][0] = desc_pos->tran.x;
-    param[1][1] = desc_pos->tran.y;
-    param[1][2] = desc_pos->tran.z;
-    param[1][3] = desc_pos->rpy.rx;
-    param[1][4] = desc_pos->rpy.ry;
-    param[1][5] = desc_pos->rpy.rz;
-    param[2] = tool;
-    param[3] = user;
-    param[4] = vel;
-    param[5] = acc;
-    param[6] = ovl;
-    param[7] = blendR;
-    param[8] = blendMode;
-    param[9][0] = epos->ePos[0];
-    param[9][1] = epos->ePos[1];
-    param[9][2] = epos->ePos[2];
-    param[9][3] = epos->ePos[3];
-    param[10] = search;
-    param[11] = offset_flag;
-    param[12][0] = offset_pos->tran.x;
-    param[12][1] = offset_pos->tran.y;
-    param[12][2] = offset_pos->tran.z;
-    param[12][3] = offset_pos->rpy.rx;
-    param[12][4] = offset_pos->rpy.ry;
-    param[12][5] = offset_pos->rpy.rz;
+    param[0][6] = desc_pos->tran.x;
+    param[0][7] = desc_pos->tran.y;
+    param[0][8] = desc_pos->tran.z;
+    param[0][9] = desc_pos->rpy.rx;
+    param[0][10] = desc_pos->rpy.ry;
+    param[0][11] = desc_pos->rpy.rz;
+    param[0][12] = tool;
+    param[0][13] = user;
+    param[0][14] = vel;
+    param[0][15] = acc;
+    param[0][16] = ovl;
+    param[0][17] = blendR;
+    param[0][18] = blendMode;
+    param[0][19] = epos->ePos[0];
+    param[0][20] = epos->ePos[1];
+    param[0][21] = epos->ePos[2];
+    param[0][22] = epos->ePos[3];
+    param[0][23] = search;
+    param[0][24] = offset_flag;
+    param[0][25] = offset_pos->tran.x;
+    param[0][26] = offset_pos->tran.y;
+    param[0][27] = offset_pos->tran.z;
+    param[0][28] = offset_pos->rpy.rx;
+    param[0][29] = offset_pos->rpy.ry;
+    param[0][30] = offset_pos->rpy.rz;
+    param[0][31] = (double)100.0;
+    param[0][32] = velAccParamMode;
 
     if (c.execute("MoveL", param, result))
     {
@@ -821,6 +865,8 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
         c.close();
         return ERR_XMLRPC_CMD_FAILED;
     }
+
+    cout << "move L rtn is " << errcode << endl;
 
     if (overSpeedStrategy > 1)
     {
@@ -852,6 +898,50 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
 }
 
 /**
+ * @brief  笛卡尔空间直线运动(重载函数2 不需要输入关节位置)
+ * @param  [in] desc_pos   目标笛卡尔位姿
+ * @param  [in] tool  工具坐标号，范围[1~15]
+ * @param  [in] user  工件坐标号，范围[1~15]
+ * @param  [in] vel  速度百分比，范围[0~100]
+ * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+ * @param  [in] blendMode 过渡方式；0-内切过渡；1-角点过渡
+ * @param  [in] epos  扩展轴位置，单位mm
+ * @param  [in] search  0-不焊丝寻位，1-焊丝寻位
+ * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+ * @param  [in] offset_pos  位姿偏移量
+ * @param  [in] config 逆解关节空间配置，[-1]-参考当前关节位置解算，[0~7]-依据特定关节空间配置求解
+ * @param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
+ * @param  [in] overSpeedStrategy  超速处理策略，1-标准；2-超速时报错停止；3-自适应降速，默认为0
+ * @param  [in] speedPercent  允许降速阈值百分比[0-100]，默认10%
+ * @return  错误码
+ */
+errno_t FRRobot::MoveL(DescPose* desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos* epos, uint8_t search, uint8_t offset_flag, DescPose* offset_pos, int config, int velAccParamMode, int overSpeedStrategy, int speedPercent)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    JointPos jPos(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    int errcode = GetInverseKin(0, desc_pos, config, &jPos);
+    if (errcode != 0)
+    {
+        logger_error("MoveL GetInverseKin failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = MoveL(&jPos, desc_pos, tool, user, vel, acc, ovl, blendR, blendMode, epos, search, offset_flag, offset_pos, velAccParamMode, overSpeedStrategy, speedPercent);
+    return errcode;
+}
+
+/**
  * @brief  笛卡尔空间直线运动
  * @param  [in] joint_pos  目标关节位置,单位deg
  * @param  [in] desc_pos   目标笛卡尔位姿
@@ -871,111 +961,7 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
  */
 errno_t FRRobot::MoveL(JointPos* joint_pos, DescPose* desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos* epos, uint8_t search, uint8_t offset_flag, DescPose* offset_pos, int overSpeedStrategy, int speedPercent)
 {
-    if (IsSockError())
-    {
-        return g_sock_com_err;
-    }
-
-    if (GetSafetyCode() != 0)
-    {
-        return GetSafetyCode();
-    }
-
-    int errcode = 0;
-
-    XmlRpcClient c(serverUrl, 20003);
-
-    if (overSpeedStrategy > 1)
-    {
-        XmlRpcValue overSpeedProtectParam, overSpeedProtectResult;
-        overSpeedProtectParam[0] = overSpeedStrategy;
-        overSpeedProtectParam[1] = speedPercent;
-        if (c.execute("JointOverSpeedProtectStart", overSpeedProtectParam, overSpeedProtectResult))
-        {
-            errcode = int(overSpeedProtectResult);
-        }
-        else
-        {
-            c.close();
-            return ERR_XMLRPC_CMD_FAILED;
-        }
-
-        if (errcode != 0)
-        {
-            c.close();
-            return errcode;
-        }
-    }
-
-    XmlRpcValue param, result;
-
-    param[0][0] = joint_pos->jPos[0];
-    param[0][1] = joint_pos->jPos[1];
-    param[0][2] = joint_pos->jPos[2];
-    param[0][3] = joint_pos->jPos[3];
-    param[0][4] = joint_pos->jPos[4];
-    param[0][5] = joint_pos->jPos[5];
-    param[1][0] = desc_pos->tran.x;
-    param[1][1] = desc_pos->tran.y;
-    param[1][2] = desc_pos->tran.z;
-    param[1][3] = desc_pos->rpy.rx;
-    param[1][4] = desc_pos->rpy.ry;
-    param[1][5] = desc_pos->rpy.rz;
-    param[2] = tool;
-    param[3] = user;
-    param[4] = vel;
-    param[5] = acc;
-    param[6] = ovl;
-    param[7] = blendR;
-    param[8] = 0;
-    param[9][0] = epos->ePos[0];
-    param[9][1] = epos->ePos[1];
-    param[9][2] = epos->ePos[2];
-    param[9][3] = epos->ePos[3];
-    param[10] = search;
-    param[11] = offset_flag;
-    param[12][0] = offset_pos->tran.x;
-    param[12][1] = offset_pos->tran.y;
-    param[12][2] = offset_pos->tran.z;
-    param[12][3] = offset_pos->rpy.rx;
-    param[12][4] = offset_pos->rpy.ry;
-    param[12][5] = offset_pos->rpy.rz;
-
-    if (c.execute("MoveL", param, result))
-    {
-        errcode = int(result);
-    }
-    else
-    {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
-    }
-
-    if (overSpeedStrategy > 1)
-    {
-        XmlRpcValue overSpeedProtectParam, overSpeedProtectResult;
-        if (c.execute("JointOverSpeedProtectEnd", overSpeedProtectParam, overSpeedProtectResult))
-        {
-            errcode = int(overSpeedProtectResult);
-        }
-        else
-        {
-            c.close();
-            return ERR_XMLRPC_CMD_FAILED;
-        }
-
-        if (errcode != 0)
-        {
-            return errcode;
-        }
-    }
-
-    c.close();
-
-    if ((robot_state_pkg->main_code != 0 || robot_state_pkg->sub_code != 0) && errcode == 0)
-    {
-        errcode = 14;
-    }
+    int errcode = MoveL(joint_pos, desc_pos, tool, user, vel, acc, ovl, blendR, 0/*blendMode*/, epos, search, offset_flag, offset_pos, 0/*velAccParamMode*/, overSpeedStrategy, speedPercent);
 
     return errcode;
 }
@@ -1002,9 +988,10 @@ errno_t FRRobot::MoveL(JointPos* joint_pos, DescPose* desc_pos, int tool, int us
  * @param  [in] offset_pos_t  位姿偏移量
  * @param  [in] ovl  速度缩放因子，范围[0~100]
  * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+ * @param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
  * @return  错误码
  */
-errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, uint8_t poffset_flag, DescPose *offset_pos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, uint8_t toffset_flag, DescPose *offset_pos_t, float ovl, float blendR)
+errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, uint8_t poffset_flag, DescPose *offset_pos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, uint8_t toffset_flag, DescPose *offset_pos_t, float ovl, float blendR, int velAccParamMode)
 {
     if (IsSockError())
     {
@@ -1026,58 +1013,58 @@ errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, i
     param[0][3] = joint_pos_p->jPos[3];
     param[0][4] = joint_pos_p->jPos[4];
     param[0][5] = joint_pos_p->jPos[5];
-    param[1][0] = desc_pos_p->tran.x;
-    param[1][1] = desc_pos_p->tran.y;
-    param[1][2] = desc_pos_p->tran.z;
-    param[1][3] = desc_pos_p->rpy.rx;
-    param[1][4] = desc_pos_p->rpy.ry;
-    param[1][5] = desc_pos_p->rpy.rz;
-    param[2][0] = (double)ptool;
-    param[2][1] = (double)puser;
-    param[2][2] = pvel;
-    param[2][3] = pacc;
-    param[3][0] = epos_p->ePos[0];
-    param[3][1] = epos_p->ePos[1];
-    param[3][2] = epos_p->ePos[2];
-    param[3][3] = epos_p->ePos[3];
-    param[4] = poffset_flag;
-    param[5][0] = offset_pos_p->tran.x;
-    param[5][1] = offset_pos_p->tran.y;
-    param[5][2] = offset_pos_p->tran.z;
-    param[5][3] = offset_pos_p->rpy.rx;
-    param[5][4] = offset_pos_p->rpy.ry;
-    param[5][5] = offset_pos_p->rpy.rz;
-    param[6][0] = joint_pos_t->jPos[0];
-    param[6][1] = joint_pos_t->jPos[1];
-    param[6][2] = joint_pos_t->jPos[2];
-    param[6][3] = joint_pos_t->jPos[3];
-    param[6][4] = joint_pos_t->jPos[4];
-    param[6][5] = joint_pos_t->jPos[5];
-    param[7][0] = desc_pos_t->tran.x;
-    param[7][1] = desc_pos_t->tran.y;
-    param[7][2] = desc_pos_t->tran.z;
-    param[7][3] = desc_pos_t->rpy.rx;
-    param[7][4] = desc_pos_t->rpy.ry;
-    param[7][5] = desc_pos_t->rpy.rz;
-    param[8][0] = (double)ttool;
-    param[8][1] = (double)tuser;
-    param[8][2] = tvel;
-    param[8][3] = tacc;
-    param[9][0] = epos_t->ePos[0];
-    param[9][1] = epos_t->ePos[1];
-    param[9][2] = epos_t->ePos[2];
-    param[9][3] = epos_t->ePos[3];
-    param[10] = toffset_flag;
-    param[11][0] = offset_pos_t->tran.x;
-    param[11][1] = offset_pos_t->tran.y;
-    param[11][2] = offset_pos_t->tran.z;
-    param[11][3] = offset_pos_t->rpy.rx;
-    param[11][4] = offset_pos_t->rpy.ry;
-    param[11][5] = offset_pos_t->rpy.rz;
-    param[12] = ovl;
-    param[13] = blendR;
-
-    logger_info("movec 1\n");
+    param[0][6] = desc_pos_p->tran.x;
+    param[0][7] = desc_pos_p->tran.y;
+    param[0][8] = desc_pos_p->tran.z;
+    param[0][9] = desc_pos_p->rpy.rx;
+    param[0][10] = desc_pos_p->rpy.ry;
+    param[0][11] = desc_pos_p->rpy.rz;
+    param[0][12] = ptool;
+    param[0][13] = puser;
+    param[0][14] = pvel;
+    param[0][15] = pacc;
+    param[0][16] = epos_p->ePos[0];
+    param[0][17] = epos_p->ePos[1];
+    param[0][18] = epos_p->ePos[2];
+    param[0][19] = epos_p->ePos[3];
+    param[0][20] = poffset_flag;
+    param[0][21] = offset_pos_p->tran.x;
+    param[0][22] = offset_pos_p->tran.y;
+    param[0][23] = offset_pos_p->tran.z;
+    param[0][24] = offset_pos_p->rpy.rx;
+    param[0][25] = offset_pos_p->rpy.ry;
+    param[0][26] = offset_pos_p->rpy.rz;
+    param[0][27] = joint_pos_t->jPos[0];
+    param[0][28] = joint_pos_t->jPos[1];
+    param[0][29] = joint_pos_t->jPos[2];
+    param[0][30] = joint_pos_t->jPos[3];
+    param[0][31] = joint_pos_t->jPos[4];
+    param[0][32] = joint_pos_t->jPos[5];
+    param[0][33] = desc_pos_t->tran.x;
+    param[0][34] = desc_pos_t->tran.y;
+    param[0][35] = desc_pos_t->tran.z;
+    param[0][36] = desc_pos_t->rpy.rx;
+    param[0][37] = desc_pos_t->rpy.ry;
+    param[0][38] = desc_pos_t->rpy.rz;
+    param[0][39] = ttool;
+    param[0][40] = tuser;
+    param[0][41] = tvel;
+    param[0][42] = tacc;
+    param[0][43] = epos_t->ePos[0];
+    param[0][44] = epos_t->ePos[1];
+    param[0][45] = epos_t->ePos[2];
+    param[0][46] = epos_t->ePos[3];
+    param[0][47] = toffset_flag;
+    param[0][48] = offset_pos_t->tran.x;
+    param[0][49] = offset_pos_t->tran.y;
+    param[0][50] = offset_pos_t->tran.z;
+    param[0][51] = offset_pos_t->rpy.rx;
+    param[0][52] = offset_pos_t->rpy.ry;
+    param[0][53] = offset_pos_t->rpy.rz;
+    param[0][54] = ovl;
+    param[0][55] = blendR;
+    param[0][56] = (double)100.0;
+    param[0][57] = velAccParamMode;
 
     if (c.execute("MoveC", param, result))
     {
@@ -1092,6 +1079,63 @@ errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, i
     logger_info("errcode:%d.", errcode);
 
     c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief  笛卡尔空间圆弧运动 (重载函数1 不需要输入关节位置)
+ * @param  [in] desc_pos_p   路径点笛卡尔位姿
+ * @param  [in] ptool  工具坐标号，范围[1~15]
+ * @param  [in] puser  工件坐标号，范围[1~15]
+ * @param  [in] pvel  速度百分比，范围[0~100]
+ * @param  [in] pacc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] epos_p  扩展轴位置，单位mm
+ * @param  [in] poffset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+ * @param  [in] offset_pos_p  位姿偏移量
+ * @param  [in] desc_pos_t   目标点笛卡尔位姿
+ * @param  [in] ttool  工具坐标号，范围[1~15]
+ * @param  [in] tuser  工件坐标号，范围[1~15]
+ * @param  [in] tvel  速度百分比，范围[0~100]
+ * @param  [in] tacc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] epos_t  扩展轴位置，单位mm
+ * @param  [in] toffset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+ * @param  [in] offset_pos_t  位姿偏移量
+ * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+ * @param  [in] config 逆解关节空间配置，[-1]-参考当前关节位置解算，[0~7]-依据特定关节空间配置求解
+ * @param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
+ * @return  错误码
+ */
+errno_t FRRobot::MoveC(DescPose* desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos* epos_p, uint8_t poffset_flag, DescPose* offset_pos_p, DescPose* desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos* epos_t, uint8_t toffset_flag, DescPose* offset_pos_t, float ovl, float blendR, int config, int velAccParamMode)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    JointPos jPosP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    JointPos jPosT(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    int errcode = GetInverseKin(0, desc_pos_p, config, &jPosP);
+    if (errcode != 0)
+    {
+        logger_error("MoveC  GetInverseKin P failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = GetInverseKin(0, desc_pos_t, config, &jPosT);
+    if (errcode != 0)
+    {
+        logger_error("MoveC  GetInverseKin T failed rtn is %d", errcode);
+        return errcode;
+    }
+    
+    errcode = MoveC(&jPosP, desc_pos_p, ptool, puser, pvel, pacc, epos_p, poffset_flag, offset_pos_p, &jPosT, desc_pos_t, ttool, tuser, tvel, tacc, epos_t, toffset_flag, offset_pos_t, ovl, blendR, velAccParamMode);
 
     return errcode;
 }
@@ -1117,9 +1161,10 @@ errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, i
  *@param  [in] offset_pos  位姿偏移量
  *@param  [in] oacc 加速度百分比
  *@param  [in] blendR -1：阻塞；0~1000：平滑半径
+ *@param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
  *@return  错误码
  */
-errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, float ovl, uint8_t offset_flag, DescPose *offset_pos, double oacc, double blendR)
+errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, float ovl, uint8_t offset_flag, DescPose *offset_pos, double oacc, double blendR, int velAccParamMode)
 {
     if (IsSockError())
     {
@@ -1141,50 +1186,51 @@ errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, 
     param[0][3] = joint_pos_p->jPos[3];
     param[0][4] = joint_pos_p->jPos[4];
     param[0][5] = joint_pos_p->jPos[5];
-    param[1][0] = desc_pos_p->tran.x;
-    param[1][1] = desc_pos_p->tran.y;
-    param[1][2] = desc_pos_p->tran.z;
-    param[1][3] = desc_pos_p->rpy.rx;
-    param[1][4] = desc_pos_p->rpy.ry;
-    param[1][5] = desc_pos_p->rpy.rz;
-    param[2][0] = (double)ptool;
-    param[2][1] = (double)puser;
-    param[2][2] = pvel;
-    param[2][3] = pacc;
-    param[3][0] = epos_p->ePos[0];
-    param[3][1] = epos_p->ePos[1];
-    param[3][2] = epos_p->ePos[2];
-    param[3][3] = epos_p->ePos[3];
-    param[4][0] = joint_pos_t->jPos[0];
-    param[4][1] = joint_pos_t->jPos[1];
-    param[4][2] = joint_pos_t->jPos[2];
-    param[4][3] = joint_pos_t->jPos[3];
-    param[4][4] = joint_pos_t->jPos[4];
-    param[4][5] = joint_pos_t->jPos[5];
-    param[5][0] = desc_pos_t->tran.x;
-    param[5][1] = desc_pos_t->tran.y;
-    param[5][2] = desc_pos_t->tran.z;
-    param[5][3] = desc_pos_t->rpy.rx;
-    param[5][4] = desc_pos_t->rpy.ry;
-    param[5][5] = desc_pos_t->rpy.rz;
-    param[6][0] = (double)ttool;
-    param[6][1] = (double)tuser;
-    param[6][2] = tvel;
-    param[6][3] = tacc;
-    param[7][0] = epos_t->ePos[0];
-    param[7][1] = epos_t->ePos[1];
-    param[7][2] = epos_t->ePos[2];
-    param[7][3] = epos_t->ePos[3];
-    param[8][0] = ovl;
-    param[8][1] = (double)offset_flag;
-    param[9][0] = offset_pos->tran.x;
-    param[9][1] = offset_pos->tran.y;
-    param[9][2] = offset_pos->tran.z;
-    param[9][3] = offset_pos->rpy.rx;
-    param[9][4] = offset_pos->rpy.ry;
-    param[9][5] = offset_pos->rpy.rz;
-    param[10][0] = oacc;
-    param[10][1] = blendR;
+    param[0][6] = desc_pos_p->tran.x;
+    param[0][7] = desc_pos_p->tran.y;
+    param[0][8] = desc_pos_p->tran.z;
+    param[0][9] = desc_pos_p->rpy.rx;
+    param[0][10] = desc_pos_p->rpy.ry;
+    param[0][11] = desc_pos_p->rpy.rz;
+    param[0][12] = ptool;
+    param[0][13] = puser;
+    param[0][14] = pvel;
+    param[0][15] = pacc;
+    param[0][16] = epos_p->ePos[0];
+    param[0][17] = epos_p->ePos[1];
+    param[0][18] = epos_p->ePos[2];
+    param[0][19] = epos_p->ePos[3];
+    param[0][20] = joint_pos_t->jPos[0];
+    param[0][21] = joint_pos_t->jPos[1];
+    param[0][22] = joint_pos_t->jPos[2];
+    param[0][23] = joint_pos_t->jPos[3];
+    param[0][24] = joint_pos_t->jPos[4];
+    param[0][25] = joint_pos_t->jPos[5];
+    param[0][26] = desc_pos_t->tran.x;
+    param[0][27] = desc_pos_t->tran.y;
+    param[0][28] = desc_pos_t->tran.z;
+    param[0][29] = desc_pos_t->rpy.rx;
+    param[0][30] = desc_pos_t->rpy.ry;
+    param[0][31] = desc_pos_t->rpy.rz;
+    param[0][32] = ttool;
+    param[0][33] = tuser;
+    param[0][34] = tvel;
+    param[0][35] = tacc;
+    param[0][36] = epos_t->ePos[0];
+    param[0][37] = epos_t->ePos[1];
+    param[0][38] = epos_t->ePos[2];
+    param[0][39] = epos_t->ePos[3];
+    param[0][40] = ovl;
+    param[0][41] = offset_flag;
+    param[0][42] = offset_pos->tran.x;
+    param[0][43] = offset_pos->tran.y;
+    param[0][44] = offset_pos->tran.z;
+    param[0][45] = offset_pos->rpy.rx;
+    param[0][46] = offset_pos->rpy.ry;
+    param[0][47] = offset_pos->rpy.rz;
+    param[0][48] = oacc;
+    param[0][49] = blendR;
+    param[0][50] = velAccParamMode;
 
     if (c.execute("Circle", param, result))
     {
@@ -1197,6 +1243,62 @@ errno_t FRRobot::Circle(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, 
     }
 
     c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief  笛卡尔空间整圆运动 (重载函数1 不需要输入关节位置)
+ * @param  [in] desc_pos_p   路径点1笛卡尔位姿
+ * @param  [in] ptool  工具坐标号，范围[0~14]
+ * @param  [in] puser  工件坐标号，范围[0~14]
+ * @param  [in] pvel  速度百分比，范围[0~100]
+ * @param  [in] pacc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] epos_p  扩展轴位置，单位mm
+ * @param  [in] desc_pos_t   路径点2笛卡尔位姿
+ * @param  [in] ttool  工具坐标号，范围[0~14]
+ * @param  [in] tuser  工件坐标号，范围[0~14]
+ * @param  [in] tvel  速度百分比，范围[0~100]
+ * @param  [in] tacc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] epos_t  扩展轴位置，单位mm
+ * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+ * @param  [in] offset_pos  位姿偏移量
+ * @param  [in] oacc 加速度百分比
+ * @param  [in] blendR -1：阻塞；0~1000：平滑半径
+ * @param  [in] config 逆解关节空间配置，[-1]-参考当前关节位置解算，[0~7]-依据特定关节空间配置求解
+ * @param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
+ * @return  错误码
+ */
+errno_t FRRobot::Circle(DescPose* desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos* epos_p, DescPose* desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos* epos_t, float ovl, uint8_t offset_flag, DescPose* offset_pos, double oacc, double blendR, int config, int velAccParamMode)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    JointPos jPosP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    JointPos jPosT(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    int errcode = GetInverseKin(0, desc_pos_p, config, &jPosP);
+    if (errcode != 0)
+    {
+        logger_error("Circle GetInverseKin P failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = GetInverseKin(0, desc_pos_t, config, &jPosT);
+    if (errcode != 0)
+    {
+        logger_error("Circle GetInverseKin T failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = Circle(&jPosP, desc_pos_p, ptool, puser, pvel, pacc, epos_p, &jPosT, desc_pos_t, ttool, tuser, tvel, tacc, epos_t, ovl, offset_flag, offset_pos, oacc, blendR, velAccParamMode);
 
     return errcode;
 }
@@ -1279,6 +1381,40 @@ errno_t FRRobot::NewSpiral(JointPos *joint_pos, DescPose *desc_pos, int tool, in
 
     c.close();
 
+    return errcode;
+}
+
+/**
+ * @brief  笛卡尔空间螺旋线运动 (重载函数1 不需要输入关节位置)
+ * @param  [in] desc_pos   目标笛卡尔位姿
+ * @param  [in] tool  工具坐标号，范围[0~14]
+ * @param  [in] user  工件坐标号，范围[0~14]
+ * @param  [in] vel  速度百分比，范围[0~100]
+ * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] epos  扩展轴位置，单位mm
+ * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+ * @param  [in] offset_pos  位姿偏移量
+ * @param  [in] spiral_param  螺旋参数
+ * @param  [in] config 逆解关节空间配置，[-1]-参考当前关节位置解算，[0~7]-依据特定关节空间配置求解
+ * @return  错误码
+ */
+errno_t FRRobot::NewSpiral(DescPose* desc_pos, int tool, int user, float vel, float acc, ExaxisPos* epos, float ovl, uint8_t offset_flag, DescPose* offset_pos, SpiralParam spiral_param, int config)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    JointPos jPos(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    int errcode = GetInverseKin(0, desc_pos, config, &jPos);
+    if (errcode != 0)
+    {
+        logger_error("NewSpiral GetInverseKin failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = NewSpiral(&jPos, desc_pos, tool, user, vel, acc, epos, ovl, offset_flag, offset_pos, spiral_param);
     return errcode;
 }
 
@@ -1621,6 +1757,41 @@ errno_t FRRobot::SplinePTP(JointPos *joint_pos, DescPose *desc_pos, int tool, in
 }
 
 /**
+ * @brief  关节空间样条运动 (重载函数1 不需要输入笛卡尔位置)
+ * @param  [in] joint_pos  目标关节位置,单位deg
+ * @param  [in] tool  工具坐标号，范围[0~14]
+ * @param  [in] user  工件坐标号，范围[0~14]
+ * @param  [in] vel  速度百分比，范围[0~100]
+ * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @return  错误码
+ */
+errno_t FRRobot::SplinePTP(JointPos* joint_pos, int tool, int user, float vel, float acc, float ovl)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    DescPose desc_pos = {};
+    int errcode = GetForwardKin(joint_pos, &desc_pos);
+    if (errcode != 0)
+    {
+        logger_error("MoveJ GetForwardKin failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = SplinePTP(joint_pos, &desc_pos, tool, user, vel, acc, ovl);
+
+    return errcode;
+}
+
+/**
  * @brief  样条运动结束
  * @return  错误码
  */
@@ -1751,6 +1922,44 @@ errno_t FRRobot::NewSplinePoint(JointPos *joint_pos, DescPose *desc_pos, int too
 
     return errcode;
 }
+
+/**
+ * @brief 新样条指令点(重载函数1 不需要输入关节位置)
+ * @param  [in] desc_pos   目标笛卡尔位姿
+ * @param  [in] tool  工具坐标号，范围[0~14]
+ * @param  [in] user  工件坐标号，范围[0~14]
+ * @param  [in] vel  速度百分比，范围[0~100]
+ * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+ * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+ * @param  [in] lastFlag 是否为最后一个点，0-否，1-是
+ * @param  [in] config 逆解关节空间配置，[-1]-参考当前关节位置解算，[0~7]-依据特定关节空间配置求解
+ * @return  错误码
+ */
+errno_t FRRobot::NewSplinePoint(DescPose* desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int lastFlag, int config)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    JointPos jPos(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    int errcode = GetInverseKin(0, desc_pos, config, &jPos);
+    if (errcode != 0)
+    {
+        logger_error("MoveL GetInverseKin failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = NewSplinePoint(&jPos, desc_pos, tool, user, vel, acc, ovl, blendR, lastFlag);
+    return errcode;
+}
+
 
 /**
  * @brief 新样条运动结束
@@ -10022,13 +10231,52 @@ errno_t FRRobot::LuaDownLoad(std::string fileName, std::string savePath)
     return errcode;
 }
 
+errno_t FRRobot::GetFileUploadBreakState(int& breakFlag, std::string& md5, int& fileSize, int& curSentSize)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetFileUploadBreakState", param, result))
+    {
+        errcode = int(result[0]);
+        if(0 == errcode)
+        {
+            breakFlag = (int)result[1];
+            fileSize = (int)result[2];
+            curSentSize = (int)result[3];
+            md5 = (string)result[4];
+
+        }
+        if (0 != errcode)
+        {
+            logger_error("execute GetFileUploadBreakState fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+
 /**
  * @brief 上传文件
  * @param [in] fileType 文件类型    0-lua文件,1-机器人软件升级包
  * @param [in] filePath 保存文件路径    “C：//test/test.lua”
  * @return 错误码
  */
-errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
+errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
 {
     if (IsSockError())
     {
@@ -10041,86 +10289,42 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
         return ERR_FILE_NAME;
     }
 
-    int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
+    if (!CheckFileIsExist(filePath))
+    {
+        logger_error("path %s do not exist.", filePath);
+        return ERR_UPLOAD_FILE_NOT_FOUND;
+    }
 
-// 检查文件路径;
-#ifdef WIN32
-    std::wstring save_path_wide(filePath.begin(), filePath.end());
-    if (GetFileAttributesA(filePath.c_str()) == INVALID_FILE_ATTRIBUTES)
-    {
-        logger_error("path %s do not exist.", filePath.c_str());
-        c.close();
-        return ERR_UPLOAD_FILE_NOT_FOUND;
-    }
-#else
-    char save_path[MAX_FILE_PATH_LENGTH];
-    memset(save_path, 0, MAX_FILE_PATH_LENGTH);
-    snprintf(save_path, MAX_FILE_PATH_LENGTH, "%s", filePath.c_str());
-    if(access(save_path, F_OK) != 0)
-    {
-        logger_error("path %s do not exist.", save_path);
-        c.close();
-        return ERR_UPLOAD_FILE_NOT_FOUND;
-    }
-#endif
-    long file_size = 0;
-    // 检查文件大小;
-#ifdef WIN32
-    HANDLE hFile = CreateFile(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (INVALID_HANDLE_VALUE != hFile)
-    {
-        DWORD dwHigh = 0;
-        DWORD dwSize = ::GetFileSize(hFile, &dwHigh);
-        CloseHandle(hFile);
-        file_size = dwSize;
-        if (file_size < 0)
-        {
-            logger_error("get file size fail, size is: %l.",  file_size);
-            c.close();
-            return ERR_UPLOAD_FILE_ERROR;
-        }
-    }else{
-        logger_error("open file fail, error is: %lu.", GetLastError());
-        c.close();
-        return ERR_UPLOAD_FILE_ERROR;
-    }
-#else
-    FILE *file_p = fopen(save_path, "rb");
-    if(NULL == file_p)
-    {
-        logger_error("open file %s fail.", save_path);
-        c.close();
-        return ERR_UPLOAD_FILE_ERROR;
-    }
-    fseek(file_p, 0, SEEK_END);
-    file_size = ftell(file_p);
-    fclose(file_p);
-#endif
+    long file_size = GetFileSize(filePath);
 
     long total_size = file_size + 16 + 32 +2;
     logger_info("file size is: %ld, total size is: %ld.", file_size, total_size);
     if (total_size > UPLOAD_FILE_MAX_SIZE)
     {
         logger_error("file size have over max limit: %d", UPLOAD_FILE_MAX_SIZE);
-        c.close();
         return ERR_FILE_TOO_LARGE;
     }
 
-    /* 获取点位表名称 */
-    string point_table_name;
-#ifdef WIN32
-    point_table_name = PathFindFileNameA(filePath.c_str());
-#else
-    char path_dup[MAX_FILE_PATH_LENGTH];
-    memset(path_dup, 0, MAX_FILE_PATH_LENGTH);
-    memcpy(path_dup, save_path, MAX_FILE_PATH_LENGTH-1);
-    point_table_name.append(basename(path_dup));
-    logger_info("name is: %s.", point_table_name.c_str());
-#endif
+    string point_table_name = GetFileNameInPath(filePath);
+    string compute_md5 = fr_md5::md5_hash_hex_from_file(filePath);
 
+    int  breakFlag = 0;
+    std::string md5 = ""; 
+    int fileSize = 0; 
+    int curSentSize = 0;
+    if (reUp > 0)
+    {
+        GetFileUploadBreakState(breakFlag, md5, fileSize, curSentSize);
+        printf("breakFlag  %d, md5 %s, fileSize %d, curSentSize %d\n", breakFlag, md5, fileSize, curSentSize);
+        if (breakFlag > 0 && md5 == compute_md5)
+        {
+            fileType = 101;
+        }
+    }
 
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
     // 发起远程调用;
     param[0] = fileType;
     param[1] = point_table_name;
@@ -10142,176 +10346,152 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath)
     
     /* 创建，设置套接字 */
     fr_network::socket_fd fd = fr_network::get_socket_fd();
-
-    /* 设置连接超时 */
-    int syncnt = 4;
-#ifdef WIN32
-    if (setsockopt(fd, IPPROTO_TCP, TCP_MAXRT, (char *)&syncnt, sizeof(syncnt)) == SOCKET_ERROR)
+    errcode = fr_network::SetTimeout(fd, 4, 40, 0);
+    if (errcode != 0)
     {
-        logger_error("Failed to set TCP_MAXRT option.\n");
-        c.close();
+        logger_error("set sock timeout failed");
         fr_network::close_fd(fd);
         return ERR_OTHER;
     }
-    int timeout = 400000;
-    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(int));
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(int));
-#else
-    setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));
-    struct timeval tv;
-    tv.tv_sec = 4;
-    tv.tv_usec = 0;
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
-    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof tv);
-#endif
 
     Sleep(30);
-    for (int i = 0; i < 100; i++)
-    {
-        errcode = fr_network::connect(fd, robot_ip, UPLOAD_POINT_TABLE_PORT);
-        if (errcode < 0)
-        {
-            Sleep(30);
-        }
-        else
-        {
-            break;
-        }
-    }
+
+    errcode = fr_network::ConnectTimes(fd, 30, 100, robot_ip, UPLOAD_POINT_TABLE_PORT);
     if (errcode < 0)
     {
         logger_error("connect fail.");
         fr_network::close_fd(fd);
-        c.close();
         return ERR_SOCKET_COM_FAILED;
     }
- 
-    /* 发送 头+内容+尾，send_buf_first, send_buf, send_buf_last */
-    do
+    // 发送头+size+md5;
+    std::ostringstream headerStream;
+    headerStream << FILE_HEAD << std::setw(10) << std::setfill('0') << total_size << compute_md5;
+    
+    std::string headstr = headerStream.str();
+    std::cout << headstr << std::endl;
+    logger_error("test.");
+    std::vector<char>headBuf(headstr.begin(), headstr.end());
+    headBuf.emplace_back('\0');
+    int send_bytes = 0;
+    if(breakFlag == 0)
     {
-        string compute_md5;
-        compute_md5.reserve(40);
-        string send_buf; // 点位表内容;
-        /* 检查，分配内存 */
-        if(total_size > send_buf.max_size())
+        logger_error("send head %s.", headBuf.data());
+        send_bytes = send(fd, headBuf.data(), 46, 0);
+        logger_error("send head len %d %s.", send_bytes, headBuf.data());
+        if ((send_bytes != 46))
         {
-            logger_error("memory is not enough. max size is: %u, total size is: %l", send_buf.max_size(), total_size);
-            errcode = ERR_FILE_TOO_LARGE;
-            break;
-        }
-        send_buf.resize(file_size, '\0');
-
-        /* 读取文件, 计算md5 */
-        ifstream input_file(filePath, std::ios::binary);
-        if (!input_file.is_open())
-        {
-            logger_error("file path is not open.");
-            errcode = ERR_FILE_OPEN_FAILED;
-            break;
-        }
-
-        input_file.seekg(0, std::ios::end);
-        std::streampos fileSize = input_file.tellg();
-        input_file.seekg(0, std::ios::beg);
-
-        input_file.read(&send_buf[0], fileSize);
-        input_file.close();
-
-        // stringstream buffer;
-        // buffer << input_file.rdbuf();
-        // send_buf = buffer.str();
-        // buffer.str("");
-        // input_file.close();
-
-        compute_md5 = fr_md5::md5_hash_hex(send_buf);
-        logger_info("send buf size is: %d. md5 is: %s.", send_buf.length(), compute_md5.c_str());
-
-        // 发送头+size+md5;
-        std::ostringstream headerStream;
-        headerStream << FILE_HEAD << std::setw(10) << std::setfill('0') << total_size << compute_md5;
-
-        std::string send_buf_first = headerStream.str();
-        int send_bytes = send(fd, const_cast<char *>(send_buf_first.c_str()), send_buf_first.length(), 0);
-        if ((send_bytes < 0) || (static_cast<unsigned int>(send_bytes) != send_buf_first.length()))
-        {
-            logger_error("send head %s fail.", send_buf_first.c_str());
+            logger_error("send head %s fail.", headBuf.data());
             errcode = ERR_SOCKET_SEND_FAILED;
-            break;
+            fr_network::close_fd(fd);
+            return errcode;
         }
         logger_info("send head end");
+    }
+    
+    const int FILE_SUBPACK_SIZE = 256 * 1024;
+    ifstream fileS(filePath, std::ios::binary);
+    if (!fileS.is_open())
+    {
+        logger_error("file path is not open.");
+        errcode = ERR_FILE_OPEN_FAILED;
+        fr_network::close_fd(fd);
+        return errcode;
+    }
 
-        /* 发送文件本体 */
-        send_bytes = 0;
-        unsigned int total_send_bytes = 0;
-        bool send_point_table_success = true;
-        while (total_send_bytes < send_buf.length())
+    int curSendSize = 0;
+
+    std::vector<char> sendBuf(FILE_SUBPACK_SIZE);
+
+    if(breakFlag > 0 && md5 == compute_md5)
+    {
+        fileS.seekg(curSentSize, ios::beg);
+        curSendSize = curSentSize;
+    }
+
+    while (!fileS.eof()) 
+    {
+        fileS.read(sendBuf.data(), sendBuf.size());
+        size_t bytes_read = fileS.gcount();
+        if (bytes_read > 0) 
         {
-            send_bytes = 0;
-            send_bytes = send(fd, const_cast<char *>(send_buf.c_str() + total_send_bytes), send_buf.length() - total_send_bytes, 0);
-            if (send_bytes < 0)
+            size_t sent = 0;
+            while (sent < bytes_read) 
             {
-                logger_error("has send bytes %d", total_send_bytes);
-                logger_error("send buf is: %s.", send_buf.c_str()+total_send_bytes);
-                logger_error("send bytes is %d", send_buf.length() - total_send_bytes);
-                errcode = ERR_SOCKET_SEND_FAILED;
-                send_point_table_success = false;
-                break;
+                /* 一帧数据有5次重试机会 */
+                int retryTimes = 0;
+                int singleSendBytes = 0;
+                while (retryTimes < 5)
+                {
+                    singleSendBytes = send(fd, sendBuf.data() + sent, bytes_read - sent, 0);
+                    if (singleSendBytes <= 0)
+                    {
+                        Sleep(50);
+                        retryTimes++;
+
+                        if (retryTimes == 4)
+                        {
+                            logger_error("Send file failed, total size is %d, current send size is %d", file_size, curSendSize);
+                            errcode = ERR_SOCKET_SEND_FAILED;
+                            fr_network::close_fd(fd);
+                            return errcode;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                
+                sent += singleSendBytes;
             }
-
-            total_send_bytes += send_bytes;
-            fileUploadPercent = total_send_bytes * 100.0 / send_buf.length();
+            curSendSize += bytes_read;
+            logger_error("Send sent file bytes is %d", curSendSize);
         }
-        if (false == send_point_table_success)
-        {
-            logger_error("send file fail \n");
-            break;
-        }
-        logger_info("except %d, total send bytes: %d", send_buf.length(), total_send_bytes);
+    }
 
-        // 发送文件尾;
-        send_bytes = 0;
-        string send_buf_last = POINT_TABLE_TAIL;
-        send_bytes = send(fd, const_cast<char *>(send_buf_last.c_str()), send_buf_last.length(), 0);
-        if ((send_bytes < 0 && errno != 0) || (static_cast<unsigned int>(send_bytes) != send_buf_last.length()))
-        {
-            logger_error("send last buf : %s fail, send bytes %d   errno is %s", send_buf_last.c_str(), send_bytes, strerror(errno));
-            errcode = ERR_SOCKET_SEND_FAILED;
-            break;
-        }
-        logger_info("send buf tail end");
+    fileS.close();
 
-        // 接收、校验客户端返回;
-        int recv_bytes = 0;
-        char recv_buf[1024];
-        memset(recv_buf, 0, sizeof(recv_buf));
-        recv_bytes = recv(fd, recv_buf, sizeof(recv_buf), 0);
-        if (recv_bytes < 0)
-        {
-            logger_error("recv fail");
-            errcode = ERR_SOCKET_RECV_FAILED;
-            break;
-        }
-        logger_info("recv %d, %s", recv_bytes, recv_buf);
-        string recv_str(recv_buf);
-        if (0 != recv_str.compare("SUCCESS"))
-        {
-            logger_error("recv %s fail. upload file fail", recv_str.c_str());
-            errcode = ERR_OTHER;
-            break;
-            ;
-        }
-        else
-        {
-            logger_error("send file success");
-        }
+    // 发送文件尾;
+    send_bytes = 0;
+    string send_buf_last = POINT_TABLE_TAIL;
+    send_bytes = send(fd, send_buf_last.c_str(), send_buf_last.length(), 0);
+    if ((send_bytes != send_buf_last.length()))
+    {
+        logger_error("send last buf failed; errno is %s", strerror(errno));
+        errcode = ERR_SOCKET_SEND_FAILED;
+        fr_network::close_fd(fd);
+        return errcode;
+    }
+    logger_info("send buf tail end");
 
-        errcode = ERR_SUCCESS;
+    // 接收、校验客户端返回;
+    int recv_bytes = 0;
+    char recv_buf[1024] = {0};
+    recv_bytes = recv(fd, recv_buf, sizeof(recv_buf), 0);
+    if (recv_bytes < 0)
+    {
+        logger_error("recv fail");
+        errcode = ERR_SOCKET_RECV_FAILED;
+        fr_network::close_fd(fd);
+        return errcode;
+    }
+    logger_info("recv %d, %s", recv_bytes, recv_buf);
+    string recv_str(recv_buf);
+    if (0 != recv_str.compare("SUCCESS"))
+    {
+        logger_error("recv %s fail. upload file fail", recv_str.c_str());
+        errcode = ERR_OTHER;
+        fr_network::close_fd(fd);
+        return errcode;
+    }
+    else
+    {
+        logger_error("send file success");
+    }
 
-    } while (0);
-
-    // 释放资源，函数返回;
-    c.close();
     fr_network::close_fd(fd);
+    errcode = ERR_SUCCESS;
+
     return errcode;
 }
 
@@ -12511,7 +12691,7 @@ errno_t FRRobot::PositionorComputeECoordSys(DescPose& coord)
 
 /**
  * @brief  UDP扩展轴与机器人关节运动同步运动
- * @param  [in] jopublic int_pos  目标关节位置,单位deg
+ * @param  [in] joint_pos  目标关节位置,单位deg
  * @param  [in] desc_pos   目标笛卡尔位姿
  * @param  [in] tool  工具坐标号，范围[0~14]
  * @param  [in] user  工件坐标号，范围[0~14]
@@ -12564,6 +12744,45 @@ errno_t FRRobot::ExtAxisSyncMoveJ(JointPos joint_pos, DescPose desc_pos, int too
 
     c.close();
     errcode = MoveJ(&joint_pos, &desc_pos, tool, user, vel, acc, ovl, &epos, blendT, offset_flag, &offset_pos);
+    return errcode;
+}
+
+/**
+* @brief  UDP扩展轴与机器人关节运动同步运动 (重载函数 不需要输入笛卡尔位置)
+* @param  [in] joint_pos  目标关节位置,单位deg
+* @param  [in] tool  工具坐标号，范围[0~14]
+* @param  [in] user  工件坐标号，范围[0~14]
+* @param  [in] vel  速度百分比，范围[0~100]
+* @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+* @param  [in] ovl  速度缩放因子，范围[0~100]
+* @param  [in] epos  扩展轴位置，单位mm
+* @param  [in] blendT [-1.0]-运动到位(阻塞)，[0~500.0]-平滑时间(非阻塞)，单位ms
+* @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+* @param  [in] offset_pos  位姿偏移量
+* @return  错误码
+*/
+errno_t FRRobot::ExtAxisSyncMoveJ(JointPos joint_pos, int tool, int user, float vel, float acc, float ovl, ExaxisPos epos, float blendT, uint8_t offset_flag, DescPose offset_pos)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    DescPose desc_pos = {};
+    int errcode = GetForwardKin(&joint_pos, &desc_pos);
+    if (errcode != 0)
+    {
+        logger_error("ExtAxisSyncMoveJ GetForwardKin failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = ExtAxisSyncMoveJ(joint_pos, desc_pos, tool, user, vel, acc, ovl, epos, blendT, offset_flag, offset_pos);
+
     return errcode;
 }
 
@@ -12622,6 +12841,45 @@ errno_t FRRobot::ExtAxisSyncMoveL(JointPos joint_pos, DescPose desc_pos, int too
 
     c.close();
     errcode = MoveL(&joint_pos, &desc_pos, tool, user, vel, acc, ovl, blendR, 0, &epos, 0, offset_flag, &offset_pos);
+    return errcode;
+}
+
+/**
+* @brief  UDP扩展轴与机器人直线运动同步运动 (重载函数 不需要输入关节位置)
+* @param  [in] desc_pos   目标笛卡尔位姿
+* @param  [in] tool  工具坐标号，范围[0~14]
+* @param  [in] user  工件坐标号，范围[0~14]
+* @param  [in] vel  速度百分比，范围[0~100]
+* @param  [in] acc  加速度百分比，范围[0~100],暂不开放
+* @param  [in] ovl  速度缩放因子，范围[0~100]
+* @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+* @param  [in] epos  扩展轴位置，单位mm
+* @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+* @param  [in] offset_pos  位姿偏移量
+* @param  [in] config 逆解关节空间配置，[-1]-参考当前关节位置解算，[0~7]-依据特定关节空间配置求解
+* @return  错误码
+*/
+errno_t FRRobot::ExtAxisSyncMoveL(DescPose desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos epos, uint8_t offset_flag, DescPose offset_pos, int config)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    JointPos jPos(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    int errcode = GetInverseKin(0, &desc_pos, config, &jPos);
+    if (errcode != 0)
+    {
+        logger_error("ExtAxisSyncMoveL GetInverseKin failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = ExtAxisSyncMoveL(jPos, desc_pos, tool, user, vel, acc, ovl, blendR, epos, offset_flag, offset_pos);
     return errcode;
 }
 
@@ -12690,6 +12948,62 @@ errno_t FRRobot::ExtAxisSyncMoveC(JointPos joint_pos_p, DescPose desc_pos_p, int
     c.close();
 
     errcode = MoveC(&joint_pos_p, &desc_pos_p, ptool, puser, pvel, pacc, &epos_p, poffset_flag, &offset_pos_p, &joint_pos_t, &desc_pos_t, ttool, tuser, tvel, tacc, &epos_t, toffset_flag, &offset_pos_t, ovl, blendR);
+    return errcode;
+}
+
+/**
+* @brief  UDP扩展轴与机器人圆弧运动同步运动 (重载函数 不需要输入关节位置)
+* @param  [in] desc_pos_p   路径点笛卡尔位姿
+* @param  [in] ptool  工具坐标号，范围[0~14]
+* @param  [in] puser  工件坐标号，范围[0~14]
+* @param  [in] pvel  速度百分比，范围[0~100]
+* @param  [in] pacc  加速度百分比，范围[0~100],暂不开放
+* @param  [in] epos_p  扩展轴位置，单位mm
+* @param  [in] poffset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+* @param  [in] offset_pos_p  位姿偏移量
+* @param  [in] desc_pos_t   目标点笛卡尔位姿
+* @param  [in] ttool  工具坐标号，范围[0~14]
+* @param  [in] tuser  工件坐标号，范围[0~14]
+* @param  [in] tvel  速度百分比，范围[0~100]
+* @param  [in] tacc  加速度百分比，范围[0~100],暂不开放
+* @param  [in] epos_t  扩展轴位置，单位mm
+* @param  [in] toffset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
+* @param  [in] offset_pos_t  位姿偏移量
+* @param  [in] ovl  速度缩放因子，范围[0~100]
+* @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+* @param  [in] config 逆解关节空间配置，[-1]-参考当前关节位置解算，[0~7]-依据特定关节空间配置求解
+* @return  错误码
+*/
+errno_t FRRobot::ExtAxisSyncMoveC(DescPose desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos epos_p, uint8_t poffset_flag, DescPose offset_pos_p, DescPose desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos epos_t, uint8_t toffset_flag, DescPose offset_pos_t, float ovl, float blendR, int config)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    JointPos jPosP(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    JointPos jPosT(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    int errcode = GetInverseKin(0, &desc_pos_p, config, &jPosP);
+    if (errcode != 0)
+    {
+        logger_error("ExtAxisSyncMoveC  GetInverseKin P failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = GetInverseKin(0, &desc_pos_t, config, &jPosT);
+    if (errcode != 0)
+    {
+        logger_error("ExtAxisSyncMoveC  GetInverseKin T failed rtn is %d", errcode);
+        return errcode;
+    }
+
+    errcode = ExtAxisSyncMoveC(jPosP, desc_pos_p, ptool, puser, pvel, pacc, epos_p, poffset_flag, offset_pos_p, jPosT, desc_pos_t, ttool, tuser, tvel, tacc, epos_t, toffset_flag, offset_pos_t, ovl, blendR);
+
     return errcode;
 }
 
@@ -17486,16 +17800,17 @@ errno_t FRRobot::WeaveChangeEnd()
 /**
  * @brief  轨迹预处理(轨迹前瞻)
  * @param  [in] name  轨迹文件名
- * @param  [in] mode 采样模式，0-不进行采样；1-等数据间隔采样；2-等误差限制采样
+ * @param  [in] mode 曲线拟合方式；0-直线连接；1-直线拟合；2-B样条曲线
  * @param  [in] errorLim 误差限制，使用直线拟合生效
  * @param  [in] type 平滑方式，0-贝塞尔平滑
  * @param  [in] precision 平滑精度，使用贝塞尔平滑时生效
  * @param  [in] vamx 设定的最大速度，mm/s
  * @param  [in] amax 设定的最大加速度，mm/s2
  * @param  [in] jmax 设定的最大加加速度，mm/s3
+ * @param  [in] flag 匀速前瞻开启开关 0-不开启；1-开启
  * @return  错误码
  */
-errno_t FRRobot::LoadTrajectoryLA(char name[30], int mode, double errorLim, int type, double precision, double vamx, double amax, double jmax)
+errno_t FRRobot::LoadTrajectoryLA(char name[30], int mode, double errorLim, int type, double precision, double vamx, double amax, double jmax, int flag)
 {
     if (IsSockError())
     {
@@ -17513,6 +17828,7 @@ errno_t FRRobot::LoadTrajectoryLA(char name[30], int mode, double errorLim, int 
     param[5] = vamx * 1.0;
     param[6] = amax * 1.0;
     param[7] = jmax * 1.0;
+    param[8] = flag;
 
     if (c.execute("LoadTrajectoryLA", param, result))
     {
@@ -18670,6 +18986,7 @@ errno_t FRRobot::SetJointFirmwareUpgrade(int type, std::string path)
     {
         logger_info("JointFirmware Upload success!");
 
+
         /* 提取文件名称 */
         size_t pos = path.find_last_of("/\\");
         if (std::string::npos == pos)
@@ -18722,6 +19039,7 @@ errno_t FRRobot::SetCtrlFirmwareUpgrade(int type, std::string path)
         }
         std::string filename = path.substr(pos + 1);
         string pathInRobot = "/tmp/" + filename;
+        errcode = SlaveFileWrite(type, 0, pathInRobot);
     }
     else {
         logger_error("CtrlFirmware Upgrade fail. errcode is: %d.", errcode);
@@ -18824,7 +19142,7 @@ errno_t FRRobot::SetRobotType(int type)
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
 
-    param[0] = type;
+    param = type;
 
     if (c.execute("SetRobotType", param, result))
     {
@@ -18841,6 +19159,164 @@ errno_t FRRobot::SetRobotType(int type)
     return errcode;
 }
 
+/**
+ * @brief 激光传感器记录点
+ * @param [in] coordID 激光传感器坐标系
+ * @param [out] desc 激光传感器识别点笛卡尔位置
+ * @param [out] joint 激光传感器识别点关节位置
+ * @param [out] exaxis 激光传感器识别点扩展轴位置
+ * @return 错误码
+ */
+errno_t FRRobot::LaserRecordPoint(int coordID, DescPose& desc, JointPos& joint, ExaxisPos& exaxis)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = coordID;
+    param[1] = 0;
+    param[2] = 100;
+
+    if (c.execute("LaserRecordPoint", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            string paramStr = (string)result[1];
+            cout << "str is " << (string)result[1] << endl;
+            std::vector<std::string> parS = split(paramStr, ',');
+            if (parS.size() != 16)
+            {
+                logger_error("LaserRecordPoint size fail");
+                return -1;
+            }
+
+            joint.jPos[0] = stod(parS[0]);
+            joint.jPos[1] = stod(parS[1]);
+            joint.jPos[2] = stod(parS[2]);
+            joint.jPos[3] = stod(parS[3]);
+            joint.jPos[4] = stod(parS[4]);
+            joint.jPos[5] = stod(parS[5]);
+            
+            desc.tran.x = stod(parS[6]);
+            desc.tran.y = stod(parS[7]);
+            desc.tran.z = stod(parS[8]);
+            desc.rpy.rx = stod(parS[9]);
+            desc.rpy.ry = stod(parS[10]);
+            desc.rpy.rz = stod(parS[11]);
+
+            exaxis.ePos[0] = stod(parS[12]);
+            exaxis.ePos[1] = stod(parS[13]);
+            exaxis.ePos[2] = stod(parS[14]);
+            exaxis.ePos[3] = stod(parS[15]);
+        }
+        else {
+            logger_error("execute LaserRecordPoint fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 设置扩展轴与机器人同步运动策略
+ * @param [in] strategy 策略；0-以机器人为主；1-扩展轴与机器人同步
+ * @return 错误码
+ */
+errno_t FRRobot::SetExAxisRobotPlan(int strategy)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param = strategy;
+
+    if (c.execute("SetExAxisRobotPlan", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 上传开放协议的Lua文件
+ * @param [in] filePath 本地开放协议lua文件路径名
+ * @return 错误码
+ */
+errno_t FRRobot::OpenLuaUpload(std::string filePath)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    /* 上传 */
+    int errcode = FileUpLoad(11, filePath);
+    if (0 == errcode)
+    {
+        logger_info("upload file success. try to check lua format.");
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        /* 提取文件名称 */
+        size_t pos = filePath.find_last_of("/\\");
+        if (std::string::npos == pos)
+        {
+            c.close();
+            logger_error("format of path is wrong, should be like /home/fd/xxx.lua");
+            return ERR_FILE_NAME;
+        }
+        std::string filename = filePath.substr(pos + 1);
+
+        param[0] = filename;
+        logger_info("file name is: [%s]", filename.c_str());
+        if (c.execute("CtrlOpenLuaUpLoadCheck", param, result))
+        {
+            errcode = int(result[0]);
+            std::string res_str = std::string(result[1]);
+            logger_error("lua format, error code is: %d, %s", errcode, res_str.c_str());
+            if (0 != errcode)
+            {
+                logger_error("lua format error.,error code is: %d, %s", errcode, res_str.c_str());
+            }
+            c.close();
+            return errcode;
+        }
+        else {
+            logger_error("execute CtrlOpenLuaUpLoadCheck fail.");
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+    }
+    else {
+        logger_error("upload file fail. errcode is: %d.", errcode);
+    }
+
+    return errcode;
+}
 
 /* 根据字符分割字符串 */
 std::vector<std::string> FRRobot::split(const std::string &s, char delim)
@@ -18933,5 +19409,478 @@ errno_t FRRobot::Sleep(int ms)
 FRRobot::~FRRobot(void)
 {
     fr_logger::logger_deinit();
-
 }
+
+/**
+     * @brief  获取从站板卡参数
+     * @param  [out] type  0-Ethercat，1-CClink, 3-Ethercat, 4-EIP
+     * @param  [out] version  协议版本
+     * @param  [out] connState  0-未连接 1-已连接
+     * @return  错误码
+     */
+errno_t FRRobot::GetFieldBusConfig(uint8_t* type, uint8_t* version, uint8_t* connState)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetFieldBusConfig", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute GetFieldBusConfig fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            *type = (uint8_t)(int)result[2];
+            *version = (uint8_t)(int)result[3];
+            *connState = (uint8_t)(int)result[4];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief  写入从站DO
+ * @param  [in] DOIndex  DO编号
+ * @param  [in] wirteNum  写入的数量
+ * @param  [in] status[8] 写入的数值，最多写8个
+ * @return  错误码
+ */
+errno_t FRRobot::FieldBusSlaveWriteDO(uint8_t DOIndex, uint8_t wirteNum, uint8_t status[8])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = DOIndex;
+    param[1] = wirteNum;
+    param[2][0] = status[0];
+    param[2][1] = status[1];
+    param[2][2] = status[2];
+    param[2][3] = status[3];
+    param[2][4] = status[4];
+    param[2][5] = status[5];
+    param[2][6] = status[6];
+    param[2][7] = status[7];
+
+    if (c.execute("FieldBusSlaveWriteDO", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute FieldBusSlaveWriteDO fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+/**
+ * @brief  写入从站AO
+ * @param  [in] AOIndex  AO编号
+ * @param  [in] wirteNum  写入的数量
+ * @param  [in] status[8] 写入的数值，最多写8个
+ * @return  错误码
+ */
+errno_t FRRobot::FieldBusSlaveWriteAO(uint8_t AOIndex, uint8_t wirteNum, int status[8])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = AOIndex;
+    param[1] = wirteNum;
+    param[2][0] = status[0];
+    param[2][1] = status[1];
+    param[2][2] = status[2];
+    param[2][3] = status[3];
+    param[2][4] = status[4];
+    param[2][5] = status[5];
+    param[2][6] = status[6];
+    param[2][7] = status[7];
+
+    if (c.execute("FieldBusSlaveWriteAO", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute FieldBusSlaveWriteAO fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief  读取从站DI
+ * @param  [in] DOIndex  DI编号
+ * @param  [in] readeNum  读取的数量
+ * @param  [out] status[8] 读取到的数值，最多读8个
+ * @return  错误码
+ */
+errno_t FRRobot::FieldBusSlaveReadDI(uint8_t DOIndex, uint8_t readNum, uint8_t status[8])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = DOIndex;
+    param[1] = readNum;
+
+    if (c.execute("FieldBusSlaveReadDI", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute FieldBusSlaveReadDI fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            for (int i = 0; i < readNum; i++)
+            {
+                status[i] = (uint8_t)(int)result[i+1];
+            }
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+/**
+ * @brief  读取从站AI
+ * @param  [in] AOIndex  AI编号
+ * @param  [in] readeNum  读取的数量
+ * @param  [out] status[8] 读取到的数值，最多读8个
+ * @return  错误码
+ */
+errno_t FRRobot::FieldBusSlaveReadAI(uint8_t AIIndex, uint8_t readNum, int status[8])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = AIIndex;
+    param[1] = readNum;
+
+    if (c.execute("FieldBusSlaveReadAI", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute FieldBusSlaveReadAI fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            for (int i = 0; i < readNum; i++)
+            {
+                status[i] = (double)result[i + 1];
+            }
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+/**
+ * @brief 等待扩展DI输入
+ * @param [in] DIIndex DI编号
+ * @param [in] status 0-低电平；1-高电平
+ * @param [in] waitMs 最大等待时间(ms)
+ * @return 错误码
+ */
+errno_t FRRobot::FieldBusSlaveWaitDI(uint8_t DIIndex, bool status, int waitMs)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = DIIndex;
+    param[1] = status;
+    param[2] = waitMs;
+
+    if (c.execute("FieldBusSlaveWaitDI", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute FieldBusSlaveWaitDI fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 等待扩展AI输入
+ * @param [in] AIIndex AI编号
+ * @param [in] waitType 0-大于；1-小于
+ * @param [in] value AI值
+ * @param [in] waitMs 最大等待时间(ms)
+ * @return 错误码
+ */
+errno_t FRRobot::FieldBusSlaveWaitAI(uint8_t AIIndex, uint8_t waitType, double value, int waitMs)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = AIIndex;
+    param[1] = waitType;
+    param[2] = value;
+    param[3] = waitMs;
+
+    if (c.execute("FieldBusSlaveWaitAI", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute FieldBusSlaveWaitAI fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 控制阵列式吸盘
+ * @param [in] slaveID 从站号
+ * @param [in] len 长度
+ * @param [in] ctrlValue 控制值 1-按最大真空度吸取 2-按设定真空度吸取 3-停止吸取
+ * @return 错误码
+ */
+errno_t FRRobot::SetSuckerCtrl(uint8_t slaveID, uint8_t len, uint8_t ctrlValue[20])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = slaveID;
+    param[1] = len;
+    for (int i = 0; i < len; i++)
+    {
+        param[2][i] = ctrlValue[i];
+    }
+    //param[2][0] = ctrlValue[0];
+    //param[2][1] = ctrlValue[1];
+    //param[2][2] = ctrlValue[2];
+    //param[2][3] = ctrlValue[3];
+    //param[2][4] = ctrlValue[4];
+    //param[2][5] = ctrlValue[5];
+    //param[2][6] = ctrlValue[6];
+    //param[2][7] = ctrlValue[7];
+    //param[2][8] = ctrlValue[8];
+    //param[2][9] = ctrlValue[9];
+    //param[2][10] = ctrlValue[10];
+    //param[2][11] = ctrlValue[11];
+    //param[2][12] = ctrlValue[12];
+    //param[2][13] = ctrlValue[13];
+    //param[2][14] = ctrlValue[14];
+    //param[2][15] = ctrlValue[15];
+    //param[2][16] = ctrlValue[16];
+    //param[2][17] = ctrlValue[17];
+    //param[2][18] = ctrlValue[18];
+    //param[2][19] = ctrlValue[19];
+
+    if (c.execute("SetSuckerCtrl", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute SetSuckerCtrl fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取阵列式吸盘状态
+ * @param [in] slaveID 从站号
+ * @param [out] state 吸附状态 0-释放物体 1-检测到工件吸附成功 2-没有吸附到物体 3-物体脱离
+ * @param [out] pressValue 当前真空度 单位kpa
+ * @param [out] error 吸盘当前的错误码
+ * @return 错误码
+ */
+errno_t FRRobot::GetSuckerState(uint8_t slaveID, uint8_t* state, int* pressValue, int* error)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = slaveID;
+
+    if (c.execute("GetSuckerState", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute GetSuckerState fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            *state = (uint8_t)(int)result[1];
+            *pressValue = (int)result[2];
+            *error = (int)result[3];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 等待吸盘状态
+ * @param [in] slaveID 从站号
+ * @param [in] state 吸附状态 0-释放物体 1-检测到工件吸附成功 2-没有吸附到物体 3-物体脱离
+ * @param [in] ms 等待最大时间
+ * @return 错误码
+ */
+errno_t FRRobot::WaitSuckerState(uint8_t slaveID, uint8_t state, int ms)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = slaveID;
+    param[1] = state;
+    param[2] = ms;
+
+    if (c.execute("WaitSuckerState", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute WaitSuckerState fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+

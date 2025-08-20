@@ -4,6 +4,7 @@
 #ifdef WIN32
     #include <winsock2.h>
     #include <windows.h>
+    #include <ws2tcpip.h>
     #pragma comment(lib, "ws2_32.lib")
 #elif __MINGW32__
 #include <winsock2.h>
@@ -101,6 +102,51 @@ namespace fr_network
             return -1;
         }
         return 0;
+    }
+
+
+    int SetTimeout(socket_fd fd, int syncnt, int sec, int millsec)
+    {
+#ifdef WIN32
+        if (setsockopt(fd, IPPROTO_TCP, TCP_MAXRT, (char*)&syncnt, sizeof(syncnt)) == SOCKET_ERROR)
+        {
+            logger_error("Failed to set TCP_MAXRT option.\n");
+            return -1;
+        }
+        int timeout = sec * 1000 + millsec;
+        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(int));
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(int));
+#else
+        setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));
+        struct timeval tv;
+        tv.tv_sec = sec;
+        tv.tv_usec = millsec;
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
+#endif
+    }
+
+    int ConnectTimes(socket_fd fd, int period, int maxTimes, const char* _robot_ip, int port)
+    {
+        int errcode = 0;
+        for (int i = 0; i < maxTimes; i++)
+        {
+            errcode = fr_network::connect(fd, _robot_ip, port);
+            if (errcode < 0)
+            {
+                #ifdef WIN32
+                Sleep(period);
+                #else
+                usleep(period * 1000);
+                #endif
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return errcode;
     }
 
 }
