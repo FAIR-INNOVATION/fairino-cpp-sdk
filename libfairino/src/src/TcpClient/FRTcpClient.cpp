@@ -204,15 +204,15 @@ int FRTcpClient::Recv(char* recvBuf, int recvSize)
 
 int FRTcpClient::RecvPkg(char* recvBuf, int recvSize)
 {
-    uint8_t allRecvBuf[1024] = {};
+    uint8_t allRecvBuf[2048] = {};
     int curRecvTotalSize = 0;
     int tmpRecvSize = 0;
-    char tmpRecvBuf[1024] = {};
+    char tmpRecvBuf[2048] = {};
     while (recvSize - curRecvTotalSize > 0)  //还有数据未接收
     {
-        memset(tmpRecvBuf, 0, 1024);
+        memset(tmpRecvBuf, 0, 2048);
         tmpRecvSize = Recv(tmpRecvBuf, recvSize - curRecvTotalSize);
-        if (tmpRecvSize < 0)
+        if (tmpRecvSize <= 0)
         {
             logger_error("robot get realtime pkg failed");
             Close();

@@ -43,11 +43,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "2"
-    #define SDK_VERSION_RELEASE "5"
+    #define SDK_VERSION_RELEASE "6"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.2.5.0-robot v3.8.5"
+#define SDK_RELEASE "SDK V2.2.6.0-robot v3.8.6"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -114,7 +114,7 @@ void FRRobot::RobotStateRoutineThread()
         return;
     }
 
-    uint8_t pkgBuf[1024] = {};
+    uint8_t pkgBuf[2048] = {};
     int pkgSize = sizeof(ROBOT_STATE_PKG);
     while (!robot_realstate_exit)
     {
@@ -127,7 +127,7 @@ void FRRobot::RobotStateRoutineThread()
         else
         {
             memcpy(robot_state_pkg.get(), pkgBuf, sizeof(ROBOT_STATE_PKG));
-            memset(pkgBuf, 0, 1024);
+            memset(pkgBuf, 0, 2048);
         }
     }
     rtClient->Close();
@@ -853,7 +853,7 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
     param[0][28] = offset_pos->rpy.rx;
     param[0][29] = offset_pos->rpy.ry;
     param[0][30] = offset_pos->rpy.rz;
-    param[0][31] = (double)100.0;
+    param[0][31] = ovl;
     param[0][32] = velAccParamMode;
 
     if (c.execute("MoveL", param, result))
@@ -2972,7 +2972,7 @@ errno_t FRRobot::ComputeTcp4(DescPose *tcp_pose)
 
 /**
  * @brief  设置工具坐标系
- * @param  [in] id 坐标系编号，范围[1~15]
+ * @param  [in] id 坐标系编号，范围[0~14]
  * @param  [in] coord  工具中心点相对于末端法兰中心位姿
  * @param  [in] type  0-工具坐标系，1-传感器坐标系
  * @param  [in] install 安装位置，0-机器人末端，1-机器人外部
@@ -3439,6 +3439,43 @@ errno_t FRRobot::SetLoadCoord(DescTran *coord)
     param[0] = coord->x;
     param[1] = coord->y;
     param[2] = coord->z;
+    param[3] = 0;
+
+    if (c.execute("SetLoadCoord", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief  设置末端负载质心坐标
+ * @param  [in] loadNum 负载编号
+ * @param  [in] coord 质心坐标，单位mm
+ * @return  错误码
+ */
+errno_t FRRobot::SetLoadCoord(int loadNum, DescTran* coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = coord->x;
+    param[1] = coord->y;
+    param[2] = coord->z;
+    param[3] = loadNum;
 
     if (c.execute("SetLoadCoord", param, result))
     {
@@ -9339,7 +9376,7 @@ errno_t FRRobot::WeldingSetVoltage(int ioType, double voltage, int AOIndex, int 
 /**
  * @brief 设置摆动参数
  * @param [in] weaveNum 摆焊参数配置编号
- * @param [in] weaveType 摆动类型 0-平面三角波摆动；1-垂直L型三角波摆动；2-顺时针圆形摆动；3-逆时针圆形摆动；4-平面正弦波摆动；5-垂直L型正弦波摆动；6-垂直三角波摆动；7-垂直正弦波摆动
+ * @param [in] weaveType 摆动类型 0-平面三角波摆动；1-垂直L型三角波摆动；2-顺时针圆形摆动；3-逆时针圆形摆动；4-平面正弦波摆动；5-垂直L型正弦波摆动；6-垂直三角波摆动；
  * @param [in] weaveFrequency 摆动频率(Hz)
  * @param [in] weaveIncStayTime 等待模式 0-周期不包含等待时间；1-周期包含等待时间
  * @param [in] weaveRange 摆动幅度(mm)
@@ -10315,7 +10352,6 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
     if (reUp > 0)
     {
         GetFileUploadBreakState(breakFlag, md5, fileSize, curSentSize);
-        printf("breakFlag  %d, md5 %s, fileSize %d, curSentSize %d\n", breakFlag, md5, fileSize, curSentSize);
         if (breakFlag > 0 && md5 == compute_md5)
         {
             fileType = 101;
@@ -19883,4 +19919,1429 @@ errno_t FRRobot::WaitSuckerState(uint8_t slaveID, uint8_t state, int ms)
     c.close();
     return errcode;
 }
+
+/**
+* @brief 阻抗启停控制
+* @param [in] status 0：关闭；1-开启
+* @param [in] workSpace 0-关节空间；1-迪卡尔空间
+* @param [in] forceThreshold 触发力阈值(N)
+* @param [in] m 质量参数
+* @param [in] b 阻尼参数
+* @param [in] k 刚度参数
+* @param [in] maxV 最大线速度(mm/s)
+* @param [in] maxVA 最大线加速度(mm/s2)
+* @param [in] maxW 最大角速度(°/s)
+* @param [in] maxWA 最大角加速度(°/s2)
+ * @return 错误码
+ */
+errno_t FRRobot::ImpedanceControlStartStop(int status, int workSpace, double forceThreshold[6], double m[6], double b[6], double k[6], double maxV, double maxVA, double maxW, double maxWA)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = status;
+    param[0][1] = workSpace;
+    param[0][2] = forceThreshold[0];
+    param[0][3] = forceThreshold[1];
+    param[0][4] = forceThreshold[2];
+    param[0][5] = forceThreshold[3];
+    param[0][6] = forceThreshold[4];
+    param[0][7] = forceThreshold[5];
+    param[0][8] = m[0];
+    param[0][9] = m[1];
+    param[0][10] = m[2];
+    param[0][11] = m[3];
+    param[0][12] = m[4];
+    param[0][13] = m[5];
+    param[0][14] = b[0];
+    param[0][15] = b[1];
+    param[0][16] = b[2];
+    param[0][17] = b[3];
+    param[0][18] = b[4];
+    param[0][19] = b[5];
+    param[0][20] = k[0];
+    param[0][21] = k[1];
+    param[0][22] = k[2];
+    param[0][23] = k[3];
+    param[0][24] = k[4];
+    param[0][25] = k[5];
+    param[0][26] = maxV;
+    param[0][27] = maxVA;
+    param[0][28] = maxW;
+    param[0][29] = maxWA;
+
+    if (c.execute("ImpedanceControlStartStop", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute ImpedanceControlStartStop fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置拖动开启前负载力检测
+ * @param [in] flag 0-关闭；1-开启
+ * @return 错误码
+ */
+errno_t FRRobot::SetTorqueDetectionSwitch(uint8_t flag)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = flag;
+
+    if (c.execute("SetTorqueDetectionSwitch", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute SetTorqueDetectionSwitch fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+
+/**
+ * @brief 激光外设打开关闭函数
+ * @param [in] OnOff 0-关闭 1-打开
+ * @param [in] weldId 焊缝ID 默认为0
+ * @return 错误码
+ */
+errno_t FRRobot::LaserTrackingLaserOnOff(int OnOff, int weldId)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = OnOff;
+    param[1] = weldId;
+
+    if (c.execute("LaserTrackingLaserOnOff", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingLaserOnOff fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激光跟踪开始结束函数
+ * @param [in] OnOff 0-结束 1-开始
+ * @param [in] coordId 激光外设工具坐标系编号
+ * @return 错误码
+ */
+errno_t FRRobot::LaserTrackingTrackOnOff(int OnOff, int coordId)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = OnOff;
+    param[1] = coordId;
+
+    if (c.execute("LaserTrackingTrackOnOff", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingTrackOnOff fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激光寻位-固定反向
+ * @param [in] direction 0-x+ 1-x- 2-y+ 3-y- 4-z+ 5-z-
+ * @param [in] vel 速度 单位%
+ * @param [in] distance 最大寻位距离 单位mm
+ * @param [in] distance 寻位超时时间 单位ms
+ * @param [in] posSensorNum 激光标定的工具坐标编号
+ * @return 错误码
+ */
+errno_t FRRobot::LaserTrackingSearchStart_xyz(int direction, int vel, int distance, int timeout, int posSensorNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = direction;
+    param[1] = vel;
+    param[2] = distance;
+    param[3] = timeout;
+    param[4] = posSensorNum;
+
+    if (c.execute("LaserTrackingSearchStart_xyz", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingSearchStart fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激光寻位-任意方向
+ * @param [in] directionPoint 寻位输入的点的xyz左边
+ * @param [in] vel 速度 单位%
+ * @param [in] distance 最大寻位距离 单位mm
+ * @param [in] distance 寻位超时时间 单位ms
+ * @param [in] posSensorNum 激光标定的工具坐标编号
+ * @return 错误码
+ */
+errno_t FRRobot::LaserTrackingSearchStart_point(DescTran directionPoint, int vel, int distance, int timeout, int posSensorNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = 6;
+    param[1] = vel;
+    param[2] = distance;
+    param[3] = timeout;
+    param[4] = posSensorNum;
+    param[5] = directionPoint.x;
+    param[6] = directionPoint.y;
+    param[7] = directionPoint.z;
+
+    if (c.execute("LaserTrackingSearchStart_point", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingSearchStart_point fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+
+/**
+ * @brief 激光IP配置
+ * @param [in] ip 激光外设的ip地址
+ * @param [in] port 激光外设的端口号
+ * @return 错误码
+ */
+errno_t FRRobot::LaserTrackingSensorConfig(std::string ip, int port)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = ip;
+    param[1] = port;
+
+    if (c.execute("LaserTrackingSensorConfig", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingSensorConfig fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+
+}
+
+/**
+ * @brief 激光外设采样周期配置
+ * @param [in] period 激光外设采样周期 单位ms
+ * @return 错误码
+ */
+errno_t FRRobot::LaserTrackingSensorSamplePeriod(int period)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = period;
+
+    if (c.execute("LaserTrackingSensorSamplePeriod", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserTrackingSensorSamplePeriod fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激光外设驱动加载
+ * @param [in] type 激光外设驱动的协议类型 101-睿牛 102-创想 103-全视 104-同舟 105-奥太
+ * @return 错误码
+ */
+errno_t FRRobot::LoadPosSensorDriver(int type)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = type;
+
+    if (c.execute("LoadPosSensorDriver", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LoadPosSensorDriver fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激光外设驱动卸载
+ * @return 错误码
+ */
+errno_t FRRobot::UnLoadPosSensorDriver()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("UnLoadPosSensorDriver", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute UnLoadPosSensorDriver fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激光焊缝轨迹记录
+ * @param [in] status 0-停止记录 1-实时跟踪  2-开始记录
+ * @param [in] delayTime 延时时间 单位ms
+ * @return 错误码
+ */
+errno_t FRRobot::LaserSensorRecord1(int status, int delayTime)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = status;
+    param[1] = delayTime;
+
+    if (c.execute("LaserSensorRecord1", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserSensorRecord1 fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激光焊缝轨迹复现
+ * @param [in] delayTime 延时时间 单位ms
+ * @param [in] speed 速度 单位%
+ * @return 错误码
+ */
+errno_t FRRobot::LaserSensorReplay(int delayTime, double speed)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = 3;
+    param[1] = delayTime;
+    param[2] = speed;
+
+    if (c.execute("LaserSensorReplay", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserSensorReplay fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+
+}
+
+/**
+ * @brief 激光跟踪复现
+ * @return 错误码
+ */
+errno_t FRRobot::MoveLTR()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = 0;
+    if (c.execute("MoveLTR", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute MoveLTR fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激光焊缝轨迹复现
+ * @param [in] delayMode 模式 0-延时时间 1-延时距离
+ * @param [in] delayTime 延时时间 单位ms
+ * @param [in] delayDisExAxisNum 扩展轴编号
+ * @param [in] delayDis 延时距离 单位mm
+ * @param [in] sensitivePara 补偿灵敏系数
+ * @param [in] speed 速度 单位%
+ * @return 错误码
+ */
+errno_t FRRobot::LaserSensorRecordandReplay(int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, double speed)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = 4;
+    param[1] = delayMode;
+    param[2] = delayTime;
+    param[3] = delayDisExAxisNum;
+    param[4] = delayDis;
+    param[5] = sensitivePara;
+    param[6] = speed;
+
+    if (c.execute("LaserSensorRecordandReplay", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute LaserSensorRecordandReplay fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 运动到焊缝记录的起点
+ * @param [in] moveType 0-PTP 1-LIN
+ * @param [in] ovl 速度 单位%
+ * @return 错误码
+ */
+errno_t FRRobot::MoveToLaserRecordStart(int moveType, double ovl)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = moveType;
+    param[1] = ovl;
+    if (c.execute("MoveToLaserRecordStart", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute MoveToLaserRecordStart fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 运动到焊缝记录的终点
+ * @param [in] moveType 0-PTP 1-LIN
+ * @param [in] ovl 速度 单位%
+ * @return 错误码
+ */
+errno_t FRRobot::MoveToLaserRecordEnd(int moveType, double ovl)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = moveType;
+    param[1] = ovl;
+    if (c.execute("MoveToLaserRecordEnd", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute MoveToLaserRecordEnd fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 运动到激光传感器寻位点
+ * @param [in] moveFlag 运动类型：0-PTP；1-LIN
+ * @param [in] ovl 速度缩放因子，0-100
+ * @param [in] dataFlag 焊缝缓存数据选择：0-执行规划数据；1-执行记录数据
+ * @param [in] plateType 板材类型：0-波纹板；1-瓦楞板；2-围栏板；3-油桶；4-波纹甲壳钢
+ * @param [in] trackOffectType 激光传感器偏移类型：0-不偏移；1-基坐标系偏移；2-工具坐标系偏移；3-激光传感器原始数据偏移
+ * @param [in] offset 偏移量
+ * @return 错误码
+ */
+errno_t FRRobot::MoveToLaserSeamPos(int moveFlag, double ovl, int dataFlag, int plateType, int trackOffectType, DescPose offset)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = moveFlag;
+    param[0][1] = ovl;
+    param[0][2] = dataFlag;
+    param[0][3] = plateType;
+    param[0][4] = trackOffectType;
+    param[0][5] = offset.tran.x;
+    param[0][6] = offset.tran.y;
+    param[0][7] = offset.tran.z;
+    param[0][8] = offset.rpy.rx;
+    param[0][9] = offset.rpy.ry;
+    param[0][10] = offset.rpy.rz;
+
+    if (c.execute("MoveToLaserSeamPos", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute MoveToLaserSeamPos fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取激光传感器寻位点坐标信息
+ * @param [in] trackOffectType 激光传感器偏移类型：0-不偏移；1-基坐标系偏移；2-工具坐标系偏移；3-激光传感器原始数据偏移
+ * @param [in] offset 偏移量
+ * @param [out] jPos 关节位置[°]
+ * @param [out] descPos 笛卡尔位置[mm]
+ * @param [out] tool 工具坐标系
+ * @param [out] user 工件坐标系
+ * @param [out] exaxis 扩展轴位置[mm]
+ * @return 错误码
+ */
+errno_t FRRobot::GetLaserSeamPos(int trackOffectType, DescPose offset, JointPos& jPos, DescPose& descPos, int& tool, int& user, ExaxisPos& exaxis)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = trackOffectType;
+    param[0][1] = offset.tran.x;
+    param[0][2] = offset.tran.y;
+    param[0][3] = offset.tran.z;
+    param[0][4] = offset.rpy.rx;
+    param[0][5] = offset.rpy.ry;
+    param[0][6] = offset.rpy.rz;
+
+    if (c.execute("GetLaserSeamPos", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            string paramStr = (string)result[1];
+            printf("%s\n\n", paramStr.c_str());
+            std::vector<std::string> parS = split(paramStr, ',');
+            if (parS.size() != 20)
+            {
+                logger_error("get SeamPos Point size fail");
+                return -1;
+            }
+
+            jPos.jPos[0] = stod(parS[0]);
+            jPos.jPos[1] = stod(parS[1]);
+            jPos.jPos[2] = stod(parS[2]);
+            jPos.jPos[3] = stod(parS[3]);
+            jPos.jPos[4] = stod(parS[4]);
+            jPos.jPos[5] = stod(parS[5]);
+
+            descPos.tran.x = stod(parS[6]);
+            descPos.tran.y = stod(parS[7]);
+            descPos.tran.z = stod(parS[8]);
+            descPos.rpy.rx = stod(parS[9]);
+            descPos.rpy.ry = stod(parS[10]);
+            descPos.rpy.rz = stod(parS[11]);
+
+            tool = stoi(parS[12]);
+            user = stoi(parS[13]);
+
+            exaxis.ePos[0] = stod(parS[16]);
+            exaxis.ePos[1] = stod(parS[17]);
+            exaxis.ePos[2] = stod(parS[18]);
+            exaxis.ePos[3] = stod(parS[19]);
+        }
+        else {
+            logger_error("execute GetLaserSeamPos fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+* @brief 根据编号获取工具坐标系
+* @param [in] id 工具坐标系编号
+* @param [out] coord 坐标系数值
+* @return 错误码
+*/
+errno_t FRRobot::GetToolCoordWithID(int id, DescPose& coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+
+    if (id < 0 || id > 14)
+    {
+        errcode = 4;
+        return errcode;
+    }
+
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+
+    if (c.execute("GetToolCoordWithID", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute GetToolCoordWithIndex fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            coord.tran.x = (double)result[1];
+            coord.tran.y = (double)result[2];
+            coord.tran.z = (double)result[3];
+            coord.rpy.rx = (double)result[4];
+            coord.rpy.ry = (double)result[5];
+            coord.rpy.rz = (double)result[6];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 根据编号获取工件坐标系
+* @param [in] id 工件坐标系编号
+* @param [out] coord 坐标系数值
+* @return 错误码
+*/
+errno_t FRRobot::GetWObjCoordWithID(int id, DescPose& coord)
+{
+    if (id < 0 || id > 14)
+    {
+        return 4;
+    }
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+
+    if (c.execute("GetWObjCoordWithID", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute GetWObjCoordWithID fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            coord.tran.x = (double)result[1];
+            coord.tran.y = (double)result[2];
+            coord.tran.z = (double)result[3];
+            coord.rpy.rx = (double)result[4];
+            coord.rpy.ry = (double)result[5];
+            coord.rpy.rz = (double)result[6];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 根据编号获取外部工具坐标系
+* @param [in] index 外部工具坐标系编号
+* @param [out] coord 坐标系数值
+* @return 错误码
+*/
+errno_t FRRobot::GetExToolCoordWithID(int id, DescPose& coord)
+{
+    if (id < 0 || id > 14)
+    {
+        return 4;
+    }
+
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+
+    if (c.execute("GetExToolCoordWithID", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute GetExToolCoordWithID fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            coord.tran.x = (double)result[1];
+            coord.tran.y = (double)result[2];
+            coord.tran.z = (double)result[3];
+            coord.rpy.rx = (double)result[4];
+            coord.rpy.ry = (double)result[5];
+            coord.rpy.rz = (double)result[6];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 根据编号获取扩展轴坐标系
+* @param [in] index 外部工具坐标系编号
+* @param [out] coord 坐标系数值
+* @return 错误码
+*/
+errno_t FRRobot::GetExAxisCoordWithID(int id, DescPose& coord)
+{
+    if (id < 0 || id > 4)
+    {
+        return 4;
+    }
+
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+
+    if (c.execute("GetExAxisCoordWithID", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute GetExAxisCoordWithID fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            coord.tran.x = (double)result[1];
+            coord.tran.y = (double)result[2];
+            coord.tran.z = (double)result[3];
+            coord.rpy.rx = (double)result[4];
+            coord.rpy.ry = (double)result[5];
+            coord.rpy.rz = (double)result[6];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 根据编号获取负载质量及质心
+* @param [in] id 负载编号
+* @param [out] weight 负载质量
+* @param [out] cog 负载质心
+* @return 错误码
+*/
+errno_t FRRobot::GetTargetPayloadWithID(int id, double& weight, DescTran& cog)
+{
+    if (id < 0 || id > 19)
+    {
+        return 4;
+    }
+
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+
+    if (c.execute("GetTargetPayloadWithID", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute GetTargetPayloadWithID fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            weight = (double)result[1];
+            cog.x = (double)result[2];
+            cog.y = (double)result[3];
+            cog.z = (double)result[4];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 获取当前工具坐标系
+* @param [out] coord 坐标系数值
+* @return 错误码
+*/
+errno_t FRRobot::GetCurToolCoord(DescPose& coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int i;
+    int errcode = 0;
+
+    if (g_sock_com_err == ERR_SUCCESS)
+    {
+        coord.tran.x = robot_state_pkg->toolCoord[0];
+        coord.tran.y = robot_state_pkg->toolCoord[1];
+        coord.tran.z = robot_state_pkg->toolCoord[2];
+        coord.rpy.rx = robot_state_pkg->toolCoord[3];
+        coord.rpy.ry = robot_state_pkg->toolCoord[4];
+        coord.rpy.rz = robot_state_pkg->toolCoord[5];
+    }
+    else
+    {
+        errcode = g_sock_com_err;
+    }
+
+    logger_info("%s(ref %f,ref %f,ref %f,ref %f,ref %f,ref %f):%d.", __func__, errcode, robot_state_pkg->toolCoord[0], robot_state_pkg->toolCoord[1], robot_state_pkg->toolCoord[2],
+        robot_state_pkg->toolCoord[3], robot_state_pkg->toolCoord[4], robot_state_pkg->toolCoord[5]);
+
+    return errcode;
+}
+
+/**
+* @brief 获取当前工件坐标系
+* @param [out] coord 坐标系数值
+* @return 错误码
+*/
+errno_t FRRobot::GetCurWObjCoord(DescPose& coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int i;
+    int errcode = 0;
+
+    if (g_sock_com_err == ERR_SUCCESS)
+    {
+        coord.tran.x = robot_state_pkg->wobjCoord[0];
+        coord.tran.y = robot_state_pkg->wobjCoord[1];
+        coord.tran.z = robot_state_pkg->wobjCoord[2];
+        coord.rpy.rx = robot_state_pkg->wobjCoord[3];
+        coord.rpy.ry = robot_state_pkg->wobjCoord[4];
+        coord.rpy.rz = robot_state_pkg->wobjCoord[5];
+    }
+    else
+    {
+        errcode = g_sock_com_err;
+    }
+
+    logger_info("%s(ref %f,ref %f,ref %f,ref %f,ref %f,ref %f):%d.", __func__,
+        robot_state_pkg->wobjCoord[0],
+        robot_state_pkg->wobjCoord[1],
+        robot_state_pkg->wobjCoord[2],
+        robot_state_pkg->wobjCoord[3],
+        robot_state_pkg->wobjCoord[4],
+        robot_state_pkg->wobjCoord[5], errcode);
+
+    return errcode;
+}
+
+/**
+* @brief 获取当前外部工具坐标系
+* @param [out] coord 坐标系数值
+* @return 错误码
+*/
+errno_t FRRobot::GetCurExToolCoord(DescPose& coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int i;
+    int errcode = 0;
+
+    if (g_sock_com_err == ERR_SUCCESS)
+    {
+        coord.tran.x = robot_state_pkg->extoolCoord[0];
+        coord.tran.y = robot_state_pkg->extoolCoord[1];
+        coord.tran.z = robot_state_pkg->extoolCoord[2];
+        coord.rpy.rx = robot_state_pkg->extoolCoord[3];
+        coord.rpy.ry = robot_state_pkg->extoolCoord[4];
+        coord.rpy.rz = robot_state_pkg->extoolCoord[5];
+    }
+    else
+    {
+        errcode = g_sock_com_err;
+    }
+
+    logger_info("%s(ref %f,ref %f,ref %f,ref %f,ref %f,ref %f):%d.", __func__,
+        robot_state_pkg->extoolCoord[0],
+        robot_state_pkg->extoolCoord[1],
+        robot_state_pkg->extoolCoord[2],
+        robot_state_pkg->extoolCoord[3],
+        robot_state_pkg->extoolCoord[4],
+        robot_state_pkg->extoolCoord[5], errcode);
+
+    return errcode;
+}
+
+/**
+* @brief 获取当前扩展轴坐标系
+* @param [out] coord 坐标系数值
+* @return 错误码
+*/
+errno_t FRRobot::GetCurExAxisCoord(DescPose& coord)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int i;
+    int errcode = 0;
+
+    if (g_sock_com_err == ERR_SUCCESS)
+    {
+        coord.tran.x = robot_state_pkg->exAxisCoord[0];
+        coord.tran.y = robot_state_pkg->exAxisCoord[1];
+        coord.tran.z = robot_state_pkg->exAxisCoord[2];
+        coord.rpy.rx = robot_state_pkg->exAxisCoord[3];
+        coord.rpy.ry = robot_state_pkg->exAxisCoord[4];
+        coord.rpy.rz = robot_state_pkg->exAxisCoord[5];
+    }
+    else
+    {
+        errcode = g_sock_com_err;
+    }
+
+    logger_info("%s(ref %f,ref %f,ref %f,ref %f,ref %f,ref %f):%d.", __func__,
+        robot_state_pkg->exAxisCoord[0],
+        robot_state_pkg->exAxisCoord[1],
+        robot_state_pkg->exAxisCoord[2],
+        robot_state_pkg->exAxisCoord[3],
+        robot_state_pkg->exAxisCoord[4],
+        robot_state_pkg->exAxisCoord[5], errcode);
+
+    return errcode;
+}
+
+/**
+ * @brief 机器人操作系统升级(LA控制箱)
+ * @param [in] filePath 操作系统升级包全路径
+ * @return  错误码
+ */
+errno_t FRRobot::KernelUpgrade(std::string filePath)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = FileUpLoad(6, filePath);
+    if (0 == errcode)
+    {
+        logger_info("Kernel Upload success!");
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("KernelUpgrade", param, result))
+        {
+            errcode = int(result);
+            if (0 != errcode)
+            {
+                logger_error("Kernel Upgrade fail");
+            }
+            c.close();
+
+            return errcode;
+        }
+        else {
+            logger_error("execute KernelUpgrade fail.");
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+    }
+    else {
+        logger_error("KernelUpgrade fail. errcode is: %d.", errcode);
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief 获取机器人操作系统升级结果(LA控制箱)
+ * @param [out] result 升级结果：0:成功；-1:失败
+ * @return  错误码
+ */
+errno_t FRRobot::GetKernelUpgradeResult(int& result)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, resultT;
+
+    if (c.execute("GetKernelUpgradeResult", param, resultT))
+    {
+        errcode = int(resultT[0]);
+        if (errcode == 0)
+        {
+            result = int(resultT[1]);
+        }
+        else {
+            logger_error("execute GetKernelUpgradeResult fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+* @brief 设置自定义摆动参数
+* @param [in] id 自定义摆动编号：0-2
+* @param [in] pointNum 摆动点位个数 0-10
+* @param [in] point 移动端点数据x,y,z
+* @param [in] stayTime 摆动停留时间ms
+* @param [in] frequency 摆动频率 Hz
+* @param [in] incStayType 等待模式：0-周期不包含等待时间；1-周期包含等待时间
+* @param [in] stationary 摆动位置等待：0-等待时间内继续运动；1-等待时间内位置静止
+* @return  错误码
+*/
+errno_t FRRobot::CustomWeaveSetPara(int id, int pointNum, DescTran point[10], double stayTime[10], double frequency, int incStayType, int stationary)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = id;
+    param[0][1] = pointNum;
+
+    for (int i = 0; i < 10; i++)
+    {
+        param[0][i * 3 + 2] = point[i].x;
+        param[0][i * 3 + 3] = point[i].y;
+        param[0][i * 3 + 4] = point[i].z;
+
+        param[0][i + 32] = stayTime[i];
+    }
+
+    param[0][42] = frequency;
+    param[0][43] = incStayType;
+    param[0][44] = stationary;
+
+    if (c.execute("CustomWeaveSetPara", param, result))
+    {
+        errcode = int(result);
+        if (errcode != 0)
+        {
+            logger_error("execute CustomWeaveSetPara fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 获取自定义摆动参数
+ * @param [in] id 自定义摆动编号：0-2
+ * @param [out] pointNum 摆动点位个数 0-10
+ * @param [out] point 移动端点数据x,y,z
+ * @param [out] stayTime 摆动停留时间ms
+ * @param [out] frequency 摆动频率 Hz
+ * @param [out] incStayType 等待模式：0-周期不包含等待时间；1-周期包含等待时间
+ * @param [out] stationary 摆动位置等待：0-等待时间内继续运动；1-等待时间内位置静止
+ * @return  错误码
+ */
+errno_t FRRobot::CustomWeaveGetPara(int id, int& pointNum, DescTran point[10], double stayTime[10], double& frequency, int& incStayType, int& stationary)
+{
+    if (id < 0 || id > 2)
+    {
+        return 4;
+    }
+
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+
+    if (c.execute("CustomWeaveGetPara", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute CustomWeaveGetPara fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            string rtnStr = (std::string)result[1];
+            std::vector<std::string> parS = split(rtnStr, ',');
+            if (parS.size() != 44)
+            {
+                logger_error("CustomWeaveGetPara size fail");
+                return -1;
+            }
+            pointNum = stoi(parS[0]);
+
+            for (int i = 0; i < 10; i++)
+            {
+                point[i].x = stod(parS[i * 3 + 1]);
+                point[i].y = stod(parS[i * 3 + 2]);
+                point[i].z = stod(parS[i * 3 + 3]);
+
+                stayTime[i] = stod(parS[i + 31]);
+            }
+
+            frequency = stod(parS[41]);
+            incStayType = stod(parS[42]);
+            stationary = stod(parS[43]);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+
 

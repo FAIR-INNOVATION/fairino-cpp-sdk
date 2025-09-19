@@ -120,10 +120,12 @@ namespace fr_network
         setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));
         struct timeval tv;
         tv.tv_sec = sec;
-        tv.tv_usec = millsec;
+        tv.tv_usec = millsec * 1000;
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
         setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 #endif
+
+        return 0;
     }
 
     int ConnectTimes(socket_fd fd, int period, int maxTimes, const char* _robot_ip, int port)

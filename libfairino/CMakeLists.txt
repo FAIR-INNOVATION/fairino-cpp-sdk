@@ -87,7 +87,7 @@ elseif(UNIX)
     # 关闭优化选项
     target_compile_options(fairino PRIVATE -O0)
     # 为动态库生成版本信息
-    set_target_properties(fairino PROPERTIES VERSION 2.2.5 SOVERSION 2)
+    set_target_properties(fairino PROPERTIES VERSION 2.2.6 SOVERSION 2)
 
     add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
     SET(CMAKE_BUILD_TYPE "Release")

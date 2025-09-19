@@ -813,6 +813,14 @@ public:
 	errno_t  SetLoadCoord(DescTran *coord);
 
 	/**
+	 * @brief  Set the end-load centroid coordinates
+	 * @param  [in] loadNum load Num
+	 * @param  [in] coord Centroid coordinates, unit: mm
+	 * @return  Error code
+	 */
+	errno_t SetLoadCoord(int loadNum, DescTran* coord);
+
+	/**
     *@brief  Set the robot installation mode
     *@param  [in] install  Installation mode: 0- formal installation, 1- side installation, 2- inverted installation
     *@return  Error code
@@ -2012,7 +2020,7 @@ public:
 	/**
 	 * @brief Set weave parameters
 	 * @param [in] weaveNum parameters number
-	 * @param [in] weaveType weave type：0- plane triangular weave ; 1- vertical L-shaped triangular weave; 2- clockwise circular weave; 3-counterclockwise circular weave; 4-plane sine weave; 5-vertical L-shaped sine weave; 6- vertical triangular weave; 7- Vertical sine weave
+	 * @param [in] weaveType weave type：0- plane triangular weave ; 1- vertical L-shaped triangular weave; 2- clockwise circular weave; 3-counterclockwise circular weave; 4-plane sine weave; 5-vertical L-shaped sine weave; 6- vertical triangular weave;
 	 * @param [in] weaveFrequency weave frequency(Hz)
 	 * @param [in] weaveIncStayTime Wait mode 0- period does not contain wait time; 1- Period contains the wait time
 	 * @param [in] weaveRange weave amplitude(mm)
@@ -3599,7 +3607,155 @@ public:
 
 	errno_t LaserTrackingSearchStart(int direction, DescTran directionPoint, int vel, int distance, int timeout, int posSensorNum);
 
+
+	/**
+	 * @brief Laser device on/off function
+	 * @param [in] OnOff 0-Off 1-On
+	 * @param [in] weldId Weld seam ID, default is 0
+	 * @return Error code
+	 */
+	errno_t LaserTrackingLaserOnOff(int OnOff, int weldId);
+
+	/**
+	 * @brief Laser tracking start/stop function
+	 * @param [in] OnOff 0-Stop 1-Start
+	 * @param [in] coordId Tool coordinate system number of the laser device
+	 * @return Error code
+	 */
+	errno_t LaserTrackingTrackOnOff(int OnOff, int coordId);
+
+	/**
+	 * @brief Laser search - Fixed direction
+	 * @param [in] direction 0-X+ 1-X- 2-Y+ 3-Y- 4-Z+ 5-Z-
+	 * @param [in] vel Velocity in %
+	 * @param [in] distance Maximum search distance in mm
+	 * @param [in] timeout Search timeout period in ms
+	 * @param [in] posSensorNum Tool coordinate number calibrated by the laser
+	 * @return Error code
+	 */
+	errno_t LaserTrackingSearchStart_xyz(int direction, int vel, int distance, int timeout, int posSensorNum);
+
+	/**
+	 * @brief Laser search - Arbitrary direction
+	 * @param [in] directionPoint XYZ coordinates of the point input for search
+	 * @param [in] vel Velocity in %
+	 * @param [in] distance Maximum search distance in mm
+	 * @param [in] timeout Search timeout period in ms
+	 * @param [in] posSensorNum Tool coordinate number calibrated by the laser
+	 * @return Error code
+	 */
+	errno_t LaserTrackingSearchStart_point(DescTran directionPoint, int vel, int distance, int timeout, int posSensorNum);
+
+	/**
+	 * @brief Stop laser search
+	 * @return Error code
+	 */
 	errno_t LaserTrackingSearchStop();
+
+	/**
+	 * @brief Configure laser network parameters
+	 * @param [in] ip IP address of the laser device
+	 * @param [in] port Port number of the laser device
+	 * @return Error code
+	 */
+	errno_t LaserTrackingSensorConfig(std::string ip, int port);
+
+	/**
+	 * @brief Configure laser device sampling period
+	 * @param [in] period Sampling period of the laser device in ms
+	 * @return Error code
+	 */
+	errno_t LaserTrackingSensorSamplePeriod(int period);
+
+	/**
+	 * @brief Load laser device driver
+	 * @param [in] type Protocol type of the laser device driver: 101-Ruineng 102-Chuangxiang 103-Quanshi 104-Tongzhou 105-Aotai
+	 * @return Error code
+	 */
+	errno_t LoadPosSensorDriver(int type);
+
+	/**
+	 * @brief Unload laser device driver
+	 * @return Error code
+	 */
+	errno_t UnLoadPosSensorDriver();
+
+	/**
+	 * @brief Record laser weld seam trajectory
+	 * @param [in] status 0-Stop recording 1-Real-time tracking 2-Start recording
+	 * @param [in] delayTime Delay time in ms
+	 * @return Error code
+	 */
+	errno_t LaserSensorRecord1(int status, int delayTime);
+
+	/**
+	 * @brief Replay laser weld seam trajectory
+	 * @param [in] delayTime Delay time in ms
+	 * @param [in] speed Velocity in %
+	 * @return Error code
+	 */
+	errno_t LaserSensorReplay(int delayTime, double speed);
+
+
+	/**
+	 * @brief Laser tracking replay
+	 * @return Error code
+	 */
+	errno_t MoveLTR();
+
+	/**
+	 * @brief Record and replay laser weld seam trajectory
+	 * @param [in] delayMode Mode: 0-Delay time 1-Delay distance
+	 * @param [in] delayTime Delay time in ms
+	 * @param [in] delayDisExAxisNum Extended axis number
+	 * @param [in] delayDis Delay distance in mm
+	 * @param [in] sensitivePara Compensation sensitivity coefficient
+	 * @param [in] speed Velocity in %
+	 * @return Error code
+	 */
+	errno_t LaserSensorRecordandReplay(int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, double speed);
+
+	/**
+	 * @brief Move to the starting point of the laser record
+	 * @param [in] moveType 0-moveJ 1-moveL
+	 * @param [in] ovl Velocity in %
+	 * @return Error code
+	 */
+	errno_t MoveToLaserRecordStart(int moveType, double ovl);
+
+	/**
+	 * @brief Move to the endpoint of the laser record
+	 * @param [in] moveType 0-moveJ 1-moveL
+	 * @param [in] ovl Velocity in %
+	 * @return Error code
+	 */
+	errno_t MoveToLaserRecordEnd(int moveType, double ovl);
+
+
+	/**
+	 * @brief Move to the laser sensor search position
+	 * @param [in] moveFlag Motion type: 0-PTP; 1-LIN
+	 * @param [in] ovl Velocity scaling factor, 0-100
+	 * @param [in] dataFlag Weld seam buffer data selection: 0-Execute planning data; 1-Execute recorded data
+	 * @param [in] plateType Plate type: 0-Corrugated plate; 1-Corrugated cardboard; 2-Fence plate; 3-Oil drum; 4-Corrugated shell steel
+	 * @param [in] trackOffectType Laser sensor offset type: 0-No offset; 1-Base coordinate system offset; 2-Tool coordinate system offset; 3-Laser sensor raw data offset
+	 * @param [in] offset Offset value
+	 * @return Error code
+	 */
+	errno_t MoveToLaserSeamPos(int moveFlag, double ovl, int dataFlag, int plateType, int trackOffectType, DescPose offset);
+
+	/**
+	 * @brief Get the coordinate information of the laser sensor search position
+	 * @param [in] trackOffectType Laser sensor offset type: 0-No offset; 1-Base coordinate system offset; 2-Tool coordinate system offset; 3-Laser sensor raw data offset
+	 * @param [in] offset Offset value
+	 * @param [out] jPos Joint position [°]
+	 * @param [out] descPos Cartesian position [mm]
+	 * @param [out] tool Tool coordinate system
+	 * @param [out] user User coordinate system
+	 * @param [out] exaxis Extended axis position [mm]
+	 * @return Error code
+	 */
+	errno_t GetLaserSeamPos(int trackOffectType, DescPose offset, JointPos& jPos, DescPose& descPos, int& tool, int& user, ExaxisPos& exaxis);
 
 	/**
 	 * @brief Wobble gradient begins
@@ -4025,6 +4181,138 @@ public:
 	 * @return Error code
 	 */
 	errno_t WaitSuckerState(uint8_t slaveID, uint8_t state, int ms);
+
+	/**
+	* @brief Impedance Control
+	* @param [in] status 0：OFF；1-ON
+	* @param [in] workSpace 0-joint space;1 -Dicard space
+	* @param [in] forceThreshold Trigger force threshold (N)
+	* @param [in] m Quality parameters
+	* @param [in] b Damping parameter
+	* @param [in] k Stiffness parameter
+	* @param [in] maxV Maximum linear velocity(mm/s)
+	* @param [in] maxVA Maximum linear acceleration(mm/s2)
+	* @param [in] maxW Maximum angular velocity(°/s)
+	* @param [in] maxWA Maximum angular acceleration(°/s2)
+	* @return Error code
+	*/
+	errno_t ImpedanceControlStartStop(int status, int workSpace, double forceThreshold[6], double m[6], double b[6], double k[6], double maxV, double maxVA, double maxW, double maxWA);
+
+	/**
+	 * @brief Set check the load state before starting drag flag
+	 * @param [in] flag 0-OFF;1-ON
+	 * @return Error code
+	 */
+	errno_t SetTorqueDetectionSwitch(uint8_t flag);
+
+	/**
+	* @brief Get the tool coordinate system according to the No
+	* @param [in] index Tool coordinate system No
+	* @param [out] coord Coordinate system value
+	* @return Error code
+	 */
+	errno_t GetToolCoordWithID(int id, DescPose& coord);
+
+	/**
+	* @brief Get the workpiece coordinate system according to the No
+	* @param [in] index Workpiece coordinate system No
+	* @param [out] coord Coordinate system value
+	* @return Error code
+	*/
+	errno_t GetWObjCoordWithID(int id, DescPose& coord);
+
+	/**
+	* @brief Get the external tool coordinate system according to the No
+	* @param [in] index External tool coordinate system No
+	* @param [out] coord Coordinate system value
+	 * @return Error code
+	 */
+	errno_t GetExToolCoordWithID(int id, DescPose& coord);
+
+	/**
+	* @brief Get the extended axis coordinate system according to the No
+	* @param [in] index Extended axis coordinate system No
+	* @param [out] coord Coordinate system value
+	* @return Error code
+	*/
+	errno_t GetExAxisCoordWithID(int id, DescPose& coord);
+
+	/**
+	* @brief Obtain the load mass and center of mass based on the number
+	* @param [in] index load ID
+	* @param [out] weight load Weight
+	* @param [out] cog load centroid
+	* @return Error code
+	*/
+	errno_t GetTargetPayloadWithID(int id, double& weight, DescTran& cog);
+	/**
+	* @brief Obtain the current tool coordinate system
+	* @param [out] coord coord Coordinate system value
+	* @return Error code
+	*/
+	errno_t GetCurToolCoord(DescPose& coord);
+
+	/**
+	* @brief Gets the current workpiece coordinate system
+	* @param [out] coord coord Coordinate system value
+	* @return Error code
+	*/
+	errno_t GetCurWObjCoord(DescPose& coord);
+
+	/**
+	* @brief Gets the current external tool coordinate system
+	* @param [out] coord coord Coordinate system value
+	* @return Error code
+	*/
+	errno_t GetCurExToolCoord(DescPose& coord);
+
+	/**
+	* @brief Gets the current extended axis coordinate system
+	* @param [out] coord coord Coordinate system value
+	* @return Error code
+	*/
+	errno_t GetCurExAxisCoord(DescPose& coord);
+
+	/**
+	 * @brief Robot Operating System Upgrade (LA Control Box)
+	 * @param [in] filePath The full path of the operating system upgrade package
+	 * @return Error code
+	 */
+	errno_t KernelUpgrade(std::string filePath);
+
+	/**
+	 * @brief Obtain the upgrade result of the robot operating system (LA control box)
+	 * @param [out] result Upgrade result: 0: Success; -1: Failure
+	 * @return  Error code
+	 */
+	errno_t GetKernelUpgradeResult(int& result);
+
+	/**
+	 * @brief Set custom weave parameters
+	 * @param [in] id custom weave ID：0-2
+	 * @param [in] pointNum Number of weave points 0-10
+	 * @param [in] point Moving endpoint data x,y,z
+	 * @param [in] stayTime weave residence time ms
+	 * @param [in] frequency weave frequency Hz
+	 * @param [in] incStayType Waiting mode: 0- Cycle does not include waiting time; 1- The cycle includes waiting time
+	 * @param [in] stationary weave position waiting: 0- Continue to move within the waiting time; The position remains stationary during the waiting time
+	 * @return Error code
+	 */
+	errno_t CustomWeaveSetPara(int id, int pointNum, DescTran point[10], double stayTime[10], double frequency, int incStayType, int stationary);
+
+	/**
+	 * @brief Gets custom swing parameters
+	 * @param [in] id custom weave ID：0-2
+	 * @param [out] pointNum Number of weave points 0-10
+	 * @param [out] point Moving endpoint data x,y,z
+	 * @param [out] stayTime weave residence time ms
+	 * @param [out] frequency weave frequency Hz
+	 * @param [out] incStayType Waiting mode: 0- Cycle does not include waiting time; 1- The cycle includes waiting time
+	 * @param [out] stationary weave position waiting: 0- Continue to move within the waiting time; The position remains stationary during the waiting time
+	 * @return  Error code
+	 */
+	errno_t CustomWeaveGetPara(int id, int& pointNum, DescTran point[10], double stayTime[10], double& frequency, int& incStayType, int& stationary);
+
 
 	/**
 	 * @brief Upload Lua file
