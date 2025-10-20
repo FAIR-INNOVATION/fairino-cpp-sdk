@@ -44,6 +44,11 @@ FRTcpClient::FRTcpClient(string IP, int port)
 #endif
 
     fd = socket(AF_INET, SOCK_STREAM, 0);
+#ifdef WIN32
+    int syncnt = 2;
+    setsockopt(fd, IPPROTO_TCP, TCP_MAXRT, (char*)&syncnt, sizeof(syncnt)); //连接时需要将时间设置长一点，避免连接失败
+#endif
+
     SetTimeOut(timeOut);
 }
 
@@ -60,6 +65,7 @@ int FRTcpClient::Connect()
     if (rtn < 0)
     {
         int connectError = WSAGetLastError();
+        logger_error("connect failed; socket errcode is %d", connectError);
         return -1;
     }
 #else
@@ -75,6 +81,10 @@ int FRTcpClient::Connect()
 
 int FRTcpClient::ReConnect()
 {
+#ifdef WIN32
+    int syncnt = 1;
+    setsockopt(fd, IPPROTO_TCP, TCP_MAXRT, (char*)&syncnt, sizeof(syncnt));  //win下连接超时1s，非常准
+#endif
     reconnFlag = true;
     bool reconnectSuccess = false;
 
@@ -110,10 +120,7 @@ int FRTcpClient::ReConnect()
 
 int FRTcpClient::SetTimeOut(int timeout)
 {
-    int syncnt = 1;
-    /* 设置连接超时 */
 #ifdef WIN32
-    setsockopt(fd, IPPROTO_TCP, TCP_MAXRT, (char*)&syncnt, sizeof(syncnt));  //win下连接超时1s，非常准
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeOut, sizeof(int));
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeOut, sizeof(int));
     int bKeepAlive = TRUE;
@@ -139,7 +146,8 @@ int FRTcpClient::SetTimeOut(int timeout)
         return FALSE;
     }
 #else
-    //setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));        //这玩意不会用
+    int syncnt = 2;
+    setsockopt(fd, IPPROTO_TCP, TCP_SYNCNT, &syncnt, sizeof(syncnt));        //这玩意不会用
     struct timeval tv;
     tv.tv_sec = timeOut / 1000;
     tv.tv_usec = timeOut % 1000 * 1000;

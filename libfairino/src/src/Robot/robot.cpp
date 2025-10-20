@@ -43,11 +43,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "2"
-    #define SDK_VERSION_RELEASE "6"
+    #define SDK_VERSION_RELEASE "7"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.2.6.0-robot v3.8.6"
+#define SDK_RELEASE "SDK V2.2.7.0-robot v3.8.7"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -98,7 +98,6 @@ FRRobot::FRRobot(void)
     g_sock_com_err = ERR_SUCCESS;
     rtClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_REALTIME_PORT);
     cmdClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_CMD_PORT);
-
 }
 
 /**
@@ -1316,7 +1315,7 @@ errno_t FRRobot::Circle(DescPose* desc_pos_p, int ptool, int puser, float pvel, 
  *@param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
  *@param  [in] offset_pos  位姿偏移量
  *@param  [in] spiral_param  螺旋参数
- *@return  错误码
+ * @return  错误码
  */
 errno_t FRRobot::NewSpiral(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, ExaxisPos *epos, float ovl, uint8_t offset_flag, DescPose *offset_pos, SpiralParam spiral_param)
 {
@@ -1340,34 +1339,35 @@ errno_t FRRobot::NewSpiral(JointPos *joint_pos, DescPose *desc_pos, int tool, in
     param[0][3] = joint_pos->jPos[3];
     param[0][4] = joint_pos->jPos[4];
     param[0][5] = joint_pos->jPos[5];
-    param[1][0] = desc_pos->tran.x;
-    param[1][1] = desc_pos->tran.y;
-    param[1][2] = desc_pos->tran.z;
-    param[1][3] = desc_pos->rpy.rx;
-    param[1][4] = desc_pos->rpy.ry;
-    param[1][5] = desc_pos->rpy.rz;
-    param[2] = tool;
-    param[3] = user;
-    param[4] = vel;
-    param[5] = acc;
-    param[6][0] = epos->ePos[0];
-    param[6][1] = epos->ePos[1];
-    param[6][2] = epos->ePos[2];
-    param[6][3] = epos->ePos[3];
-    param[7] = ovl;
-    param[8] = offset_flag;
-    param[9][0] = offset_pos->tran.x;
-    param[9][1] = offset_pos->tran.y;
-    param[9][2] = offset_pos->tran.z;
-    param[9][3] = offset_pos->rpy.rx;
-    param[9][4] = offset_pos->rpy.ry;
-    param[9][5] = offset_pos->rpy.rz;
-    param[10][0] = (double)spiral_param.circle_num;
-    param[10][1] = spiral_param.circle_angle;
-    param[10][2] = spiral_param.rad_init;
-    param[10][3] = spiral_param.rad_add;
-    param[10][4] = spiral_param.rotaxis_add;
-    param[10][5] = (double)spiral_param.rot_direction;
+    param[0][6] = desc_pos->tran.x;
+    param[0][7] = desc_pos->tran.y;
+    param[0][8] = desc_pos->tran.z;
+    param[0][9] = desc_pos->rpy.rx;
+    param[0][10] = desc_pos->rpy.ry;
+    param[0][11] = desc_pos->rpy.rz;
+    param[0][12] = tool;
+    param[0][13] = user;
+    param[0][14] = vel;
+    param[0][15] = acc;
+    param[0][16] = epos->ePos[0];
+    param[0][17] = epos->ePos[1];
+    param[0][18] = epos->ePos[2];
+    param[0][19] = epos->ePos[3];
+    param[0][20] = ovl;
+    param[0][21] = offset_flag;
+    param[0][22] = offset_pos->tran.x;
+    param[0][23] = offset_pos->tran.y;
+    param[0][24] = offset_pos->tran.z;
+    param[0][25] = offset_pos->rpy.rx;
+    param[0][26] = offset_pos->rpy.ry;
+    param[0][27] = offset_pos->rpy.rz;
+    param[0][28] = (double)spiral_param.circle_num;
+    param[0][29] = spiral_param.circle_angle;
+    param[0][30] = spiral_param.rad_init;
+    param[0][31] = spiral_param.rad_add;
+    param[0][32] = spiral_param.rotaxis_add;
+    param[0][33] = (int)spiral_param.rot_direction;
+    param[0][34] = spiral_param.velAccMode;
 
     if (c.execute("NewSpiral", param, result))
     {
@@ -7103,6 +7103,32 @@ errno_t FRRobot::FT_Guard(uint8_t flag, int sensor_id, uint8_t select[6], ForceT
  */
 errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque *ft, float ft_pid[6], uint8_t adj_sign, uint8_t ILC_sign, float max_dis, float max_ang, int filter_Sign, int posAdapt_sign, int isNoBlock)
 {
+    double M[2] = { 0.0 };
+    double B[2] = { 0.0 };
+    return FT_Control(flag, sensor_id, select, ft, ft_pid, adj_sign, ILC_sign, max_dis, max_ang, M, B, 0.0, filter_Sign, posAdapt_sign, isNoBlock);
+}
+
+/**
+ * @brief  恒力控制
+ * @param  [in] flag 0-关闭恒力控制，1-开启恒力控制
+ * @param  [in] sensor_id 力传感器编号
+ * @param  [in] select  选择六个自由度是否检测碰撞，0-不检测，1-检测
+ * @param  [in] ft  碰撞力/扭矩，fx,fy,fz,tx,ty,tz
+ * @param  [in] ft_pid 力pid参数，力矩pid参数
+ * @param  [in] adj_sign 自适应启停控制，0-关闭，1-开启
+ * @param  [in] ILC_sign ILC启停控制， 0-停止，1-训练，2-实操
+ * @param  [in] max_dis 最大调整距离，单位mm
+ * @param  [in] max_ang 最大调整角度，单位deg
+ * @param  [in] M 质量参数
+ * @param  [in] B 阻尼参数
+ * @param  [in] polishRadio 打磨半径，单位mm
+ * @param  [in] filter_Sign 滤波开启标志 0-关；1-开，默认关闭
+ * @param  [in] posAdapt_sign 姿态顺应开启标志 0-关；1-开，默认关闭
+ * @param  [in] isNoBlock 阻塞标志，0-阻塞；1-非阻塞
+ * @return  错误码
+ */
+errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque* ft, float ft_pid[6], uint8_t adj_sign, uint8_t ILC_sign, float max_dis, float max_ang, double M[2], double B[2], double polishRadio, int filter_Sign, int posAdapt_sign, int isNoBlock)
+{
     if (IsSockError())
     {
         return g_sock_com_err;
@@ -7139,9 +7165,14 @@ errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], Forc
     param[6] = ILC_sign;
     param[7] = max_dis;
     param[8] = max_ang;
-    param[9] = filter_Sign;
-    param[10] = posAdapt_sign;
-    param[11] = isNoBlock;
+    param[9] = polishRadio;
+    param[10] = filter_Sign;
+    param[11] = posAdapt_sign;
+    param[12][0] = M[0];
+    param[12][1] = M[1];
+    param[12][2] = B[0];
+    param[12][3] = B[1];
+    param[13] = isNoBlock;
 
     if (c.execute("FT_Control", param, result))
     {
@@ -7156,6 +7187,7 @@ errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], Forc
 
     return errcode;
 }
+
 
 /**
  * @brief  螺旋线探索
@@ -21147,13 +21179,14 @@ errno_t FRRobot::KernelUpgrade(std::string filePath)
         return g_sock_com_err;
     }
 
-    int errcode = FileUpLoad(6, filePath);
+    int errcode = FileUpLoad(6, filePath, 1);
     if (0 == errcode)
     {
         logger_info("Kernel Upload success!");
         XmlRpcClient c(serverUrl, 20003);
         XmlRpcValue param, result;
 
+        param[0] = GetFileNameInPath(filePath);
         if (c.execute("KernelUpgrade", param, result))
         {
             errcode = int(result);
@@ -21343,5 +21376,372 @@ errno_t FRRobot::CustomWeaveGetPara(int id, int& pointNum, DescTran point[10], d
     return errcode;
 }
 
+/**
+ * @brief 关节扭矩传感器灵敏度标定功能开启
+ * @param [in] status 0-关闭；1-开启
+ * @return  错误码
+ */
+errno_t FRRobot::JointSensitivityEnable(int status)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
 
+    param[0][0] = status;
 
+    if (c.execute("JointSensitivityEnable", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute JointSensitivityEnable fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取关节扭矩传感器灵敏度标定结果
+ * @param [out] calibResult j1~j6关节灵敏度[0-1]
+ * @return 错误码
+ */
+errno_t FRRobot::JointSensitivityCalibration(double calibResult[6])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("JointSensitivityCalibration", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute JointSensitivityCalibration fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            calibResult[0] = (double)result[1];
+            calibResult[1] = (double)result[2];
+            calibResult[2] = (double)result[3];
+            calibResult[3] = (double)result[4];
+            calibResult[4] = (double)result[5];
+            calibResult[5] = (double)result[6];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 关节扭矩传感器灵敏度数据采集
+ * @return 错误码
+ */
+errno_t FRRobot::JointSensitivityCollect()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("JointSensitivityCollect", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute JointSensitivityCollect fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 清空运动指令队列
+ * @return 错误码
+ */
+errno_t FRRobot::MotionQueueClear()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("MotionQueueClear", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute MotionQueueClear fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取机器人8个从站端口错误帧数
+ * @param [out] inRecvErr 输入接收错误帧数
+ * @param [out] inCRCErr 输入CRC错误帧数
+ * @param [out] inTransmitErr 输入转发错误帧数
+ * @param [out] inLinkErr 输入链接错误帧数
+ * @param [out] outRecvErr 输出接收错误帧数
+ * @param [out] outCRCErr 输出CRC错误帧数
+ * @param [out] outTransmitErr 输出转发错误帧数
+ * @param [out] outLinkErr 输出链接错误帧数
+ * @return 错误码
+ */
+errno_t FRRobot::GetSlavePortErrCounter(int inRecvErr[8], int inCRCErr[8], int inTransmitErr[8], int inLinkErr[8],
+    int outRecvErr[8], int outCRCErr[8], int outTransmitErr[8], int outLinkErr[8])
+
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetSlavePortErrCounter", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            string paramStr = (string)result[1];
+            std::vector<std::string> parS = split(paramStr, ',');
+            if (parS.size() != 64)
+            {
+                logger_error("GetSlavePortErrCounter size fail");
+                return -1;
+            }
+            for (int i = 0; i < 8; i++)
+            {
+                inRecvErr[i] = stoi(parS[i * 4]);
+                inCRCErr[i] = stoi(parS[i * 4 + 1]);
+                inTransmitErr[i] = stoi(parS[i * 4 + 2]);
+                inLinkErr[i] = stoi(parS[i * 4 + 3]);
+
+                outRecvErr[i] = stoi(parS[i * 4 + 32]);
+                outCRCErr[i] = stoi(parS[i * 4 + 32 + 1]);
+                outTransmitErr[i] = stoi(parS[i * 4 + 32 + 2]);
+                outLinkErr[i] = stoi(parS[i * 4 + 32 + 3]);
+            }
+        }
+        else {
+            logger_error("execute GetSlavePortErrCounter fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 从站端口错误帧清零
+ * @param [in] slaveID 从站编号0~7
+ * @return 错误码
+ */
+errno_t FRRobot::SlavePortErrCounterClear(int slaveID)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = slaveID;
+
+    if (c.execute("SlavePortErrCounterClear", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute SlavePortErrCounterClear fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置各轴速度前馈系数
+ * @param [in] radio 各轴速度前馈系数
+ * @return 错误码
+ */
+errno_t FRRobot::SetVelFeedForwardRatio(double radio[6])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = radio[0];
+    param[0][1] = radio[1];
+    param[0][2] = radio[2];
+    param[0][3] = radio[3];
+    param[0][4] = radio[4];
+    param[0][5] = radio[5];
+
+    if (c.execute("SetVelFeedForwardRatio", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute SetVelFeedForwardRatio fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取各轴速度前馈系数
+ * @param [out] radio 各轴速度前馈系数
+ * @return 错误码
+ */
+errno_t FRRobot::GetVelFeedForwardRatio(double radio[6])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetVelFeedForwardRatio", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute GetVelFeedForwardRatio fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            radio[0] = (double)result[1];
+            radio[1] = (double)result[2];
+            radio[2] = (double)result[3];
+            radio[3] = (double)result[4];
+            radio[4] = (double)result[5];
+            radio[5] = (double)result[6];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 机器人MCU日志生成
+ * @return 错误码
+ */
+errno_t FRRobot::RobotMCULogCollect()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("RobotMCULogCollect", param, result))
+    {
+        errcode = int(result);
+        if (0 != errcode)
+        {
+            logger_error("execute RobotMCULogCollect fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}

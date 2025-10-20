@@ -5,9 +5,9 @@
 #ifndef MAKEDEPEND
 
 #if defined(_WINDOWS)
-# include <stdio.h>
-
-# include <winsock2.h>
+#include <stdio.h>
+#include <WS2tcpip.h>
+#include <winsock2.h>
 //# pragma lib(WS2_32.lib)
 #pragma comment(lib, "WS2_32.lib")   //vincent 2023.03.22
 
@@ -26,6 +26,7 @@ extern "C" {
 # include <fcntl.h>
 }
 #endif  // _WINDOWS
+
 
 #endif // MAKEDEPEND
 
@@ -162,11 +163,30 @@ XmlRpcSocket::connect(int fd, std::string& host, int port)
   memset(&saddr, 0, sizeof(saddr));
   saddr.sin_family = AF_INET;
 
-  struct hostent *hp = gethostbyname(host.c_str());
-  if (hp == 0) return false;
+  /*struct hostent *hp = gethostbyname(host.c_str());
+  if (hp == 0) return false;*/
+  struct addrinfo hints, * res, * p;
+  int status;
+  char ipstr[INET6_ADDRSTRLEN];
 
-  saddr.sin_family = hp->h_addrtype;
-  memcpy(&saddr.sin_addr, hp->h_addr, hp->h_length);
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  status = getaddrinfo(host.c_str(), NULL, &hints, &res);
+  if (status != 0) {
+      logger_info("getaddrinfo failed %s.", host);
+      return -1;
+  }
+
+  struct sockaddr_in* ipv4 = (struct sockaddr_in*)res->ai_addr;
+
+  saddr.sin_family = ipv4->sin_family;
+#ifdef WIN32
+  memcpy(&saddr.sin_addr, &(ipv4->sin_addr), sizeof(IN_ADDR));
+#else
+  memcpy(&saddr.sin_addr, &(ipv4->sin_addr), sizeof(struct in_addr));
+#endif
+  
   saddr.sin_port = htons((u_short) port);
 
   // For asynch operation, this will return EWOULDBLOCK (windows) or

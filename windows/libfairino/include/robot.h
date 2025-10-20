@@ -1607,19 +1607,46 @@ public:
 	errno_t  FT_Guard(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque *ft, float max_threshold[6], float min_threshold[6]);	
 	
 	/**
-    *@brief  Constant force control
-    *@param  [in] flag 0- turn off constant force control, 1- turn on constant force control
-    *@param  [in] sensor_id Force sensor number
-    *@param  [in] select  Select the six degrees of freedom whether to detect collision, 0- no detection, 1- detection
-    *@param  [in] ft  Impact force/torque，fx,fy,fz,tx,ty,tz
-    *@param  [in] ft_pid Force pid parameter, torque pid parameter
-    *@param  [in] adj_sign Adaptive start-stop control, 0- off, 1- on
-    *@param  [in] ILC_sign ILC start stop control, 0- stop, 1- training, 2- operation
-    *@param  [in] Maximum Adjustment distance, unit: mm
-    *@param  [in] Maximum Adjustment Angle, unit: deg
-    *@return  Error code
-	 */	
-	errno_t FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque *ft, float ft_pid[6], uint8_t adj_sign, uint8_t ILC_sign, float max_dis, float max_ang, int filter_Sign = 0, int posAdapt_sign = 0, int isNoBlock = 0);
+    * @brief  Constant force control
+    * @param  [in] flag 0- turn off constant force control, 1- turn on constant force control
+    * @param  [in] sensor_id Force sensor number
+    * @param  [in] select  Select the six degrees of freedom whether to detect collision, 0- no detection, 1- detection
+    * @param  [in] ft  Impact force/torque，fx,fy,fz,tx,ty,tz
+    * @param  [in] ft_pid Force pid parameter, torque pid parameter
+    * @param  [in] adj_sign Adaptive start-stop control, 0- off, 1- on
+    * @param  [in] ILC_sign ILC start stop control, 0- stop, 1- training, 2- operation
+    * @param  [in] max_dis Adjustment distance, unit: mm
+    * @param  [in] max_ang Adjustment Angle, unit: deg
+	* @param  [in] filter_Sign Filter on indicator 0- off; 1- On, off by default
+	* @param  [in] posAdapt_sign The posture conforms to the opening mark 0-off. 1- On, off by default
+	* @param  [in] isNoBlock Block flag, 0- block; 1- Non-blocking
+    * @return  Error code
+	*/	
+	errno_t FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque *ft, float ft_pid[6], uint8_t adj_sign, 
+		uint8_t ILC_sign, float max_dis, float max_ang, int filter_Sign = 0, int posAdapt_sign = 0, int isNoBlock = 0);
+
+	/**
+	* @brief  Constant force control
+	* @param  [in] flag 0- turn off constant force control, 1- turn on constant force control
+	* @param  [in] sensor_id Force sensor number
+	* @param  [in] select  Select the six degrees of freedom whether to detect collision, 0- no detection, 1- detection
+	* @param  [in] ft  Impact force/torque，fx,fy,fz,tx,ty,tz
+	* @param  [in] ft_pid Force pid parameter, torque pid parameter
+	* @param  [in] adj_sign Adaptive start-stop control, 0- off, 1- on
+	* @param  [in] ILC_sign ILC start stop control, 0- stop, 1- training, 2- operation
+	* @param  [in] max_dis Adjustment distance, unit: mm
+	* @param  [in] max_ang Adjustment Angle, unit: deg
+	* @param  [in] M Quality parameters
+	* @param  [in] B Damping parameter
+	* @param  [in] polishRadio Polish radius, unit: mm
+	* @param  [in] filter_Sign Filter on indicator 0- off; 1- On, off by default
+	* @param  [in] posAdapt_sign The posture conforms to the opening mark 0-off. 1- On, off by default
+	* @param  [in] isNoBlock Block flag, 0- block; 1- Non-blocking
+	* @return  Error code
+	*/
+	errno_t FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque* ft, float ft_pid[6], uint8_t adj_sign, 
+		uint8_t ILC_sign, float max_dis, float max_ang, double M[2], double B[2], double polishRadio = 0.0, int filter_Sign = 0, int posAdapt_sign = 0, int isNoBlock = 0);
+
 
 	/**
     *@brief  Spiral exploration
@@ -4183,6 +4210,13 @@ public:
 	errno_t WaitSuckerState(uint8_t slaveID, uint8_t state, int ms);
 
 	/**
+	 * @brief Upload Lua file
+	 * @param [in] filePath local openlua file path name
+	 * @return error code
+	 */
+	errno_t OpenLuaUpload(std::string filePath);
+
+	/**
 	* @brief Impedance Control
 	* @param [in] status 0：OFF；1-ON
 	* @param [in] workSpace 0-joint space;1 -Dicard space
@@ -4313,15 +4347,75 @@ public:
 	 */
 	errno_t CustomWeaveGetPara(int id, int& pointNum, DescTran point[10], double stayTime[10], double& frequency, int& incStayType, int& stationary);
 
+	/**
+	 * @brief Enable joint torque sensor sensitivity calibration function
+	 * @param [in] status 0-Disable；1-Enable
+	 * @return Error code
+	 */
+	errno_t JointSensitivityEnable(int status);
 
 	/**
-	 * @brief Upload Lua file
-	 * @param [in] filePath local openlua file path name
-	 * @return error code
+	 * @brief Get the sensitivity calibration results of the joint torque sensor
+	 * @param [out] calibResult j1~j6 Joint sensitivity [0-1]
+	 * @return Error code
 	 */
-	errno_t OpenLuaUpload(std::string filePath);
+	errno_t JointSensitivityCalibration(double result[6]);
+
+	/**
+	 * @brief Sensitivity data acquisition of joint torque sensors
+	 * @return Error code
+	 */
+	errno_t JointSensitivityCollect();
 
 	errno_t Sleep(int ms);
+
+	/**
+	 * @brief Clear the motion command queue
+	 * @return Error code
+	 */
+	errno_t MotionQueueClear();
+
+	/**
+	 * @brief Get the number of 8 slave port error frames of the robot
+	 * @param [out] inRecvErr Input receiving error frames
+	 * @param [out] inCRCErr Input CRC error frames
+	 * @param [out] inTransmitErr Input transmit error frames
+	 * @param [out] inLinkErr Input link error frames
+	 * @param [out] outRecvErr Output receiving error frames
+	 * @param [out] outCRCErr Output CRC error frames
+	 * @param [out] outTransmitErr Output transmit error frames
+	 * @param [out] outLinkErr Output link error frames
+	 * @return Error code
+	 */
+	errno_t GetSlavePortErrCounter(int inRecvErr[8], int inCRCErr[8], int inTransmitErr[8], int inLinkErr[8],
+		int outRecvErr[8], int outCRCErr[8], int outTransmitErr[8], int outLinkErr[8]);
+
+	/**
+	 * @brief Clear the slave port error num
+	 * @param [in] slaveID slave id 0~7
+	 * @return Error code
+	 */
+	errno_t SlavePortErrCounterClear(int slaveID);
+
+	/**
+	 * @brief Set the feedforward coefficients of the velocities of each axis
+	 * @param [in] radio feedforward coefficients of the velocities of each axis
+	 * @return Error code
+	 */
+	errno_t SetVelFeedForwardRatio(double radio[6]);
+
+	/**
+	 * @brief Get the feedforward coefficients of the velocities of each axis
+	 * @param [out] radio feedforward coefficients of the velocities of each axis
+	 * @return Error code
+	 */
+	errno_t GetVelFeedForwardRatio(double radio[6]);
+
+	/**
+	 * @brief Robot MCU log generation
+	 * @return Error code
+	 */
+	errno_t RobotMCULogCollect();
 
 
 	/**
