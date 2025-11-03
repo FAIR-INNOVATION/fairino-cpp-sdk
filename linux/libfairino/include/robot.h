@@ -3171,10 +3171,21 @@ public:
 	/**
 	* @brief joint torque control
 	* @param [in] torque j1 to j6 Joint torque, unit: Nm
-	* @param [in] interval Instruction period, unit s, range [0.001~0.008]
-	* @return  error code
+	* @param [in] interval Instruction period, unit s, range [0.001~0.016]
+	* @return error code
 	*/
 	errno_t ServoJT(float torque[], double interval);
+
+	/**
+	* @brief joint torque control
+	* @param [in] torque j1 to j6 Joint torque, unit: Nm
+	* @param [in] interval Instruction period, unit s, range [0.001~0.016]
+	* @param [in] checkFlag Detection strategy: 0- no limit; 1- Power limit; 2- Speed limit; 3- Both power and speed are limited simultaneously
+	* @param [in] jPowerLimit Maximum power limit of the joint(W)
+	* @param [in] jVelLimit Maximum speed limit of the joint(°/s)
+	* @return error code
+	*/
+	errno_t ServoJT(float torque[], double interval, int checkFlag, double jPowerLimit[6], double jVelLimit[6]);
 
 	/**
 	* @brief Joint torque control end

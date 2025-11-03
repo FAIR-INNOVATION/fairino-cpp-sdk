@@ -15211,6 +15211,33 @@ errno_t FRRobot::ServoJT(float torque[], double interval)
     {
         return GetSafetyCode();
     }
+    int checkFlag = 0; 
+    double jPowerLimit[6] = { 0.0 };
+    double jVelLimit[6] = { 0.0 };
+    int errcode = ServoJT(torque, interval, checkFlag, jPowerLimit, jVelLimit);
+    return errcode;
+}
+
+/**
+ * @brief 关节扭矩控制
+ * @param  [in] torque j1~j6关节扭矩，单位Nm
+ * @param  [in] interval 指令周期，单位s，范围[0.001~0.008]
+ * @param  [in] checkFlag 检测策略 0-不限制；1-限制功率；2-限制速度；3-功率和速度同时限制
+ * @param  [in] jPowerLimit 关节最大功率限制(W)
+ * @param  [in] jVelLimit 关节最大速度(°/s)
+ * @return  错误码
+ */
+errno_t FRRobot::ServoJT(float torque[], double interval, int checkFlag, double jPowerLimit[6], double jVelLimit[6])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -15222,6 +15249,20 @@ errno_t FRRobot::ServoJT(float torque[], double interval)
     param[0][4] = torque[4];
     param[0][5] = torque[5];
     param[1] = interval;
+    param[2] = checkFlag;
+    param[3][0] = jPowerLimit[0];
+    param[3][1] = jPowerLimit[1];
+    param[3][2] = jPowerLimit[2];
+    param[3][3] = jPowerLimit[3];
+    param[3][4] = jPowerLimit[4];
+    param[3][5] = jPowerLimit[5];
+    param[4][0] = jVelLimit[0];
+    param[4][1] = jVelLimit[1];
+    param[4][2] = jVelLimit[2];
+    param[4][3] = jVelLimit[3];
+    param[4][4] = jVelLimit[4];
+    param[4][5] = jVelLimit[5];
+
 
     if (c.execute("ServoJT", param, result))
     {

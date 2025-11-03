@@ -1381,7 +1381,6 @@ void AxleSensorConfig(FRRobot* robot)
 
      rtn = robot->MoveTrajectoryJ();
      printf("MoveTrajectoryJ rtn is: %d\n", rtn);
-     return 0;
  }
 
  int UploadTrajectoryB(FRRobot* robot)
@@ -1411,7 +1410,6 @@ void AxleSensorConfig(FRRobot* robot)
 
      rtn = robot->MoveTrajectoryJ();
      printf("MoveTrajectoryJ rtn is: %d\n", rtn);
-     return 0;
  }
 
  int MoveRotGripper(FRRobot* robot, int pos, double rotPos)
@@ -2015,10 +2013,8 @@ void AxleSensorConfig(FRRobot* robot)
      //rtn = robot->TrajectoryJUpLoad("D://zUP/B.txt");
      //cout << "TrajectoryJUpLoad B.txt rtn is " << rtn << endl;
 
-     //char nameA[30] = "/fruser/traj/A.txt";
+     char nameA[30] = "/fruser/traj/A.txt";
      char nameB[30] = "/fruser/traj/B.txt";
-
-     char nameA[30] = "/fruser/traj/spray_traj1.txt";
      
      //rtn = robot->LoadTrajectoryLA(nameA, 2, 0.0, 0, 1.0, 100.0, 200.0, 1000.0);    //B样条
      //cout << "LoadTrajectoryLA rtn is " << rtn << endl;
@@ -2026,9 +2022,6 @@ void AxleSensorConfig(FRRobot* robot)
      robot->LoadTrajectoryLA(nameA, 1, 2, 0, 2, 100, 200, 1000);    //直线拟合
      DescPose startPos(0, 0, 0, 0, 0, 0);
      robot->GetTrajectoryStartPose(nameA, &startPos);
-     printf("GetTrajectoryStartPose %f %f %f %f %f %f \n", 
-         startPos.tran.x, startPos.tran.y, startPos.tran.z, startPos.rpy.rx, startPos.rpy.ry, startPos.rpy.rz);
-     return ;
      //robot->GetTrajectoryStartPose(nameB, &startPos);
      robot->MoveCart(&startPos, 1, 0, 100, 100, 100, -1, -1);
      rtn = robot->MoveTrajectoryLA();
@@ -8920,6 +8913,43 @@ int TestSlavePortErr()
     return 0;
 }
 
+int ServoJTWithSafety(FRRobot* robot)
+{
+    robot->ResetAllError();
+    robot->Sleep(500);
+    float torques[] = { 0, 0, 0, 0, 0, 0 };
+    robot->GetJointTorques(1, torques);
+    robot->ServoJTStart(); //   #servoJT开始
+    ROBOT_STATE_PKG pkg = {};
+    robot->DragTeachSwitch(1);
+    int checkFlag = 3;
+    //double jPowerLimit[6] = {1, 1, 1, 1, 1, 1}; 
+    double jPowerLimit[6] = { 10.0, 10.0, 10.0, 10.0, 10.0, 10.0 };
+    double jVelLimit[6] = { 181, 80, 80, 80, 80, 80 };
+    int count = 800000;
+    
+    int error = 0;
+    while (count > 0)
+    {
+        torques[2] = torques[2];//  #每次1轴增加0.01NM，运动100次
+        error = robot->ServoJT(torques, 0.008, checkFlag, jPowerLimit, jVelLimit);  //# 关节空间伺服模式运动
+        if (error != 0)
+        {
+            robot->ServoJTEnd();
+        }
+        printf("ServoJT rtn is %d\n", error);
+        count = count - 1;
+        robot->Sleep(1);
+
+        robot->GetRobotRealTimeState(&pkg);
+        printf("maincode %d, subcode %d\n", pkg.main_code, pkg.sub_code);
+    }
+    robot->DragTeachSwitch(0);
+
+    error = robot->ServoJTEnd();  //#伺服运动结束
+    return 0;
+}
+
  int main(void)
  {
      ROBOT_STATE_PKG pkg = {};
@@ -8935,7 +8965,33 @@ int TestSlavePortErr()
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     TestTrajectoryLA(&robot);
+     //robot.SoftwareUpgrade("D://zUP/388/software.tar.gz", false);
+     //while (true)
+     //{
+     //    int curState = -1;
+     //    robot.GetSoftwareUpgradeState(curState);
+     //    printf("upgrade state is %d\n", curState);
+     //    robot.Sleep(300);
+     //}
+
+
+     while (true)
+     {
+        int rtn = robot.LuaUpload("D://zUP/test1.lua");
+         printf("LuaUpload rtn is %d\n", rtn);
+         robot.ProgramLoad("/usr/local/etc/controller/lua/test1.lua");
+
+         robot.ProgramRun();
+
+         robot.Sleep(500);
+
+         robot.ProgramStop();
+
+         //rtn = robot.LuaDelete("test1.lua");
+         robot.Sleep(2000);
+     }
+
+
 
      robot.Sleep(100 * 1000);
 
