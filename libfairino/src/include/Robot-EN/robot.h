@@ -4368,9 +4368,10 @@ public:
 	/**
 	 * @brief Get the sensitivity calibration results of the joint torque sensor
 	 * @param [out] calibResult j1~j6 Joint sensitivity [0-1]
+	 * @param [out] linearityn j1~j6 Joint linearity[0-1]
 	 * @return Error code
 	 */
-	errno_t JointSensitivityCalibration(double result[6]);
+	errno_t JointSensitivityCalibration(double result[6], double linearity[6]);
 
 	/**
 	 * @brief Sensitivity data acquisition of joint torque sensors
@@ -4427,6 +4428,103 @@ public:
 	 * @return Error code
 	 */
 	errno_t RobotMCULogCollect();
+
+	/**
+	 * @brief Move to the starting point of the intersection line
+	 * @param [in] mainPoint Cartesian poses of the six teaching points of the main pipeline
+	 * @param [in] piecePoint Cartesian poses of the six teaching points of the auxiliary pipeline
+	 * @param [in] tool Tool coordinate system ID
+	 * @param [in] wobj Workpiece coordinate system ID
+	 * @param [in] vel Velocity percentage
+	 * @param [in] acc Acceleration percentage
+	 * @param [in] ovl Velocity scaling factor
+	 * @param [in] oacc Acceleration scaling factor
+	 * @param [in] moveType Movement type; 0-PTP；1-LIN
+	 * @return Error code
+	 */
+	errno_t MoveToIntersectLineStart(DescPose mainPoint[6], DescPose piecePoint[6], int tool, int wobj, double vel, double acc, double ovl, double oacc, int moveType);
+
+	/**
+	 * @brief Move to the starting point of the intersection line
+	 * @param [in] mainPoint Cartesian poses of the six teaching points of the main pipeline
+	 * @param [in] mainExaxisPos Exaxis poses of the six teaching points of the main pipeline
+	 * @param [in] piecePoint Cartesian poses of the six teaching points of the auxiliary pipeline
+	 * @param [in] pieceExaxisPos Exaxis poses of the six teaching points of the auxiliary pipeline
+	 * @param [in] extAxisFlag Whether to enable the extended axis; 0- Not enabled; 1- Enable
+	 * @param [in] exaxisPos The position of the starting expansion axis
+	 * @param [in] tool Tool coordinate system ID
+	 * @param [in] wobj Workpiece coordinate system ID
+	 * @param [in] vel Velocity percentage
+	 * @param [in] acc Acceleration percentage
+	 * @param [in] ovl Velocity scaling factor
+	 * @param [in] oacc Acceleration scaling factor
+	 * @param [in] moveType Movement type; 0-PTP；1-LIN
+	 * @param [in] moveDirection Direction of movement; 0- clockwise; 1- Counterclockwise
+	 * @param [in] offset Offset Descartes
+	 * @return Error code
+	 */
+	errno_t MoveToIntersectLineStart(DescPose mainPoint[6], ExaxisPos mainExaxisPos[6], DescPose piecePoint[6], ExaxisPos pieceExaxisPos[6], int extAxisFlag, ExaxisPos exaxisPos, int tool, int wobj, double vel, double acc, double ovl, double oacc, int moveType, int moveDirection, DescPose offset);
+
+	/**
+	 * @brief Intersection line movement
+	 * @param [in] mainPoint Cartesian poses of the six teaching points of the main pipeline
+	 * @param [in] piecePoint Cartesian poses of the six teaching points of the auxiliary pipeline
+	 * @param [in] tool Tool coordinate system ID
+	 * @param [in] wobj Workpiece coordinate system ID
+	 * @param [in] vel Velocity percentage
+	 * @param [in] acc Acceleration percentage
+	 * @param [in] ovl Velocity scaling factor
+	 * @param [in] oacc Acceleration scaling factor
+	 * @param [in] moveDirection Direction of movement; 0- clockwise; 1- Counterclockwise
+	 * @return Error code
+	 */
+	errno_t MoveIntersectLine(DescPose mainPoint[6], DescPose piecePoint[6], int tool, int wobj, double vel, double acc, double ovl, double oacc, int moveDirection);
+
+	/**
+	 * @brief Intersection line movement
+	 * @param [in] mainPoint Cartesian poses of the six teaching points of the main pipeline
+	 * @param [in] mainExaxisPos Exaxis poses of the six teaching points of the main pipeline
+	 * @param [in] piecePoint Cartesian poses of the six teaching points of the auxiliary pipeline
+	 * @param [in] pieceExaxisPos Exaxis poses of the six teaching points of the auxiliary pipeline
+	 * @param [in] extAxisFlag Whether to enable the extended axis; 0- Not enabled; 1- Enable
+	 * @param [in] exaxisPos The position of the starting expansion axis
+	 * @param [in] tool Tool coordinate system ID
+	 * @param [in] wobj Workpiece coordinate system ID
+	 * @param [in] vel Velocity percentage
+	 * @param [in] acc Acceleration percentage
+	 * @param [in] ovl Velocity scaling factor
+	 * @param [in] oacc Acceleration scaling factor
+	 * @param [in] moveDirection Direction of movement; 0- clockwise; 1- Counterclockwise
+	 * @param [in] offset Offset Descartes
+	 * @return Error code
+	 */
+	errno_t MoveIntersectLine(DescPose mainPoint[6], ExaxisPos mainExaxisPos[6], DescPose piecePoint[6], ExaxisPos pieceExaxisPos[6], int extAxisFlag, ExaxisPos exaxisPos[4], int tool, int wobj, double vel, double acc, double ovl, double oacc, int moveDirection, DescPose offset);
+
+	/**
+	 * @brief Get the hysteresis error of the joint torque sensor
+	 * @param [out] hysteresisError j1~j6 Joint hysteresis error
+	 * @return Error code
+	 */
+	errno_t JointHysteresisError(double hysteresisError[6]);
+
+	/**
+	 * @brief Get the repeatability accuracy of the joint torque sensor
+	 * @param [out] repeatability j1~j6 Repeatability accuracy of joint torque sensors
+	 * @return Error code
+	 */
+	errno_t JointRepeatability(double repeatability[6]);
+
+	/**
+	 * @brief Set the parameters of the joint torque sensor
+	 * @param [in] M J1-J6 Mass coefficient [0.001 ~ 10]
+	 * @param [in] B J1-J6 Damping coefficient [0.001 ~ 10]
+	 * @param [in] K J1-J6 Stiffness coefficient [0.001 ~ 10]
+	 * @param [in] threshold Force control threshold，Nm
+	 * @param [in] sensitivity Sensitivity,Nm/V [0 ~ 10]
+	 * @param [in] setZeroFlag Function enable flag bit; 0- Close; 1- Turn on; Position 2- Position 1 records the zero point; Position 3- Position 2 records the zero point
+	 * @return Error code
+	 */
+	errno_t SetAdmittanceParams(double M[6], double B[6], double K[6], double threshold[6], double sensitivity[6], int setZeroFlag);
 
 
 	/**

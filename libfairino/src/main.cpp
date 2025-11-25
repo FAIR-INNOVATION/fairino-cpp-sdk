@@ -24,6 +24,16 @@ using std::chrono::system_clock;
 using std::chrono::milliseconds;
 using std::chrono::seconds;
 
+int Sleep(int ms)
+{
+#ifdef WIN32
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+#else
+    usleep(ms * 1000);
+#endif
+    return 0;
+}
+
 int WeldingProcessParamConfig(FRRobot* robot)
 {
     robot->WeldingSetProcessParam(1, 177, 27, 1000, 178, 28, 176, 26, 1000);
@@ -8716,18 +8726,17 @@ int TestSensitivityCalib()
         return 0;
     }
 
+    rtn = robot.JointSensitivityEnable(0);
     rtn = robot.JointSensitivityEnable(1);
     printf("JointSensitivityEnable rtn is %d\n", rtn);
     JointPos curJPos = {};
     robot.GetActualJointPosDegree(0, &curJPos);
+    ExaxisPos epos = { 0,0,0,0 };
+    DescPose offset_pos = { 0,0,0,0,0,0 };
 
     JointPos jointPos1 = { curJPos.jPos[0], 0, 0, -90, 0.02, curJPos.jPos[5] };
     DescPose descPos1 = {};
     robot.GetForwardKin(&jointPos1, &descPos1);
-
-    ExaxisPos epos = { 0,0,0,0 };
-    DescPose offset_pos = { 0,0,0,0,0,0 };
-
     robot.MoveJ(&jointPos1, &descPos1, 0, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
 
     robot.Sleep(200);
@@ -8795,14 +8804,77 @@ int TestSensitivityCalib()
     printf("JointSensitivityCollect 7 rtn is %d\n", rtn);
     robot.Sleep(100);
 
+    //-------------------
+    robot.MoveJ(&jointPos6, &descPos6, 0, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    robot.Sleep(100);
+    rtn = robot.JointSensitivityCollect();
+    printf("JointSensitivityCollect 8 rtn is %d\n", rtn);
+    robot.Sleep(100);
+
+    robot.MoveJ(&jointPos5, &descPos5, 0, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    robot.Sleep(100);
+    rtn = robot.JointSensitivityCollect();
+    printf("JointSensitivityCollect 9 rtn is %d\n", rtn);
+    robot.Sleep(100);
+
+    robot.MoveJ(&jointPos4, &descPos4, 0, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    robot.Sleep(100);
+    rtn = robot.JointSensitivityCollect();
+    printf("JointSensitivityCollect 10 rtn is %d\n", rtn);
+    robot.Sleep(100);
+
+    robot.MoveJ(&jointPos3, &descPos3, 0, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    robot.Sleep(100);
+    rtn = robot.JointSensitivityCollect();
+    printf("JointSensitivityCollect 11 rtn is %d\n", rtn);
+    robot.Sleep(100);
+
+    robot.MoveJ(&jointPos2, &descPos2, 0, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    robot.Sleep(100);
+    rtn = robot.JointSensitivityCollect();
+    printf("JointSensitivityCollect 12 rtn is %d\n", rtn);
+    robot.Sleep(100);
+
+    robot.MoveJ(&jointPos1, &descPos1, 0, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    robot.Sleep(200);
+    rtn = robot.JointSensitivityCollect();
+    printf("JointSensitivityCollect 13 rtn is %d\n", rtn);
+    robot.Sleep(100);
+
+
     double calibResult[6] = { 0.0 };
-    rtn = robot.JointSensitivityCalibration(calibResult);
+    double linearity[6] = { 0.0 };
+    rtn = robot.JointSensitivityCalibration(calibResult, linearity);
     printf("JointSensitivityCalibration rtn is %d\n", rtn);
+
     rtn = robot.JointSensitivityEnable(0);
     printf("JointSensitivityEnable rtn is %d\n", rtn);
 
-    printf("jointSensor Calib result is %f %f %f %f %f %f\n", calibResult[0], calibResult[1], calibResult[2], 
-        calibResult[3], calibResult[4], calibResult[5]);
+    printf("jointSensor Calib result is %f %f %f %f %f %f\njointSensor linearity is %f %f %f %f %f %f\n", 
+        calibResult[0], calibResult[1], calibResult[2], 
+        calibResult[3], calibResult[4], calibResult[5], 
+        linearity[0], linearity[1], linearity[2],
+        linearity[3], linearity[4], linearity[5]);
+
+    double hysteresisError[6] = { 0.0 };
+    rtn = robot.JointHysteresisError(hysteresisError);
+    printf("JointHysteresisError result is %f %f %f %f %f %f\n",
+        hysteresisError[0], hysteresisError[1], hysteresisError[2],
+        hysteresisError[3], hysteresisError[4], hysteresisError[5]);
+
+    double repeatability[6] = { 0.0 };
+    rtn = robot.JointRepeatability(repeatability);
+    printf("JointRepeatability result is %f %f %f %f %f %f\n",
+        repeatability[0], repeatability[1], repeatability[2],
+        repeatability[3], repeatability[4], repeatability[5]);
+
+    double M[6] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+    double B[6] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+    double K[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    double threshold[6] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+    int setZeroFlag = 1;
+    rtn = robot.SetAdmittanceParams(M, B, K, threshold, calibResult, setZeroFlag);
+    printf("SetAdmittanceParams rtn is %d\n", rtn);
 
     robot.CloseRPC();
 }
@@ -8950,8 +9022,86 @@ int ServoJTWithSafety(FRRobot* robot)
     return 0;
 }
 
+void TestIntersectLineMove()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+
+    robot.SetLoggerLevel(3);
+
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return ;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    DescPose mainPoint[6] = {};
+    DescPose piecePoint[6] = {};
+
+    ExaxisPos mainExaxisPos[6] = {};
+    ExaxisPos pieceExaxisPos[6] = {};
+    int extAxisFlag = 1;
+    ExaxisPos exaxisPos[4] = {};
+    DescPose offset = { 0.0, 2.0 ,30.0, -2.0, 0.0, 0.0 };
+
+    mainPoint[0] = {490.004, -383.194, 402.735, -9.332, -1.528, 69.594};
+    mainPoint[1] = {444.950, -407.117, 389.011, -5.546, -2.196, 65.279};
+    mainPoint[2] = {445.168, -463.605, 355.759, -1.544, -10.886, 57.104};
+    mainPoint[3] = {507.529, -485.385, 343.013, -0.786, -4.834, 61.799};
+    mainPoint[4] = {554.390, -442.647, 367.701, -4.761, -10.181, 64.925};
+    mainPoint[5] = {532.552, -394.003, 396.467, -13.732, -13.592, 67.411};
+
+    mainExaxisPos[0] = { -29.996, 0.000, 0.000, 0.000 };
+    mainExaxisPos[1] = { -29.996, 0.000, 0.000, 0.000 };
+    mainExaxisPos[2] = { -29.996, 0.000, 0.000, 0.000 };
+    mainExaxisPos[3] = { -29.996, 0.000, 0.000, 0.000 };
+    mainExaxisPos[4] = { -29.996, 0.000, 0.000, 0.000 };
+    mainExaxisPos[5] = { -29.996, 0.000, 0.000, 0.000 };
+
+    piecePoint[0] = { 505.571, -192.408, 316.759, 38.098, 37.051, 139.447 };
+    piecePoint[1] = {533.837, -201.558, 332.340, 34.644, 42.339, 137.748};
+    piecePoint[2] = {530.386, -225.085, 373.808, 35.431, 45.111, 137.560};
+    piecePoint[3] = {485.646, -229.195, 383.778, 33.870, 45.173, 137.064};
+    piecePoint[4] = {460.551, -212.161, 354.256, 28.856, 45.602, 135.930};
+    piecePoint[5] = {474.217, -197.124, 324.611, 42.469, 41.133, 148.167};
+        
+    pieceExaxisPos[0] = { -29.996, -0.000, 0.000, 0.000 };
+    pieceExaxisPos[1] = { -29.996, -0.000, 0.000, 0.000 };
+    pieceExaxisPos[2] = { -29.996, -0.000, 0.000, 0.000 };
+    pieceExaxisPos[3] = { -29.996, -0.000, 0.000, 0.000 };
+    pieceExaxisPos[4] = { -29.996, -0.000, 0.000, 0.000 };
+    pieceExaxisPos[5] = { -29.996, -0.000, 0.000, 0.000 };
+
+    exaxisPos[0] = {-29.996, -0.000, 0.000, 0.000};
+    exaxisPos[1] = {-44.994, 90.000, 0.000, 0.000};
+    exaxisPos[2] = {-59.992, 0.002, 0.000, 0.000};
+    exaxisPos[3] = {-44.994, -89.997, 0.000, 0.000};
+
+    int tool = 2;
+    int wobj = 0;
+    double vel = 100.0;
+    double acc = 100.0;
+    double ovl = 12.0;
+    double oacc = 12.0; 
+    int moveType = 1;
+    int moveDirection = 1;
+    rtn = robot.MoveToIntersectLineStart(mainPoint, mainExaxisPos, piecePoint, pieceExaxisPos, extAxisFlag, exaxisPos[0], tool, wobj, vel, acc, ovl, oacc, moveType, moveDirection, offset);
+    printf("MoveToIntersectLineStart rtn is %d\n", rtn);
+    rtn = robot.MoveIntersectLine(mainPoint, mainExaxisPos, piecePoint, pieceExaxisPos, extAxisFlag, exaxisPos, tool, wobj, vel, acc, 5.0, 5.0, moveDirection, offset);
+    printf("MoveIntersectLine rtn is %d\n", rtn);
+
+    robot.CloseRPC();
+    return ;
+}
+
  int main(void)
  {
+     TestIntersectLineMove();
+     Sleep(1000000);
+     return 0;
+
      ROBOT_STATE_PKG pkg = {};
      FRRobot robot;
      robot.LoggerInit();
@@ -8964,6 +9114,19 @@ int ServoJTWithSafety(FRRobot* robot)
          return 0;
      }
      robot.SetReConnectParam(true, 30000, 500);
+
+     auto start = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+     rtn = robot.LuaUpload("D://zUP/slmuploadtime/test2.lua");
+     auto end = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+     std::cout << "上传文件1时间: " << end - start << std::endl;
+
+     auto start1 = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+     rtn = robot.LuaUpload("D://zUP/slmuploadtime/test1.lua");
+     auto end1 = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+     std::cout << "上传文件2时间: " << end1 - start1 << std::endl;
+     robot.Sleep(10000 * 1000);
+
+     robot.CloseRPC();
 
      //robot.SoftwareUpgrade("D://zUP/388/software.tar.gz", false);
      //while (true)

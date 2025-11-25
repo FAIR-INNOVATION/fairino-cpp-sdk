@@ -42,12 +42,12 @@
     // #include <filesystem>
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
-    #define SDK_VERSION_MINOR "2"
-    #define SDK_VERSION_RELEASE "7"
+    #define SDK_VERSION_MINOR "3"
+    #define SDK_VERSION_RELEASE "0"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.2.7.0-robot v3.8.7"
+#define SDK_RELEASE "SDK V2.3.0.0-robot v3.9.0"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -10414,6 +10414,8 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
     
     /* 创建，设置套接字 */
     fr_network::socket_fd fd = fr_network::get_socket_fd();
+    int yes = 1;
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char*)&yes, sizeof(int));
     errcode = fr_network::SetTimeout(fd, 4, 40, 0);
     if (errcode != 0)
     {
@@ -10437,15 +10439,14 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
     
     std::string headstr = headerStream.str();
     std::cout << headstr << std::endl;
-    logger_error("test.");
+    
     std::vector<char>headBuf(headstr.begin(), headstr.end());
     headBuf.emplace_back('\0');
     int send_bytes = 0;
     if(breakFlag == 0)
     {
-        logger_error("send head %s.", headBuf.data());
         send_bytes = send(fd, headBuf.data(), 46, 0);
-        logger_error("send head len %d %s.", send_bytes, headBuf.data());
+        logger_info("send head len %d %s.", send_bytes, headBuf.data());
         if ((send_bytes != 46))
         {
             logger_error("send head %s fail.", headBuf.data());
@@ -10453,7 +10454,6 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
             fr_network::close_fd(fd);
             return errcode;
         }
-        logger_info("send head end");
     }
     
     const int FILE_SUBPACK_SIZE = 256 * 1024;
@@ -10543,7 +10543,6 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
         fr_network::close_fd(fd);
         return errcode;
     }
-    logger_info("recv %d, %s", recv_bytes, recv_buf);
     string recv_str(recv_buf);
     if (0 != recv_str.compare("SUCCESS"))
     {
@@ -10594,7 +10593,7 @@ errno_t FRRobot::LuaUpload(std::string filePath)
 
         // std::string filename = "2222.tar.gz";
         param[0] = filename;
-        logger_info("file name is: [%s]", filename.c_str());
+        logger_info("LuaUpLoadUpdate start, file name is: [%s]", filename.c_str());
         if(c.execute("LuaUpLoadUpdate", param, result))
         {
             errcode = int(result[0]);
@@ -10605,6 +10604,7 @@ errno_t FRRobot::LuaUpload(std::string filePath)
                 logger_error("lua format error.,error code is: %d, %s", errcode, res_str.c_str());
             }
             c.close();
+            logger_info("LuaUpLoadUpdate end");
             return errcode;
         }else{
             logger_error("execute LuaUpLoadUpdate fail.");
@@ -10614,6 +10614,8 @@ errno_t FRRobot::LuaUpload(std::string filePath)
     }else{
         logger_error("upload file fail. errcode is: %d.", errcode);
     }
+
+    
 
     return errcode;
 }
@@ -21457,9 +21459,10 @@ errno_t FRRobot::JointSensitivityEnable(int status)
 /**
  * @brief 获取关节扭矩传感器灵敏度标定结果
  * @param [out] calibResult j1~j6关节灵敏度[0-1]
+ * @param [out] linearityn j1~j6关节线性度[0-1]
  * @return 错误码
  */
-errno_t FRRobot::JointSensitivityCalibration(double calibResult[6])
+errno_t FRRobot::JointSensitivityCalibration(double calibResult[6], double linearity[6])
 {
     if (IsSockError())
     {
@@ -21486,6 +21489,12 @@ errno_t FRRobot::JointSensitivityCalibration(double calibResult[6])
             calibResult[3] = (double)result[4];
             calibResult[4] = (double)result[5];
             calibResult[5] = (double)result[6];
+            linearity[0] = (double)result[7];
+            linearity[1] = (double)result[8];
+            linearity[2] = (double)result[9];
+            linearity[3] = (double)result[10];
+            linearity[4] = (double)result[11];
+            linearity[5] = (double)result[12];
         }
     }
     else
@@ -21786,3 +21795,465 @@ errno_t FRRobot::RobotMCULogCollect()
     c.close();
     return errcode;
 }
+
+/**
+ * @brief 移动到相贯线起始点
+ * @param [in] mainPoint 主管6个示教点的笛卡尔位姿
+ * @param [in] piecePoint 辅管6个示教点的笛卡尔位姿
+ * @param [in] tool 工具坐标系编号
+ * @param [in] wobj 工件坐标系编号
+ * @param [in] vel 速度百分比
+ * @param [in] acc 加速度百分比
+ * @param [in] ovl 速度缩放因子
+ * @param [in] oacc 加速度缩放因子
+ * @param [in] moveType 运动类型; 0-PTP；1-LIN
+ * @return 错误码
+ */
+errno_t FRRobot::MoveToIntersectLineStart(DescPose mainPoint[6], DescPose piecePoint[6], int tool, int wobj, double vel, double acc, double ovl, double oacc, int moveType)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    ExaxisPos mainExaxisPos[6] = {};
+    ExaxisPos pieceExaxisPos[6] = {};
+    int extAxisFlag = 0;
+    ExaxisPos exaxisPos = {};
+    int moveDirection = 0;
+    DescPose offset = {};
+    int errcode = MoveToIntersectLineStart(mainPoint, mainExaxisPos, piecePoint, pieceExaxisPos, extAxisFlag, exaxisPos, tool, wobj, vel, acc, ovl, oacc, moveType, moveDirection, offset);
+
+    return errcode;
+}
+
+/**
+ * @brief 移动到相贯线起始点
+ * @param [in] mainPoint 主管6个示教点的笛卡尔位姿
+ * @param [in] mainExaxisPos 主管6个示教点扩展轴位置
+ * @param [in] piecePoint 辅管6个示教点的笛卡尔位姿
+ * @param [in] pieceExaxisPos 拼接管6个示教点扩展轴位置
+ * @param [in] extAxisFlag 是否启用扩展轴；0-不启用；1-启用
+ * @param [in] exaxisPos 起点扩展轴位置
+ * @param [in] tool 工具坐标系编号
+ * @param [in] wobj 工件坐标系编号
+ * @param [in] vel 速度百分比
+ * @param [in] acc 加速度百分比
+ * @param [in] ovl 速度缩放因子
+ * @param [in] oacc 加速度缩放因子
+ * @param [in] moveType 运动类型; 0-PTP；1-LIN
+ * @param [in] moveDirection 运动方向；0-顺时针；1-逆时针
+ * @param [in] offset 偏移量
+ * @return 错误码
+ */
+errno_t FRRobot::MoveToIntersectLineStart(DescPose mainPoint[6], ExaxisPos mainExaxisPos[6], DescPose piecePoint[6], ExaxisPos pieceExaxisPos[6], int extAxisFlag, ExaxisPos exaxisPos, int tool, int wobj, double vel, double acc, double ovl, double oacc, int moveType, int moveDirection, DescPose offset)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    for (int i = 0; i < 6; i++)
+    {
+        param[0][i * 6 + 0] = mainPoint[i].tran.x;
+        param[0][i * 6 + 1] = mainPoint[i].tran.y;
+        param[0][i * 6 + 2] = mainPoint[i].tran.z;
+        param[0][i * 6 + 3] = mainPoint[i].rpy.rx;
+        param[0][i * 6 + 4] = mainPoint[i].rpy.ry;
+        param[0][i * 6 + 5] = mainPoint[i].rpy.rz;
+    }
+
+    for (int i = 0; i < 6; i++)
+    {
+        param[0][i * 4 + 0 + 36] = mainExaxisPos[i].ePos[0];
+        param[0][i * 4 + 1 + 36] = mainExaxisPos[i].ePos[1];
+        param[0][i * 4 + 2 + 36] = mainExaxisPos[i].ePos[2];
+        param[0][i * 4 + 3 + 36] = mainExaxisPos[i].ePos[3];
+    }
+
+    for (int i = 0; i < 6; i++)
+    {
+        param[0][i * 6 + 0 + 60] = piecePoint[i].tran.x;
+        param[0][i * 6 + 1 + 60] = piecePoint[i].tran.y;
+        param[0][i * 6 + 2 + 60] = piecePoint[i].tran.z;
+        param[0][i * 6 + 3 + 60] = piecePoint[i].rpy.rx;
+        param[0][i * 6 + 4 + 60] = piecePoint[i].rpy.ry;
+        param[0][i * 6 + 5 + 60] = piecePoint[i].rpy.rz;
+    }
+
+    for (int i = 0; i < 6; i++)
+    {
+        param[0][i * 4 + 0 + 96] = pieceExaxisPos[i].ePos[0];
+        param[0][i * 4 + 1 + 96] = pieceExaxisPos[i].ePos[1];
+        param[0][i * 4 + 2 + 96] = pieceExaxisPos[i].ePos[2];
+        param[0][i * 4 + 3 + 96] = pieceExaxisPos[i].ePos[3];
+    }
+
+    param[0][120] = extAxisFlag;
+    param[0][121] = exaxisPos.ePos[0];
+    param[0][122] = exaxisPos.ePos[1];
+    param[0][123] = exaxisPos.ePos[2];
+    param[0][124] = exaxisPos.ePos[3];
+
+    param[0][125] = tool;
+    param[0][126] = wobj;
+    param[0][127] = vel;
+    param[0][128] = acc;
+    param[0][129] = ovl;
+    param[0][130] = oacc;
+    param[0][131] = moveType;
+    param[0][132] = moveDirection;
+
+    param[0][133] = offset.tran.x;
+    param[0][134] = offset.tran.y;
+    param[0][135] = offset.tran.z;
+    param[0][136] = offset.rpy.rx;
+    param[0][137] = offset.rpy.ry;
+    param[0][138] = offset.rpy.rz;
+
+    if (c.execute("MoveToIntersectLineStart", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    if ((robot_state_pkg->main_code != 0 || robot_state_pkg->sub_code != 0) && errcode == 0)
+    {
+        errcode = 14;
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief 相贯线运动
+ * @param [in] mainPoint 主管6个示教点的笛卡尔位姿
+ * @param [in] piecePoint 辅管6个示教点的笛卡尔位姿
+ * @param [in] tool 工具坐标系编号
+ * @param [in] wobj 工件坐标系编号
+ * @param [in] vel 速度百分比
+ * @param [in] acc 加速度百分比
+ * @param [in] ovl 速度缩放因子
+ * @param [in] oacc 加速度缩放因子
+ * @param [in] moveDirection 运动方向; 0-顺时针；1-逆时针
+ * @return 错误码
+ */
+errno_t FRRobot::MoveIntersectLine(DescPose mainPoint[6], DescPose piecePoint[6], int tool, int wobj, double vel, double acc, double ovl, double oacc, int moveDirection)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    int errcode = 0;
+    ExaxisPos mainExaxisPos[6] = {};
+    ExaxisPos pieceExaxisPos[6] = {};
+    int extAxisFlag = 0;
+    ExaxisPos exaxisPos[4] = {};
+    DescPose offset = {};
+    errcode = MoveIntersectLine(mainPoint, mainExaxisPos, piecePoint, pieceExaxisPos, extAxisFlag, exaxisPos, tool, wobj, vel, acc, ovl, oacc, moveDirection, offset);
+
+    return errcode;
+}
+
+/**
+ * @brief 相贯线运动
+ * @param [in] mainPoint 主管6个示教点的笛卡尔位姿
+ * @param [in] mainExaxisPos 主管6个示教点扩展轴位置
+ * @param [in] piecePoint 辅管6个示教点的笛卡尔位姿
+ * @param [in] pieceExaxisPos 拼接管6个示教点扩展轴位置
+ * @param [in] extAxisFlag 是否启用扩展轴；0-不启用；1-启用
+ * @param [in] exaxisPos 起点扩展轴位置
+ * @param [in] tool 工具坐标系编号
+ * @param [in] wobj 工件坐标系编号
+ * @param [in] vel 速度百分比
+ * @param [in] acc 加速度百分比
+ * @param [in] ovl 速度缩放因子
+ * @param [in] oacc 加速度缩放因子
+ * @param [in] moveDirection 运动方向; 0-顺时针；1-逆时针
+ * @param [in] offset 偏移量
+ * @return 错误码
+ */
+errno_t FRRobot::MoveIntersectLine(DescPose mainPoint[6], ExaxisPos mainExaxisPos[6], DescPose piecePoint[6], ExaxisPos pieceExaxisPos[6], int extAxisFlag, ExaxisPos exaxisPos[4], int tool, int wobj, double vel, double acc, double ovl, double oacc, int moveDirection, DescPose offset)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    for (int i = 0; i < 6; i++)
+    {
+        param[0][i * 6 + 0] = mainPoint[i].tran.x;
+        param[0][i * 6 + 1] = mainPoint[i].tran.y;
+        param[0][i * 6 + 2] = mainPoint[i].tran.z;
+        param[0][i * 6 + 3] = mainPoint[i].rpy.rx;
+        param[0][i * 6 + 4] = mainPoint[i].rpy.ry;
+        param[0][i * 6 + 5] = mainPoint[i].rpy.rz;
+    }
+
+    for (int i = 0; i < 6; i++)
+    {
+        param[0][i * 4 + 0 + 36] = mainExaxisPos[i].ePos[0];
+        param[0][i * 4 + 1 + 36] = mainExaxisPos[i].ePos[1];
+        param[0][i * 4 + 2 + 36] = mainExaxisPos[i].ePos[2];
+        param[0][i * 4 + 3 + 36] = mainExaxisPos[i].ePos[3];
+    }
+
+    for (int i = 0; i < 6; i++)
+    {
+        param[0][i * 6 + 0 + 60] = piecePoint[i].tran.x;
+        param[0][i * 6 + 1 + 60] = piecePoint[i].tran.y;
+        param[0][i * 6 + 2 + 60] = piecePoint[i].tran.z;
+        param[0][i * 6 + 3 + 60] = piecePoint[i].rpy.rx;
+        param[0][i * 6 + 4 + 60] = piecePoint[i].rpy.ry;
+        param[0][i * 6 + 5 + 60] = piecePoint[i].rpy.rz;
+    }
+
+    for (int i = 0; i < 6; i++)
+    {
+        param[0][i * 4 + 0 + 96] = pieceExaxisPos[i].ePos[0];
+        param[0][i * 4 + 1 + 96] = pieceExaxisPos[i].ePos[1];
+        param[0][i * 4 + 2 + 96] = pieceExaxisPos[i].ePos[2];
+        param[0][i * 4 + 3 + 96] = pieceExaxisPos[i].ePos[3];
+    }
+
+    param[0][120] = extAxisFlag;
+
+    for (int i = 0; i < 4; i++)
+    {
+        param[0][121 + i * 4] = exaxisPos[i].ePos[0];
+        param[0][122 + i * 4] = exaxisPos[i].ePos[1];
+        param[0][123 + i * 4] = exaxisPos[i].ePos[2];
+        param[0][124 + i * 4] = exaxisPos[i].ePos[3];
+    }
+
+    param[0][137] = tool;
+    param[0][138] = wobj;
+    param[0][139] = vel;
+    param[0][140] = acc;
+    param[0][141] = ovl;
+    param[0][142] = oacc;
+    param[0][143] = moveDirection;
+
+    param[0][144] = offset.tran.x;
+    param[0][145] = offset.tran.y;
+    param[0][146] = offset.tran.z;
+    param[0][147] = offset.rpy.rx;
+    param[0][148] = offset.rpy.ry;
+    param[0][149] = offset.rpy.rz;
+
+    if (c.execute("MoveIntersectLine", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    if ((robot_state_pkg->main_code != 0 || robot_state_pkg->sub_code != 0) && errcode == 0)
+    {
+        errcode = 14;
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief 获取关节扭矩传感器迟滞误差
+ * @param [out] hysteresisError j1~j6关节迟滞误差
+ * @return 错误码
+ */
+errno_t FRRobot::JointHysteresisError(double hysteresisError[6])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("JointHysteresisError", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute JointHysteresisError fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            hysteresisError[0] = (double)result[1];
+            hysteresisError[1] = (double)result[2];
+            hysteresisError[2] = (double)result[3];
+            hysteresisError[3] = (double)result[4];
+            hysteresisError[4] = (double)result[5];
+            hysteresisError[5] = (double)result[6];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取关节扭矩传感器重复精度
+ * @param [out] repeatability j1~j6关节扭矩传感器重复精度
+ * @return 错误码
+ */
+errno_t FRRobot::JointRepeatability(double repeatability[6])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("JointRepeatability", param, result))
+    {
+        errcode = int(result[0]);
+        if (0 != errcode)
+        {
+            logger_error("execute JointRepeatability fail: %d.", errcode);
+            c.close();
+            return errcode;
+        }
+        else
+        {
+            repeatability[0] = (double)result[1];
+            repeatability[1] = (double)result[2];
+            repeatability[2] = (double)result[3];
+            repeatability[3] = (double)result[4];
+            repeatability[4] = (double)result[5];
+            repeatability[5] = (double)result[6];
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置关节力传感器参数
+ * @param [in] M J1-J6质量系数[0.001 ~ 10]
+ * @param [in] B J1-J6阻尼系数[0.001 ~ 10]
+ * @param [in] K J1-J6刚度系数[0.001 ~ 10]
+ * @param [in] threshold 力控制阈值，Nm
+ * @param [in] sensitivity 灵敏度,Nm/V,[0 ~ 10]
+ * @param [in] setZeroFlag 功能开启标志位；0-关闭；1-开启；2-位置1记录零点；3-位置2记录零点
+ * @return 错误码
+ */
+errno_t FRRobot::SetAdmittanceParams(double M[6], double B[6], double K[6], double threshold[6], double sensitivity[6], int setZeroFlag)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = M[0];
+    param[0][1] = M[1];
+    param[0][2] = M[2];
+    param[0][3] = M[3];
+    param[0][4] = M[4];
+    param[0][5] = M[5];
+    param[0][6] = B[0];
+    param[0][7] = B[1];
+    param[0][8] = B[2];
+    param[0][9] = B[3];
+    param[0][10] = B[4];
+    param[0][11] = B[5];
+    param[0][12] = K[0];
+    param[0][13] = K[1];
+    param[0][14] = K[2];
+    param[0][15] = K[3];
+    param[0][16] = K[4];
+    param[0][17] = K[5];
+    param[0][18] = threshold[0];
+    param[0][19] = threshold[1];
+    param[0][20] = threshold[2];
+    param[0][21] = threshold[3];
+    param[0][22] = threshold[4];
+    param[0][23] = threshold[5];
+    param[0][24] = sensitivity[0];
+    param[0][25] = sensitivity[1];
+    param[0][26] = sensitivity[2];
+    param[0][27] = sensitivity[3];
+    param[0][28] = sensitivity[4];
+    param[0][29] = sensitivity[5];
+    param[0][30] = setZeroFlag;
+    
+    if (c.execute("SetAdmittanceParams", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+
