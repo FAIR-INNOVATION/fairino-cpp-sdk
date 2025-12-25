@@ -43,11 +43,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "3"
-    #define SDK_VERSION_RELEASE "0"
+    #define SDK_VERSION_RELEASE "1"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.3.0.0-robot v3.9.0"
+#define SDK_RELEASE "SDK V2.3.1.0-robot v3.9.1"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -769,19 +769,20 @@ errno_t FRRobot::MoveJ(JointPos* joint_pos, int tool, int user, float vel, float
  * @param  [in] user  工件坐标号，范围[1~15]
  * @param  [in] vel  速度百分比，范围[0~100]
  * @param  [in] acc  加速度百分比，范围[0~100],暂不开放
- * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] ovl  速度缩放因子[0~100]/物理速度(mm/s)
  * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
  * @param  [in] blendMode 过渡方式；0-内切过渡；1-角点过渡
  * @param  [in] epos  扩展轴位置，单位mm
  * @param  [in] search  0-不焊丝寻位，1-焊丝寻位
  * @param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
  * @param  [in] offset_pos  位姿偏移量
+ * @param  [in] oacc 加速度缩放因子[0-100]/物理加速度(mm/s2)
  * @param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
  * @param  [in] overSpeedStrategy  超速处理策略，1-标准；2-超速时报错停止；3-自适应降速，默认为0
  * @param  [in] speedPercent  允许降速阈值百分比[0-100]，默认10%
  * @return  错误码
  */
-errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int velAccParamMode, int overSpeedStrategy, int speedPercent)
+errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, float oacc, int velAccParamMode, int overSpeedStrategy, int speedPercent)
 {
     if (IsSockError())
     {
@@ -852,7 +853,7 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
     param[0][28] = offset_pos->rpy.rx;
     param[0][29] = offset_pos->rpy.ry;
     param[0][30] = offset_pos->rpy.rz;
-    param[0][31] = ovl;
+    param[0][31] = oacc;
     param[0][32] = velAccParamMode;
 
     if (c.execute("MoveL", param, result))
@@ -864,8 +865,6 @@ errno_t FRRobot::MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int us
         c.close();
         return ERR_XMLRPC_CMD_FAILED;
     }
-
-    cout << "move L rtn is " << errcode << endl;
 
     if (overSpeedStrategy > 1)
     {
@@ -936,7 +935,7 @@ errno_t FRRobot::MoveL(DescPose* desc_pos, int tool, int user, float vel, float 
         return errcode;
     }
 
-    errcode = MoveL(&jPos, desc_pos, tool, user, vel, acc, ovl, blendR, blendMode, epos, search, offset_flag, offset_pos, velAccParamMode, overSpeedStrategy, speedPercent);
+    errcode = MoveL(&jPos, desc_pos, tool, user, vel, acc, ovl, blendR, blendMode, epos, search, offset_flag, offset_pos, ovl, velAccParamMode, overSpeedStrategy, speedPercent);
     return errcode;
 }
 
@@ -960,7 +959,7 @@ errno_t FRRobot::MoveL(DescPose* desc_pos, int tool, int user, float vel, float 
  */
 errno_t FRRobot::MoveL(JointPos* joint_pos, DescPose* desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos* epos, uint8_t search, uint8_t offset_flag, DescPose* offset_pos, int overSpeedStrategy, int speedPercent)
 {
-    int errcode = MoveL(joint_pos, desc_pos, tool, user, vel, acc, ovl, blendR, 0/*blendMode*/, epos, search, offset_flag, offset_pos, 0/*velAccParamMode*/, overSpeedStrategy, speedPercent);
+    int errcode = MoveL(joint_pos, desc_pos, tool, user, vel, acc, ovl, blendR, 0/*blendMode*/, epos, search, offset_flag, offset_pos, ovl, 0/*velAccParamMode*/, overSpeedStrategy, speedPercent);
 
     return errcode;
 }
@@ -985,12 +984,13 @@ errno_t FRRobot::MoveL(JointPos* joint_pos, DescPose* desc_pos, int tool, int us
  * @param  [in] epos_t  扩展轴位置，单位mm
  * @param  [in] toffset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
  * @param  [in] offset_pos_t  位姿偏移量
- * @param  [in] ovl  速度缩放因子，范围[0~100]
+ * @param  [in] ovl  速度缩放因子[0~100]/物理速度(mm/s)
  * @param  [in] blendR [-1.0]-运动到位(阻塞)，[0~1000.0]-平滑半径(非阻塞)，单位mm
+ * @param  [in] oacc 加速度缩放因子[0-100]/物理加速度(mm/s2)
  * @param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
  * @return  错误码
  */
-errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, uint8_t poffset_flag, DescPose *offset_pos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, uint8_t toffset_flag, DescPose *offset_pos_t, float ovl, float blendR, int velAccParamMode)
+errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, uint8_t poffset_flag, DescPose *offset_pos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, uint8_t toffset_flag, DescPose *offset_pos_t, float ovl, float blendR, float oacc, int velAccParamMode)
 {
     if (IsSockError())
     {
@@ -1062,7 +1062,7 @@ errno_t FRRobot::MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, i
     param[0][53] = offset_pos_t->rpy.rz;
     param[0][54] = ovl;
     param[0][55] = blendR;
-    param[0][56] = (double)100.0;
+    param[0][56] = oacc;
     param[0][57] = velAccParamMode;
 
     if (c.execute("MoveC", param, result))
@@ -1134,7 +1134,7 @@ errno_t FRRobot::MoveC(DescPose* desc_pos_p, int ptool, int puser, float pvel, f
         return errcode;
     }
     
-    errcode = MoveC(&jPosP, desc_pos_p, ptool, puser, pvel, pacc, epos_p, poffset_flag, offset_pos_p, &jPosT, desc_pos_t, ttool, tuser, tvel, tacc, epos_t, toffset_flag, offset_pos_t, ovl, blendR, velAccParamMode);
+    errcode = MoveC(&jPosP, desc_pos_p, ptool, puser, pvel, pacc, epos_p, poffset_flag, offset_pos_p, &jPosT, desc_pos_t, ttool, tuser, tvel, tacc, epos_t, toffset_flag, offset_pos_t, ovl, blendR, ovl, velAccParamMode);
 
     return errcode;
 }
@@ -1155,10 +1155,10 @@ errno_t FRRobot::MoveC(DescPose* desc_pos_p, int ptool, int puser, float pvel, f
  *@param  [in] tvel  速度百分比，范围[0~100]
  *@param  [in] tacc  加速度百分比，范围[0~100],暂不开放
  *@param  [in] epos_t  扩展轴位置，单位mm
- *@param  [in] ovl  速度缩放因子，范围[0~100]
+ *@param  [in] ovl  速度缩放因子[0~100]/物理速度(mm/s)
  *@param  [in] offset_flag  0-不偏移，1-基坐标系/工件坐标系下偏移，2-工具坐标系下偏移
  *@param  [in] offset_pos  位姿偏移量
- *@param  [in] oacc 加速度百分比
+ *@param  [in] oacc 加速度缩放因子[0-100]/物理加速度(mm/s2)
  *@param  [in] blendR -1：阻塞；0~1000：平滑半径
  *@param  [in] velAccParamMode 速度加速度参数模式；0-百分比；1-物理速度(mm/s)加速度(mm/s2)
  *@return  错误码
@@ -7119,8 +7119,8 @@ errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], Forc
  * @param  [in] ILC_sign ILC启停控制， 0-停止，1-训练，2-实操
  * @param  [in] max_dis 最大调整距离，单位mm
  * @param  [in] max_ang 最大调整角度，单位deg
- * @param  [in] M 质量参数
- * @param  [in] B 阻尼参数
+ * @param  [in] M rx、ry质量参数[0.1-10],默认2
+ * @param  [in] B rx、ry阻尼参数[0.1-50],默认8
  * @param  [in] polishRadio 打磨半径，单位mm
  * @param  [in] filter_Sign 滤波开启标志 0-关；1-开，默认关闭
  * @param  [in] posAdapt_sign 姿态顺应开启标志 0-关；1-开，默认关闭
@@ -7128,6 +7128,34 @@ errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], Forc
  * @return  错误码
  */
 errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque* ft, float ft_pid[6], uint8_t adj_sign, uint8_t ILC_sign, float max_dis, float max_ang, double M[2], double B[2], double polishRadio, int filter_Sign, int posAdapt_sign, int isNoBlock)
+{
+    double threshold[2] = { 0.0 };
+    double adjustCoeff[2] = { 0.0 };
+    return FT_Control(flag, sensor_id, select, ft, ft_pid, adj_sign, ILC_sign, max_dis, max_ang, M, B, threshold, adjustCoeff, polishRadio, filter_Sign, posAdapt_sign, isNoBlock);
+}
+
+/**
+ * @brief  恒力控制
+ * @param  [in] flag 0-关闭恒力控制，1-开启恒力控制
+ * @param  [in] sensor_id 力传感器编号
+ * @param  [in] select  选择六个自由度是否检测碰撞，0-不检测，1-检测
+ * @param  [in] ft  碰撞力/扭矩，fx,fy,fz,tx,ty,tz
+ * @param  [in] ft_pid 力pid参数，力矩pid参数
+ * @param  [in] adj_sign 自适应启停控制，0-关闭，1-开启
+ * @param  [in] ILC_sign ILC启停控制， 0-停止，1-训练，2-实操
+ * @param  [in] max_dis 最大调整距离，单位mm
+ * @param  [in] max_ang 最大调整角度，单位deg
+ * @param  [in] M rx、ry质量参数[0.1-10],默认2
+ * @param  [in] B rx、ry阻尼参数[0.1-50],默认8
+ * @param  [in] threshold rx、ry启动阈值[0-10],默认0.2
+ * @param  [in] adjustCoeff rx、ry力矩调节系数[0-1],默认1
+ * @param  [in] polishRadio 打磨半径，单位mm
+ * @param  [in] filter_Sign 滤波开启标志 0-关；1-开，默认关闭
+ * @param  [in] posAdapt_sign 姿态顺应开启标志 0-关；1-开，默认关闭
+ * @param  [in] isNoBlock 阻塞标志，0-阻塞；1-非阻塞
+ * @return  错误码
+ */
+errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque* ft, float ft_pid[6], uint8_t adj_sign, uint8_t ILC_sign, float max_dis, float max_ang, double M[2], double B[2], double threshold[2], double adjustCoeff[2], double polishRadio, int filter_Sign, int posAdapt_sign, int isNoBlock)
 {
     if (IsSockError())
     {
@@ -7172,6 +7200,10 @@ errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], Forc
     param[12][1] = M[1];
     param[12][2] = B[0];
     param[12][3] = B[1];
+    param[12][4] = threshold[0];
+    param[12][5] = threshold[1];
+    param[12][6] = adjustCoeff[0];
+    param[12][7] = adjustCoeff[1];
     param[13] = isNoBlock;
 
     if (c.execute("FT_Control", param, result))
@@ -22255,5 +22287,50 @@ errno_t FRRobot::SetAdmittanceParams(double M[6], double B[6], double K[6], doub
     c.close();
     return errcode;
 }
+
+/**
+ * @brief 开启力矩补偿功能及补偿系数
+ * @param [in] status 开关，0-关闭；1-开启
+ * @param [in] torqueCoeff J1-J6力矩补偿系数[0-1]
+ * @return 错误码
+ */
+errno_t FRRobot::SerCoderCompenParams(int status, double torqueCoeff[6])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (GetSafetyCode() != 0)
+    {
+        return GetSafetyCode();
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = status;
+    param[0][1] = torqueCoeff[0];
+    param[0][2] = torqueCoeff[1];
+    param[0][3] = torqueCoeff[2];
+    param[0][4] = torqueCoeff[3];
+    param[0][5] = torqueCoeff[4];
+    param[0][6] = torqueCoeff[5];
+
+    if (c.execute("SerCoderCompenParams", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
 
 

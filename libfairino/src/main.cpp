@@ -2877,52 +2877,41 @@ void AxleSensorConfig(FRRobot* robot)
      DescPose desc_pos4(-443.165, 147.881, 480.951, 179.511, -0.775, -15.409);
      DescPose offset_pos(0, 0, 0, 0, 0, 0);
      ExaxisPos epos(0, 0, 0, 0);
-
      int tool = 0;
      int user = 0;
      float vel = 100.0;
      float acc = 100.0;
      float ovl = 100.0;
+     float oacc = 100.0;
      float blendT = 0.0;
      float blendR = 0.0;
      uint8_t flag = 0;
      uint8_t search = 0;
-
+     int blendMode = 0;
+     int velAccMode = 0;
      robot.SetSpeed(20);
-
      rtn = robot.MoveJ(&j1, &desc_pos1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
      printf("movej errcode:%d\n", rtn);
-
-     rtn = robot.MoveL(&j2, &desc_pos2, tool, user, vel, acc, ovl, blendR, &epos, search, flag, &offset_pos);
+     rtn = robot.MoveL(&j2, &desc_pos2, tool, user, vel, acc, ovl, blendR, blendMode, &epos, search, flag, &offset_pos, oacc, velAccMode);
      printf("movel errcode:%d\n", rtn);
-
-     rtn = robot.MoveC(&j3, &desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &j4, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR);
+     rtn = robot.MoveC(&j3, &desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &j4, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR, oacc, velAccMode);
      printf("movec errcode:%d\n", rtn);
-
      rtn = robot.MoveJ(&j2, &desc_pos2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
      printf("movej errcode:%d\n", rtn);
-
-     rtn = robot.Circle(&j3, &desc_pos3, tool, user, vel, acc, &epos, &j1, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, 100, -1);
+     rtn = robot.Circle(&j3, &desc_pos3, tool, user, vel, acc, &epos, &j1, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, oacc, -1, velAccMode);
      printf("circle errcode:%d\n", rtn);
-
      rtn = robot.MoveCart(&desc_pos4, tool, user, vel, acc, ovl, blendT, -1);
      printf("MoveCart errcode:%d\n", rtn);
-
      rtn = robot.MoveJ(&j1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
      printf("movej errcode:%d\n", rtn);
-
-     rtn = robot.MoveL(&desc_pos2, tool, user, vel, acc, ovl, blendR, 0, &epos, search, flag, &offset_pos);
+     rtn = robot.MoveL(&desc_pos2, tool, user, vel, acc, ovl, blendR, blendMode, &epos, search, flag, &offset_pos, -1, velAccMode);
      printf("movel errcode:%d\n", rtn);
-
-     rtn = robot.MoveC(&desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR);
+     rtn = robot.MoveC(&desc_pos3, tool, user, vel, acc, &epos, flag, &offset_pos, &desc_pos4, tool, user, vel, acc, &epos, flag, &offset_pos, ovl, blendR, -1, velAccMode);
      printf("movec errcode:%d\n", rtn);
-
      rtn = robot.MoveJ(&j2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
      printf("movej errcode:%d\n", rtn);
-
-     rtn = robot.Circle(&desc_pos3, tool, user, vel, acc, &epos, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, 100, -1);
+     rtn = robot.Circle(&desc_pos3, tool, user, vel, acc, &epos, &desc_pos1, tool, user, vel, acc, &epos, ovl, flag, &offset_pos, oacc, blendR, -1, velAccMode);
      printf("circle errcode:%d\n", rtn);
-
      robot.CloseRPC();
      return 0;
  }
@@ -5062,11 +5051,11 @@ int TestServoJ(void)
      robot.WeldingSetCurrent(1, 230, 0, 0);
      robot.WeldingSetVoltage(1, 24, 0, 1);
 
-     DescPose p1Desc(228.879, -503.594, 453.984, -175.580, 8.293, 171.267);
-     JointPos p1Joint(102.700, -85.333, 90.518, -102.365, -83.932, 22.134);
+     DescPose p1Desc(-116.379, -393.699, 465.637, -172.598, 4.196, 14.109);
+     JointPos p1Joint(61.288, -102.146, 101.761, -86.999, -98.093, 137.636);
 
-     DescPose p2Desc(-333.302, -435.580, 449.866, -174.997, 2.017, 109.815);
-     JointPos p2Joint(41.862, -85.333, 90.526, -100.587, -90.014, 22.135);
+     DescPose p2Desc(-409.051, -34.933, 465.637, -172.599, 4.195, -54.542);
+     JointPos p2Joint(-7.363, -102.146, 101.761, -86.999, -98.092, 137.636);
 
      ExaxisPos exaxisPos(0, 0, 0, 0);
      DescPose offdese(0, 0, 0, 0, 0, 0);
@@ -5866,6 +5855,63 @@ int TestServoJ(void)
      robot.CloseRPC();
      return 0;
  }
+
+ //带有力矩调节系数的恒力控制代码实例
+ int TestFTControlWithAdjustCoeff(void)
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return -1;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     uint8_t sensor_id = 10;
+     uint8_t select[6] = { 0,0,1,0,0,0 };
+     float ft_pid[6] = { 0.0008, 0.0, 0.0, 0.0, 0.0, 0.0 };
+     uint8_t adj_sign = 0;
+     uint8_t ILC_sign = 0;
+     float max_dis = 1000.0;
+     float max_ang = 20;
+
+     ForceTorque ft = {0.0};
+     ExaxisPos epos(0, 0, 0, 0);
+     
+        
+     JointPos j1(80.765, -98.795, 106.548, -97.734, -89.999, 94.842);
+     JointPos j2(43.067, -84.429, 92.620, -98.175, -90.011, 57.144);
+     DescPose desc_p1(5.009, -547.463, 262.053, -179.999, -0.019, 75.923);
+     DescPose desc_p2(-347.966, -547.463, 262.048, -180.000, -0.019, 75.923);
+     DescPose offset_pos(0, 0, 0, 0, 0, 0);
+
+     double M[2] = { 2.0, 2.0 };
+     double B[2] = { 15.0, 15.0 };
+     double threshold[2] = {1.0, 1.0};
+     double adjustCoeff[2] = {1.0, 0.8};
+     double polishRadio = 0.0;
+     int filter_Sign = 0;
+     int posAdapt_sign = 1;
+     int isNoBlock;
+
+     ft.fz = -10.0;
+     while(true)
+     { 
+         rtn = robot.FT_Control(1, sensor_id, select, &ft, ft_pid, adj_sign, ILC_sign, max_dis, max_ang, M, B, threshold, adjustCoeff, 0, 0, 1, 0);
+         printf("FT_Control start rtn is %d\n", rtn);
+         robot.MoveL(&j1, &desc_p1, 1, 0, 100, 100, 100, -1, 0, &epos, 0, 0, &offset_pos, 200.0, 0);
+         robot.MoveL(&j2, &desc_p2, 1, 0, 100, 100, 100, -1, 0, &epos, 0, 0, &offset_pos, 200.0, 0);
+         rtn = robot.FT_Control(0, sensor_id, select, &ft, ft_pid, adj_sign, ILC_sign, max_dis, max_ang, M, B, threshold, adjustCoeff, 0, 0, 1, 0);
+         printf("FT_Control end rtn is %d\n", rtn);
+     }
+     robot.CloseRPC();
+     return 0;
+ }
+
 
  int TestFTSearch(void)
  {
@@ -9098,67 +9144,43 @@ void TestIntersectLineMove()
 
  int main(void)
  {
-     TestIntersectLineMove();
-     Sleep(1000000);
-     return 0;
 
-     ROBOT_STATE_PKG pkg = {};
-     FRRobot robot;
-     robot.LoggerInit();
+     TestSegWeld();
 
-     robot.SetLoggerLevel(1);
+     //DescPose startdescPose = { -252.898, -611.453, 211.692, 178.053, -5.329, 114.255 };
+     //JointPos startjointPos = { 59.127, -59.093, 88.934, -115.191, -93.252, 35.095 };
+     //DescPose enddescPose = { -659.192, -188.885, 211.698, 178.054, -5.329, 114.255 };
+     //JointPos endjointPos = { 8.238, -56.580, 86.031, -119.046, -95.657, -15.906 };
 
-     int rtn = robot.RPC("192.168.58.2");
-     if (rtn != 0)
-     {
-         return 0;
-     }
-     robot.SetReConnectParam(true, 30000, 500);
+     //DescPose midarcdescPose(-348.296, -611.453, 211.698, 178.053, -5.329, 114.255);
+     //JointPos midarcjointPos(52.509, -54.057, 80.630, -112.327, -93.766, 28.484);
+     //DescPose endarcdescPose(-348.297, -478.796, 211.696, 178.053, -5.329, 114.255);
+     //JointPos endarcjointPos(44.748, -67.215, 102.017, -121.104, -94.304, 20.722);
 
-     auto start = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
-     rtn = robot.LuaUpload("D://zUP/slmuploadtime/test2.lua");
-     auto end = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
-     std::cout << "上传文件1时间: " << end - start << std::endl;
+     //ExaxisPos exaxisPos = { 0, 0, 0, 0 };
+     //DescPose offdese = { 0, 0, 0, 0, 0, 0 };
+     //int velaccmode = 1;
+     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode, 0, 0);
+     //robot.MoveL(&endjointPos, &enddescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode, 0, 0);
+     //robot.MoveL(&startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, -1, velaccmode, 0, 0);
+     //robot.MoveL(&enddescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, -1, velaccmode, 0, 0);
+     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 0, 0);
+     //robot.MoveL(&endjointPos, &enddescPose, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 0, 0);
 
-     auto start1 = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
-     rtn = robot.LuaUpload("D://zUP/slmuploadtime/test1.lua");
-     auto end1 = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
-     std::cout << "上传文件2时间: " << end1 - start1 << std::endl;
-     robot.Sleep(10000 * 1000);
+     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode);
+     //robot.MoveC(&midarcjointPos, &midarcdescPose, 1, 0, 100, 100, &exaxisPos, 0, &offdese, &endarcjointPos, &endarcdescPose, 1, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1, 200, velaccmode);
+     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode);
+     //robot.MoveC(&midarcdescPose, 1, 0, 100, 100, &exaxisPos, 0, &offdese, &endarcdescPose, 1, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1, -1, velaccmode);
 
-     robot.CloseRPC();
+     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode);
+     //rtn = robot.Circle(&midarcjointPos, &midarcdescPose, 1, 0, 100, 100, &exaxisPos, &endarcjointPos, &endarcdescPose, 1, 0, 100, 100, &exaxisPos, 100, -1, &offdese, 210, -1, velaccmode);
+     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode);
+     //rtn = robot.Circle(&midarcdescPose, 1, 0, 100, 100, &exaxisPos, &endarcdescPose, 1, 0, 100, 100, &exaxisPos, 100, -1, &offdese, 210, -1, -1, velaccmode);
 
-     //robot.SoftwareUpgrade("D://zUP/388/software.tar.gz", false);
-     //while (true)
-     //{
-     //    int curState = -1;
-     //    robot.GetSoftwareUpgradeState(curState);
-     //    printf("upgrade state is %d\n", curState);
-     //    robot.Sleep(300);
-     //}
+     //printf("Circle rtn is %d\n", rtn);
+     //robot.Sleep(100 * 1000);
 
-
-     while (true)
-     {
-        int rtn = robot.LuaUpload("D://zUP/test1.lua");
-         printf("LuaUpload rtn is %d\n", rtn);
-         robot.ProgramLoad("/usr/local/etc/controller/lua/test1.lua");
-
-         robot.ProgramRun();
-
-         robot.Sleep(500);
-
-         robot.ProgramStop();
-
-         //rtn = robot.LuaDelete("test1.lua");
-         robot.Sleep(2000);
-     }
-
-
-
-     robot.Sleep(100 * 1000);
-
-     robot.CloseRPC();
+     //robot.CloseRPC();
 
      
      return 0;

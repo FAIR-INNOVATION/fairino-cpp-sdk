@@ -2,9 +2,9 @@
 #define FRROBOT_H_
 
 #ifdef WINDOWS_OPTION
-	#define FR_LIB_EXPORT __declspec(dllexport)
+#define FR_LIB_EXPORT __declspec(dllexport)
 #else
-	#define FR_LIB_EXPORT 
+#define FR_LIB_EXPORT
 #endif
 
 #ifdef WIN32
@@ -148,19 +148,20 @@ public:
      * @param [in] user  Workpiece coordinate number, range [0~14]
      * @param [in] vel  Percentage of speed, range [0~100]
      * @param [in] acc  Acceleration percentage, range [0~100], not open for now
-     * @param [in] ovl  Velocity scaling factor, range[0~100]
+     * @param [in] ovl  Velocity scaling factor[0~100]/physics velocity(mm/s)
      * @param [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm    
      * @param [in] blendMode transition mode; 0- Internal cutting transition 1- Corner transition
 	 * @param [in] epos  Position of expansion shaft, unit: mm
      * @param [in] search  0- no wire seeking, 1- wire seeking
      * @param [in] offset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
      * @param [in] offset_pos  The pose offset
+	 * @param [in] oacc Acceleration scaling factor [0-100]/ physical acceleration (mm/s ²)
 	 * @param [in] velAccParamMode Speed-acceleration parameter mode 0- percentage 1- Physical velocity (mm/s) Acceleration (mm/s ²)
 	 * @param [in] overSpeedStrategy  Overspeed handling strategy, 1-standard; 2- Reporting a wrong stop when speeding; 3- Adaptive deceleration, default is 0
 	 * @param [in] speedPercent  The allowable deceleration threshold percentage [0-100], default 10%
 	 * @return Error code
 	 */
-	errno_t MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, int velAccParamMode = 0, int overSpeedStrategy = 0, int speedPercent = 10);
+	errno_t MoveL(JointPos *joint_pos, DescPose *desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, int blendMode, ExaxisPos *epos, uint8_t search, uint8_t offset_flag, DescPose *offset_pos, float oacc = 100.0, int velAccParamMode = 0, int overSpeedStrategy = 0, int speedPercent = 10);
 
 	/**
 	 * @brief Rectilinear motion in Cartesian space(Overloaded function 2 does not require the input of joint positions)
@@ -169,7 +170,7 @@ public:
 	 * @param [in] user Workpiece coordinate number, range [0~14]
 	 * @param [in] vel Percentage of speed, range [0~100]
 	 * @param [in] acc Acceleration percentage, range [0~100], not open for now
-	 * @param [in] ovl Velocity scaling factor, range[0~100]
+	 * @param [in] ovl Velocity scaling factor[0~100]/physics velocity(mm/s)
 	 * @param [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm
 	 * @param [in] blendMode transition mode; 0- Internal cutting transition 1- Corner transition
 	 * @param [in] epos Position of expansion shaft, unit: mm
@@ -186,76 +187,77 @@ public:
 
 
 	/**
-	*@brief  Rectilinear motion in Cartesian space
-	*@param  [in] joint_pos  Target joint location, unit: deg
-	*@param  [in] desc_pos   Target Cartesian position
-	*@param  [in] tool  Tool coordinate number, range [0~14]
-	*@param  [in] user  Workpiece coordinate number, range [0~14]
-	*@param  [in] vel  Percentage of speed, range [0~100]
-	*@param  [in] acc  Acceleration percentage, range [0~100], not open for now
-	*@param  [in] ovl  Velocity scaling factor, range[0~100]
-	*@param  [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm
-	*@param  [in] epos  Position of expansion shaft, unit: mm
-	*@param  [in] search  0- no wire seeking, 1- wire seeking
-	*@param  [in] offset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
-	*@param  [in] offset_pos  The pose offset
-	 *@param  [in] overSpeedStrategy  Overspeed handling strategy, 1-standard; 2- Reporting a wrong stop when speeding; 3- Adaptive deceleration, default is 0
-	 *@param  [in] speedPercent  The allowable deceleration threshold percentage [0-100], default 10%
-	*@return  Error code
+	* @brief Rectilinear motion in Cartesian space
+	* @param [in] joint_pos Target joint location, unit: deg
+	* @param [in] desc_pos Target Cartesian position
+	* @param [in] tool Tool coordinate number, range [0~14]
+	* @param [in] user Workpiece coordinate number, range [0~14]
+	* @param [in] vel Percentage of speed, range [0~100]
+	* @param [in] acc Acceleration percentage, range [0~100], not open for now
+	* @param [in] ovl Velocity scaling factor, range[0~100]
+	* @param [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm
+	* @param [in] epos Position of expansion shaft, unit: mm
+	* @param [in] search 0- no wire seeking, 1- wire seeking
+	* @param [in] offset_flag 0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
+	* @param [in] offset_pos The pose offset
+	* @param [in] overSpeedStrategy Overspeed handling strategy, 1-standard; 2- Reporting a wrong stop when speeding; 3- Adaptive deceleration, default is 0
+	* @param [in] speedPercent The allowable deceleration threshold percentage [0-100], default 10%
+	* @return Error code
 	*/
 	errno_t MoveL(JointPos* joint_pos, DescPose* desc_pos, int tool, int user, float vel, float acc, float ovl, float blendR, ExaxisPos* epos, uint8_t search, uint8_t offset_flag, DescPose* offset_pos, int overSpeedStrategy = 0, int speedPercent = 10);
 
 
 	/**
-     *@brief  Circular arc motion in Cartesian space
-     *@param  [in] joint_pos_p  Waypoint joint position, unit: deg
-     *@param  [in] desc_pos_p   Waypoint Cartesian position
-     *@param  [in] ptool  Tool coordinate number, range [0~14]
-     *@param  [in] puser  Workpiece coordinate number, range [0~14]
-     *@param  [in] pvel  Percentage of speed, range [0~100]
-     *@param  [in] pacc  Acceleration percentage, range [0~100], not open for now
-     *@param  [in] epos_p  Position of expansion shaft, unit: mm
-     *@param  [in] poffset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
-     *@param  [in] offset_pos_p  The pose offset
-     *@param  [in] joint_pos_t  Target joint position, unit: deg
-     *@param  [in] desc_pos_t   Target point Cartesian position
-     *@param  [in] ttool  Tool coordinate number, range [0~14]
-     *@param  [in] tuser  Workpiece coordinate number, range [0~14]
-     *@param  [in] tvel  Percentage of speed, range [0~100]
-     *@param  [in] tacc  Acceleration percentage, range [0~100], not open for now
-     *@param  [in] epos_t  Position of expansion shaft, unit: mm
-     *@param  [in] toffset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
-     *@param  [in] offset_pos_t  The pose offset   
-     *@param  [in] ovl  Velocity scaling factor, range[0~100]    
-     *@param  [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm    
-	 *@param  [in] velAccParamMode Speed-acceleration parameter mode 0- percentage 1- Physical velocity (mm/s) Acceleration (mm/s ²)
-	 *@return  Error code
+     * @brief Circular arc motion in Cartesian space
+     * @param [in] joint_pos_p Waypoint joint position, unit: deg
+     * @param [in] desc_pos_p Waypoint Cartesian position
+     * @param [in] ptool Tool coordinate number, range [0~14]
+     * @param [in] puser Workpiece coordinate number, range [0~14]
+     * @param [in] pvel Percentage of speed, range [0~100]
+     * @param [in] pacc Acceleration percentage, range [0~100], not open for now
+     * @param [in] epos_p Position of expansion shaft, unit: mm
+     * @param [in] poffset_flag 0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
+     * @param [in] offset_pos_p The pose offset
+     * @param [in] joint_pos_t Target joint position, unit: deg
+     * @param [in] desc_pos_t Target point Cartesian position
+     * @param [in] ttool Tool coordinate number, range [0~14]
+     * @param [in] tuser Workpiece coordinate number, range [0~14]
+     * @param [in] tvel Percentage of speed, range [0~100]
+     * @param [in] tacc Acceleration percentage, range [0~100], not open for now
+     * @param [in] epos_t Position of expansion shaft, unit: mm
+     * @param [in] toffset_flag 0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
+     * @param [in] offset_pos_t The pose offset   
+     * @param [in] ovl Velocity scaling factor[0~100]/physics velocity(mm/s)   
+     * @param [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm    
+	 * @param [in] oacc Acceleration scaling factor [0-100]/ physical acceleration (mm/s ²)
+	 * @param [in] velAccParamMode Speed-acceleration parameter mode 0- percentage 1- Physical velocity (mm/s) Acceleration (mm/s ²)
+	 * @return Error code
 	 */		
-	errno_t MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, uint8_t poffset_flag, DescPose *offset_pos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, uint8_t toffset_flag, DescPose *offset_pos_t, float ovl, float blendR, int velAccParamMode = 0);
+	errno_t MoveC(JointPos *joint_pos_p, DescPose *desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos *epos_p, uint8_t poffset_flag, DescPose *offset_pos_p, JointPos *joint_pos_t, DescPose *desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos *epos_t, uint8_t toffset_flag, DescPose *offset_pos_t, float ovl, float blendR, float oacc = 100.0, int velAccParamMode = 0);
 
 	/**
-	 *@brief  Circular arc motion in Cartesian space (Overloaded function does not require input of joint positions.)
-	 *@param  [in] desc_pos_p   Waypoint Cartesian position
-	 *@param  [in] ptool  Tool coordinate number, range [0~14]
-	 *@param  [in] puser  Workpiece coordinate number, range [0~14]
-	 *@param  [in] pvel  Percentage of speed, range [0~100]
-	 *@param  [in] pacc  Acceleration percentage, range [0~100], not open for now
-	 *@param  [in] epos_p  Position of expansion shaft, unit: mm
-	 *@param  [in] poffset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
-	 *@param  [in] offset_pos_p  The pose offset
-	 *@param  [in] desc_pos_t   Target point Cartesian position
-	 *@param  [in] ttool  Tool coordinate number, range [0~14]
-	 *@param  [in] tuser  Workpiece coordinate number, range [0~14]
-	 *@param  [in] tvel  Percentage of speed, range [0~100]
-	 *@param  [in] tacc  Acceleration percentage, range [0~100], not open for now
-	 *@param  [in] epos_t  Position of expansion shaft, unit: mm
-	 *@param  [in] toffset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
-	 *@param  [in] offset_pos_t  The pose offset
-	 *@param  [in] ovl  Velocity scaling factor, range[0~100]
-	 *@param  [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm
-	 *@param  [in] config Robot inverse kinematics calculation joint configuration, [-1]- calculate based on the current joint position, [0~7]- solve based on the specific joint space configuration
-	 * @param  [in] velAccParamMode Speed-acceleration parameter mode 0- percentage 1- Physical velocity (mm/s) Acceleration (mm/s ²)
-	 * @return  Error code
+	 * @brief Circular arc motion in Cartesian space (Overloaded function does not require input of joint positions.)
+	 * @param [in] desc_pos_p Waypoint Cartesian position
+	 * @param [in] ptool Tool coordinate number, range [0~14]
+	 * @param [in] puser Workpiece coordinate number, range [0~14]
+	 * @param [in] pvel Percentage of speed, range [0~100]
+	 * @param [in] pacc Acceleration percentage, range [0~100], not open for now
+	 * @param [in] epos_p Position of expansion shaft, unit: mm
+	 * @param [in] poffset_flag 0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
+	 * @param [in] offset_pos_p The pose offset
+	 * @param [in] desc_pos_t Target point Cartesian position
+	 * @param [in] ttool Tool coordinate number, range [0~14]
+	 * @param [in] tuser Workpiece coordinate number, range [0~14]
+	 * @param [in] tvel Percentage of speed, range [0~100]
+	 * @param [in] tacc Acceleration percentage, range [0~100], not open for now
+	 * @param [in] epos_t Position of expansion shaft, unit: mm
+	 * @param [in] toffset_flag 0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
+	 * @param [in] offset_pos_t The pose offset
+	 * @param [in] ovl Velocity scaling factor, range[0~100]
+	 * @param [in] blendR [-1.0]- movement in place (blocking), [0~1000.0]- Smoothing radius (non-blocking), unit: mm
+	 * @param [in] config Robot inverse kinematics calculation joint configuration, [-1]- calculate based on the current joint position, [0~7]- solve based on the specific joint space configuration
+	 * @param [in] velAccParamMode Speed-acceleration parameter mode 0- percentage 1- Physical velocity (mm/s) Acceleration (mm/s ²)
+	 * @return Error code
 	 */
 	errno_t MoveC(DescPose* desc_pos_p, int ptool, int puser, float pvel, float pacc, ExaxisPos* epos_p, uint8_t poffset_flag, DescPose* offset_pos_p, DescPose* desc_pos_t, int ttool, int tuser, float tvel, float tacc, ExaxisPos* epos_t, uint8_t toffset_flag, DescPose* offset_pos_t, float ovl, float blendR, int config = -1, int velAccParamMode = 0);
 
@@ -275,10 +277,10 @@ public:
      *@param  [in] tvel  Percentage of speed, range [0~100]
      *@param  [in] tacc  Acceleration percentage, range [0~100], not open for now
      *@param  [in] epos_t  Position of expansion shaft, unit: mm
-     *@param  [in] ovl  Velocity scaling factor, range[0~100]   
+     *@param  [in] ovl  Velocity scaling factor[0~100]/physics velocity(mm/s)  
      *@param  [in] offset_flag  0- no offset, 1- offset in base/job coordinate system, 2- offset in tool coordinate system
      *@param  [in] offset_pos  The pose offset  
-     *@param  [in] oacc Percentage of acceleration
+     *@param  [in] oacc Acceleration scaling factor [0-100]/ physical acceleration (mm/s ²)
 	 *@param  [in] blendR -1: Block; 0-1000: Smooth radius
 	 * @param  [in] velAccParamMode Speed-acceleration parameter mode 0- percentage 1- Physical velocity (mm/s) Acceleration (mm/s ²)
 	 * @return  Error code
@@ -1646,6 +1648,30 @@ public:
 	*/
 	errno_t FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque* ft, float ft_pid[6], uint8_t adj_sign, 
 		uint8_t ILC_sign, float max_dis, float max_ang, double M[2], double B[2], double polishRadio = 0.0, int filter_Sign = 0, int posAdapt_sign = 0, int isNoBlock = 0);
+
+	/**
+	* @brief  Constant force control
+	* @param  [in] flag 0- turn off constant force control, 1- turn on constant force control
+	* @param  [in] sensor_id Force sensor number
+	* @param  [in] select  Select the six degrees of freedom whether to detect collision, 0- no detection, 1- detection
+	* @param  [in] ft  Impact force/torque，fx,fy,fz,tx,ty,tz
+	* @param  [in] ft_pid Force pid parameter, torque pid parameter
+	* @param  [in] adj_sign Adaptive start-stop control, 0- off, 1- on
+	* @param  [in] ILC_sign ILC start stop control, 0- stop, 1- training, 2- operation
+	* @param  [in] max_dis Adjustment distance, unit: mm
+	* @param  [in] max_ang Adjustment Angle, unit: deg
+	* @param  [in] M rx、ry Quality parameters[0.1-10],Default 2
+	* @param  [in] B rx、ry Damping parameter[0.1-50],Default 8
+	* @param  [in] threshold rx、ry Start-up threshold[0-10],Default 0.2
+	* @param  [in] adjustCoeff rx、ry Torque regulation coefficient[0-1],Default 1
+	* @param  [in] polishRadio Polish radius, unit: mm
+	* @param  [in] filter_Sign Filter on indicator 0- off; 1- On, off by default
+	* @param  [in] posAdapt_sign The posture conforms to the opening mark 0-off. 1- On, off by default
+	* @param  [in] isNoBlock Block flag, 0- block; 1- Non-blocking
+	* @return  Error code
+	*/
+	errno_t FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], ForceTorque* ft, float ft_pid[6], uint8_t adj_sign,
+		uint8_t ILC_sign, float max_dis, float max_ang, double M[2], double B[2], double threshold[2], double adjustCoeff[2], double polishRadio = 0.0, int filter_Sign = 0, int posAdapt_sign = 0, int isNoBlock = 0);
 
 
 	/**
@@ -4371,7 +4397,7 @@ public:
 	 * @param [out] linearityn j1~j6 Joint linearity[0-1]
 	 * @return Error code
 	 */
-	errno_t JointSensitivityCalibration(double result[6], double linearity[6]);
+	errno_t JointSensitivityCalibration(double calibResult[6], double linearity[6]);
 
 	/**
 	 * @brief Sensitivity data acquisition of joint torque sensors
@@ -4526,6 +4552,13 @@ public:
 	 */
 	errno_t SetAdmittanceParams(double M[6], double B[6], double K[6], double threshold[6], double sensitivity[6], int setZeroFlag);
 
+	/**
+	 * @brief Activate the torque compensation function and compensation coefficient
+	 * @param [in] status Switch, 0- off; 1- Start
+	 * @param [in] torqueCoeff Torque compensation coefficient of J1-J6 [0-1]
+	 * @return Error code
+	 */
+	errno_t SerCoderCompenParams(int status, double torqueCoeff[6]);
 
 	/**
 	 *@brief  Robot interface class destructor
