@@ -35,28 +35,60 @@ typedef struct JointPos
 
 	JointPos()
 	{
-
+		jPos[0] = 0.0;
+		jPos[1] = 0.0;
+		jPos[2] = 0.0;
+		jPos[3] = 0.0;
+		jPos[4] = 0.0;
+		jPos[5] = 0.0;
 	}
 }JointPos;
 
 /**
 * @brief Cartesian spatial location data type
 */
-typedef struct
+typedef struct DescTran
 {
 	double x;    /* X-axis coordinate, unit: mm  */
 	double y;    /* Y-axis coordinate, unit: mm  */
 	double z;    /* Z-axis coordinate, unit: mm  */
+	DescTran(double _x, double _y, double _z)
+	{
+		x = _x;
+		y = _y;
+		z = _z;
+	}
+
+	DescTran()
+	{
+		x = 0.0;
+		y = 0.0;
+		z = 0.0;
+	}
 } DescTran;
 
 /**
 * @brief Euler Angle attitude data type
 */
-typedef struct
+typedef struct Rpy
 {
 	double rx;   /* Rotation Angle about fixed axis X, unit: deg  */
 	double ry;   /* Rotation Angle about fixed axis y, unit: deg  */
 	double rz;   /* Rotation Angle about fixed axis Z, unit: deg  */
+
+	Rpy(double _rx, double _ry, double _rz)
+	{
+		rx = _rx;
+		ry = _ry;
+		rz = _rz;
+	}
+
+	Rpy()
+	{
+		rx = 0.0;
+		ry = 0.0;
+		rz = 0.0;
+	}
 } Rpy;
 
 /**
@@ -79,7 +111,8 @@ typedef struct DescPose
 
 	DescPose()
 	{
-
+		tran = { 0.0, 0.0, 0.0 };
+		rpy = { 0.0, 0.0, 0.0 };
 	}
 } DescPose;
 

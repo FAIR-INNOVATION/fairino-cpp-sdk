@@ -113,7 +113,7 @@ int DragControl(FRRobot* robot)
 
     rtn = robot->EndForceDragControl(0, 0, 0, 0, 1, M, B, K, F, 50, 100);
     printf("force drag control end again rtn is %d\n", rtn);
-
+    return 0;
 }
 
 int SixDiaDrag(FRRobot* robot)
@@ -1391,6 +1391,7 @@ void AxleSensorConfig(FRRobot* robot)
 
      rtn = robot->MoveTrajectoryJ();
      printf("MoveTrajectoryJ rtn is: %d\n", rtn);
+     return 0;
  }
 
  int UploadTrajectoryB(FRRobot* robot)
@@ -1420,6 +1421,7 @@ void AxleSensorConfig(FRRobot* robot)
 
      rtn = robot->MoveTrajectoryJ();
      printf("MoveTrajectoryJ rtn is: %d\n", rtn);
+     return 0;
  }
 
  int MoveRotGripper(FRRobot* robot, int pos, double rotPos)
@@ -1779,10 +1781,10 @@ void AxleSensorConfig(FRRobot* robot)
      robot->MoveJ(&p1Joint, &p1Desc, 8, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
      robot->ExtAxisMove(exaxisPosStart, 50.0);
      robot->MoveL(&p2Joint, &p2Desc, 8, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);
-     robot->LaserSensorRecord(4, 1, 10, 2, 35, 0.1, 100);
+     robot->LaserSensorRecord(4, 1, 10, 2, 35, 0.1, 100, 0, 0, 0);
      ExaxisPos exaxisPosTarget(0.000, 400.015, 0.000, 0.000);
      robot->ExtAxisMove(exaxisPosTarget, 10.0);
-     robot->LaserSensorRecord(0, 1, 10, 2, 35, 0.1, 100);
+     robot->LaserSensorRecord(0, 1, 10, 2, 35, 0.1, 100, 0, 0, 0);
      robot->MoveJ(&p3Joint, &p3Desc, 8, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
      robot->ExtAxisMove(exaxisPosStart, 50.0);
  }
@@ -6000,16 +6002,6 @@ int TestServoJ(void)
      status = 0;
      robot.FT_Control(status, sensor_num, select2, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
-     uint8_t select3[6] = { 0,0,1,1,1,0 };  //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
-     ft.fz = -10.0;
-     gain[0] = 0.0001;
-     status = 1;
-     robot.FT_Control(status, sensor_num, select3, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
-     rtn = robot.FT_RotInsertion(rcs, angVelRot, forceInsertion, angleMax, orn, angAccmax, rotorn);
-     printf("FT_RotInsertion rtn is %d\n", rtn);
-     status = 0;
-     robot.FT_Control(status, sensor_num, select3, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
-
      uint8_t select4[6] = { 1,1,1,0,0,0 };  //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
      ft.fz = -30.0;
      status = 1;
@@ -6019,6 +6011,62 @@ int TestServoJ(void)
      status = 0;
      robot.FT_Control(status, sensor_num, select4, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
+     robot.CloseRPC();
+     return 0;
+ }
+
+ int TestRotInsert()
+ {
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
+
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return -1;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
+
+     float forceInsertion = 2.0; //力或力矩阈值（0~100），单位N或Nm
+     int angleMax = 12; //最大旋转角度，单位°
+     uint8_t orn = 2; //力的方向，1-fz,2-mz
+     float angAccmax = 5; //最大旋转角加速度，单位°/s^2,暂不使用
+     uint8_t status = 1;  //恒力控制开启标志，0-关，1-开
+     int sensor_num = 2; //力传感器编号
+     float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //最大阈值
+     uint8_t adj_sign = 0;  //自适应启停状态，0-关闭，1-开启
+     uint8_t ILC_sign = 0;  //ILC控制启停状态，0-停止，1-训练，2-实操
+     float max_dis = 1000.0;  //最大调整距离
+     float max_ang = 5.0;  //最大调整角度
+     ForceTorque ft;
+     memset(&ft, 0, sizeof(ForceTorque));
+     int rcs = 0;  //参考坐标系，0-工具坐标系，1-基坐标系
+     float angVelRot = 2.0;  //旋转角速度，单位°/s
+     uint8_t rotorn = 1; //旋转方向，1-顺时针，2-逆时针
+
+     JointPos j1(58.417, -85.578, -100.516, -83.915, 90.000, -31.662);
+     JointPos j2(58.417, -87.111, -107.956, -74.942, 90.000, -31.662);
+     DescPose desc_p1(328.796, 339.109, 433.617, 179.993, 0.005, 0.079);
+     DescPose desc_p2(328.795, 339.109, 373.605, 179.993, 0.005, 0.079);
+     ExaxisPos epos = { 0.0, 0.0, 0.0, 0.0 };
+     DescPose offset_pos(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+     robot.MoveL(&j1, &desc_p1, 0, 0, 100.0, 180.0, 100.0, -1.0, &epos, 0, 1, &offset_pos);
+     uint8_t select3[6] = { 0,0,1,0,0,0 };  //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
+     ft.fz = -10.0;
+     gain[0] = 0.0001;
+     status = 1;
+     robot.FT_Control(status, sensor_num, select3, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
+     rtn = robot.FT_RotInsertion(rcs, angVelRot, forceInsertion, angleMax, orn, angAccmax, rotorn, 0);
+     printf("FT_RotInsertion rtn is %d\n", rtn);
+     status = 0;
+     robot.FT_Control(status, sensor_num, select3, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
+     robot.MoveL(&j2, &desc_p2, 0, 0, 100.0, 180.0, 100.0, -1.0, &epos, 0, 0, &offset_pos);
+     robot.Sleep(1000);
+     robot.GetRobotRealTimeState(&pkg);
+     printf("robot errcode %d  %d\n", pkg.main_code, pkg.sub_code);
      robot.CloseRPC();
      return 0;
  }
@@ -9142,47 +9190,82 @@ void TestIntersectLineMove()
     return ;
 }
 
+int TestPhotoelectricSensorTCPCalib(void)
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+
+    robot.SetLoggerLevel(1);
+
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return 0;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+    DescTran offset = { 10.0, 10.0, 3.0 };
+    DescPose TCP = {};
+    rtn = robot.PhotoelectricSensorTCPCalibration("/fruser/FR_CalibrateTheToolTcp.lua", offset, TCP);
+    printf("PhotoelectricSensorTCPCalibration rtn is  %d %f %f %f %f %f %f \n", rtn, TCP.tran.x, TCP.tran.y, TCP.tran.z, TCP.rpy.rx, TCP.rpy.ry, TCP.rpy.rz);
+
+    robot.CloseRPC();
+    robot.Sleep(9999999);
+    return 0;
+}
+
+int TestLaserStationary(void)
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return 0;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    rtn = robot.LaserSensorRecordandReplay(0, 10, 1, 0, 0.1, 1, 0, 10, 100);
+    printf("LaserSensorRecordandReplay rtn is %d\n", rtn);
+    rtn = robot.MoveStationary();
+    printf("MoveStationary rtn is %d\n", rtn);
+    rtn = robot.LaserSensorRecord1(0, 10);
+    printf("LaserSensorRecordandReplay rtn is %d\n", rtn);
+
+    robot.CloseRPC();
+
+    robot.Sleep(9999999);
+    return 0;
+}
+
  int main(void)
  {
 
-     TestSegWeld();
+     TestRotInsert();
+     return 0;
+     ROBOT_STATE_PKG pkg = {};
+     FRRobot robot;
 
-     //DescPose startdescPose = { -252.898, -611.453, 211.692, 178.053, -5.329, 114.255 };
-     //JointPos startjointPos = { 59.127, -59.093, 88.934, -115.191, -93.252, 35.095 };
-     //DescPose enddescPose = { -659.192, -188.885, 211.698, 178.054, -5.329, 114.255 };
-     //JointPos endjointPos = { 8.238, -56.580, 86.031, -119.046, -95.657, -15.906 };
+     robot.LoggerInit();
+     robot.SetLoggerLevel(1);
+     int rtn = robot.RPC("192.168.58.2");
+     if (rtn != 0)
+     {
+         return 0;
+     }
+     robot.SetReConnectParam(true, 30000, 500);
 
-     //DescPose midarcdescPose(-348.296, -611.453, 211.698, 178.053, -5.329, 114.255);
-     //JointPos midarcjointPos(52.509, -54.057, 80.630, -112.327, -93.766, 28.484);
-     //DescPose endarcdescPose(-348.297, -478.796, 211.696, 178.053, -5.329, 114.255);
-     //JointPos endarcjointPos(44.748, -67.215, 102.017, -121.104, -94.304, 20.722);
+     DescTran offset = { 10.0, 10.0, 3.0 };
+     DescPose TCP = {};
+     rtn = robot.PhotoelectricSensorTCPCalibration("/fruser/FR_CalibrateTheToolTcp.lua", offset, TCP);
+     printf("PhotoelectricSensorTCPCalibration rtn is %d %f %f %f %f %f %f \n", rtn, TCP.tran.x, TCP.tran.y, TCP.tran.z, TCP.rpy.rx, TCP.rpy.ry, TCP.rpy.rz);
 
-     //ExaxisPos exaxisPos = { 0, 0, 0, 0 };
-     //DescPose offdese = { 0, 0, 0, 0, 0, 0 };
-     //int velaccmode = 1;
-     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode, 0, 0);
-     //robot.MoveL(&endjointPos, &enddescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode, 0, 0);
-     //robot.MoveL(&startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, -1, velaccmode, 0, 0);
-     //robot.MoveL(&enddescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, -1, velaccmode, 0, 0);
-     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 0, 0);
-     //robot.MoveL(&endjointPos, &enddescPose, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 0, 0);
+     robot.CloseRPC();
 
-     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode);
-     //robot.MoveC(&midarcjointPos, &midarcdescPose, 1, 0, 100, 100, &exaxisPos, 0, &offdese, &endarcjointPos, &endarcdescPose, 1, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1, 200, velaccmode);
-     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode);
-     //robot.MoveC(&midarcdescPose, 1, 0, 100, 100, &exaxisPos, 0, &offdese, &endarcdescPose, 1, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1, -1, velaccmode);
-
-     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode);
-     //rtn = robot.Circle(&midarcjointPos, &midarcdescPose, 1, 0, 100, 100, &exaxisPos, &endarcjointPos, &endarcdescPose, 1, 0, 100, 100, &exaxisPos, 100, -1, &offdese, 210, -1, velaccmode);
-     //robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese, 200.0, velaccmode);
-     //rtn = robot.Circle(&midarcdescPose, 1, 0, 100, 100, &exaxisPos, &endarcdescPose, 1, 0, 100, 100, &exaxisPos, 100, -1, &offdese, 210, -1, -1, velaccmode);
-
-     //printf("Circle rtn is %d\n", rtn);
-     //robot.Sleep(100 * 1000);
-
-     //robot.CloseRPC();
-
-     
+     robot.Sleep(9999999);
      return 0;
  }
 

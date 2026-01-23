@@ -1686,17 +1686,18 @@ public:
     errno_t  FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, float max_vel);	
 	
 	/**
-    *@brief  Rotary insertion
-    *@param  [in] rcs Reference frame, 0- tool frame, 1- base frame
-    *@param  [in] angVelRot Angular velocity of rotation, unit: deg/s
-    *@param  [in] ft  Force/torque threshold，fx,fy,fz,tx,ty,tz，range[0~100]
-    *@param  [in] max_angle Maximum rotation Angle, unit: deg
-    *@param  [in] orn Force/torque direction, 1- along the z axis, 2- around the z axis
-    *@param  [in] max_angAcc Maximum rotational acceleration, in deg/s^2, not used yet, default is 0
-    *@param  [in] rotorn  Rotation direction, 1- clockwise, 2- counterclockwise
+    *@brief Rotary insertion
+    *@param [in] rcs Reference frame, 0- tool frame, 1- base frame
+    *@param [in] angVelRot Angular velocity of rotation, unit: deg/s
+    *@param [in] ft  Force/torque threshold，fx,fy,fz,tx,ty,tz，range[0~100]
+    *@param [in] max_angle Maximum rotation Angle, unit: deg
+    *@param [in] orn Force/torque direction, 1- along the z axis, 2- around the z axis
+    *@param [in] max_angAcc Maximum rotational acceleration, in deg/s^2, not used yet, default is 0
+    *@param [in] rotorn  Rotation direction, 1- clockwise, 2- counterclockwise
+	*@param [in] strategy No detected force/moment processing strategy, 0-Error; 1-Warning and continue movement.
     *@return  Error code
 	 */	
-    errno_t  FT_RotInsertion(int rcs, float angVelRot, float ft, float max_angle, uint8_t orn, float max_angAcc, uint8_t rotorn);		
+    errno_t  FT_RotInsertion(int rcs, float angVelRot, float ft, float max_angle, uint8_t orn, float max_angAcc, uint8_t rotorn, int strategy = 0);
 	
 	/**
     *@brief  Linear insertion
@@ -3652,14 +3653,20 @@ public:
 	errno_t WeldingAbortWeldAfterBreakOff();
 
 	/**
-	 * @brief laser track record
-	 * @param [in] enable Whether to enable welding interrupt recovery
-	 * @param [in] length Weld overlap distance (mm)
-	 * @param [in] velocity Percentage of velocity at which the robot returns to the rearcing point (0-100)
-	 * @param [in] moveType Indicates how the robot moves to the rearcing point. 0-LIN; 1-PTP
+	 * @brief Laser trajectory recording
+	 * @param [in] status 0-Stop recording; 1-Real-time tracking; 2-Start recording; 3-Trajectory replay; 4-Record and replay simultaneously
+	 * @param [in] delayMode Data processing method. 0-Delay time; 1-Delay distance
+	 * @param [in] delayTime Time required for the laser sensor starting point to move to the robot welding torch (ms)
+	 * @param [in] delayDisExAxisNum External axis number corresponding to delay distance, bit0-3 correspond to axis 1-4
+	 * @param [in] delayDis Distance required for the laser sensor starting point to move to the robot welding torch (mm/°)
+	 * @param [in] sensitivePara Compensation sensitivity coefficient (0~1)
+	 * @param [in] trackMode Fixed-point tracking type. 0-External axis asynchronous motion; 1-Robot
+	 * @param [in] triggerMode Fixed-point tracking trigger method. 0-Tracking duration; 1-IO
+	 * @param [in] runTime Robot fixed-point tracking duration (s)
+	 * @param [in] speed Robot movement speed percentage
 	 * @return Error code
 	 */
-	errno_t LaserSensorRecord(int status, int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, double speed);
+	errno_t LaserSensorRecord(int status, int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, int trackMode, int triggerMode, int runTime, double speed);
 
 	errno_t LaserTrackingLaserOn(int weldId);
 
@@ -3768,16 +3775,19 @@ public:
 	errno_t MoveLTR();
 
 	/**
-	 * @brief Record and replay laser weld seam trajectory
+	 * @brief Laser Seam Trajectory Recording and Replay
 	 * @param [in] delayMode Mode: 0-Delay time 1-Delay distance
 	 * @param [in] delayTime Delay time in ms
 	 * @param [in] delayDisExAxisNum Extended axis number
 	 * @param [in] delayDis Delay distance in mm
 	 * @param [in] sensitivePara Compensation sensitivity coefficient
-	 * @param [in] speed Velocity in %
+	 * @param [in] trackMode Fixed-point tracking type. 0-External axis asynchronous motion; 1-Robot
+	 * @param [in] triggerMode Fixed-point tracking trigger method. 0-Tracking duration; 1-IO
+	 * @param [in] runTime Robot fixed-point tracking duration (s)
+	 * @param [in] speed Speed, unit %
 	 * @return Error code
 	 */
-	errno_t LaserSensorRecordandReplay(int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, double speed);
+	errno_t LaserSensorRecordandReplay(int delayMode, int delayTime, int delayDisExAxisNum, double delayDis, double sensitivePara, int trackMode, int triggerMode, double runTime, double speed);
 
 	/**
 	 * @brief Move to the starting point of the laser record
@@ -4559,6 +4569,65 @@ public:
 	 * @return Error code
 	 */
 	errno_t SerCoderCompenParams(int status, double torqueCoeff[6]);
+
+	/**
+	* @brief TCP calibration of photoelectric sensors-Computing tool RPY
+	* @param [in] Btool Robot Cartesian position
+	* @param [in] Etool The current tool coordinate system value
+	* @param [in] senser Current sensor coordinate system value (not yet open)
+	* @param [in] radius Circular motion radius mm(not yet open)
+	* @param [in] dz The movement distance along the negative Z-axis of the base marking system; When dz = 10000, the function directly returns the tool RPY
+	* @param [out] TCPRPY Tool RPY values
+	* @return Error code
+	*/
+	errno_t TCPComputeRPY(DescPose Btool, DescPose Etool, DescPose sensor, double radius, double dz, Rpy& TCPRPY);
+
+	/**
+	 * @brief TCP calibration of photoelectric sensors-Computing tool XYZ
+	 * @param [in] select 0- Computing tool TCP; 1- Calculate the origin of the sensor; 2- Calculate the sensor attitude; 3- Directly return the tool TCP; 4- Record the current workpiece coordinate system and tool coordinate system
+	 * @param [in] originDirection 0-X direction; 1-Y direction; 2-Z direction
+	 * @param [in] pos1 Robot Cartesian position 1
+	 * @param [in] pos2 Robot Cartesian position 2
+	 * @param [in] pos3 Robot Cartesian position 3
+	 * @param [in] pos4 Robot Cartesian position 4
+	 * @param [out] TCP Tool XYZ value
+	 * @return Error code
+	 */
+	errno_t TCPComputeXYZ(int select, double originDirection, DescTran pos1, DescTran pos2, DescTran pos3, DescTran pos4, DescTran& TCP);
+
+	/**
+	 * @brief TCP calibration of photoelectric sensors-Start recording the center position of the end flange
+	 * @return Error code
+	 */
+	errno_t TCPRecordFlangePosStart();
+
+	/**
+	 * @brief TCP calibration of photoelectric sensors-Stop recording the center position of the end flange
+	 * @return Error code
+	 */
+	errno_t TCPRecordFlangePosEnd();
+
+	/**
+	 * @brief TCP calibration of photoelectric sensors-Get the center point position of the end tool
+	 * @param [out] TCP The position of the tool center point (x,y,z)
+	 * @return Error code
+	 */
+	errno_t TCPGetRecordFlangePos(DescTran& TCP);
+
+	/**
+	 * @brief TCP calibration of photoelectric sensors
+	 * @param [in] luaPath Automatic calibration of lua program paths: QX version robot-"/fruser/FR_CalibrateTheToolTcp.lua";LA version robot-"/usr/local/etc/controller/lua/FR_CalibrateTheToolTcp.lua"
+	 * @param [in] offsetX Teaching point offset(x,y,z)mm
+	 * @param [out] TCP The calibrated tool coordinate system(x,y,z,rx,ry,rz)
+	 * @return Error code
+	 */
+	errno_t PhotoelectricSensorTCPCalibration(std::string luaPath, DescTran offset, DescPose& TCP);
+
+	/**
+	 * @brief Motion in place
+	 * @return Error code
+	 */
+	errno_t MoveStationary();
 
 	/**
 	 *@brief  Robot interface class destructor
