@@ -24,6 +24,7 @@
 #include <sstream>
 #include <iomanip>
 #include <FRTcpClient.h>
+#include "FrameHandle.h"
 
 
 #ifdef WIN32
@@ -43,11 +44,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "3"
-    #define SDK_VERSION_RELEASE "2"
+    #define SDK_VERSION_RELEASE "3"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.3.2.0-robot v3.9.2"
+#define SDK_RELEASE "SDK V2.3.3.0-robot v3.9.3"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
@@ -190,6 +191,24 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
         if (recvbyte > 0)
         {
             logger_info("recv cmd is %s.", (char*)g_recvbuf);
+            std::vector<std::string> allFrames = SplitFrame(std::string(g_recvbuf));
+            for (int i = 0; i < allFrames.size(); i++)
+            {
+                FRAME rcvFrame = UnpacketFrame(allFrames[i]);
+
+                if (rcvFrame.cmdID == 500)  //解析programrun执行lua程序中的500错误
+                {
+                    size_t luaPos = rcvFrame.content.find(".lua");
+                    if (luaPos != std::string::npos)
+                    {
+                        int errLinNum = 0;
+                        int luaErrCode = 0;
+                        GetRobotLUAProgram500ErrCode(rcvFrame.content, errLinNum, luaErrCode);
+                        robotProgramErrLinNum = errLinNum;
+                        robotProgramErrCode = luaErrCode;
+                    }
+                }
+            }
         }
         
         //if (recvbyte < 0)
@@ -1549,18 +1568,19 @@ errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, floa
 }
 
 /**
- *@brief  笛卡尔空间伺服模式运动
- *@param  [in]  mode  0-绝对运动(基坐标系)，1-增量运动(基坐标系)，2-增量运动(工具坐标系)
- *@param  [in]  desc_pos  目标笛卡尔位姿或位姿增量
- *@param  [in]  pos_gain  位姿增量比例系数，仅在增量运动下生效，范围[0~1]
- *@param  [in] acc  加速度百分比，范围[0~100],暂不开放，默认为0
- *@param  [in] vel  速度百分比，范围[0~100]，暂不开放，默认为0
- *@param  [in] cmdT  指令下发周期，单位s，建议范围[0.001~0.0016]
- *@param  [in] filterT 滤波时间，单位s，暂不开放，默认为0
- *@param  [in] gain  目标位置的比例放大器，暂不开放，默认为0
- *@return  错误码
+ *@brief 笛卡尔空间伺服模式运动
+ *@param [in] mode 0-绝对运动(基坐标系)，1-增量运动(基坐标系)，2-增量运动(工具坐标系)
+ *@param [in] desc_pos 目标笛卡尔位姿或位姿增量
+ *@param [in] exaxis 扩展轴位置
+ *@param [in] pos_gain 位姿增量比例系数，仅在增量运动下生效，范围[0~1]
+ *@param [in] acc 加速度百分比，范围[0~100],暂不开放，默认为0
+ *@param [in] vel 速度百分比，范围[0~100]，暂不开放，默认为0
+ *@param [in] cmdT 指令下发周期，单位s，建议范围[0.001~0.016]
+ *@param [in] filterT 滤波时间，单位s，暂不开放，默认为0
+ *@param [in] gain 目标位置的比例放大器，暂不开放，默认为0
+ *@return 错误码
  */
-errno_t FRRobot::ServoCart(int mode, DescPose *desc_pose, float pos_gain[6], float acc, float vel, float cmdT, float filterT, float gain)
+errno_t FRRobot::ServoCart(int mode, DescPose *desc_pose, ExaxisPos exaxis, float pos_gain[6], float acc, float vel, float cmdT, float filterT, float gain)
 {
     if (IsSockError())
     {
@@ -1588,11 +1608,15 @@ errno_t FRRobot::ServoCart(int mode, DescPose *desc_pose, float pos_gain[6], flo
     param[2][3] = pos_gain[3];
     param[2][4] = pos_gain[4];
     param[2][5] = pos_gain[5];
-    param[3] = acc;
-    param[4] = vel;
-    param[5] = cmdT;
-    param[6] = filterT;
-    param[7] = gain;
+    param[3][0] = exaxis.ePos[0];
+    param[3][1] = exaxis.ePos[1];
+    param[3][2] = exaxis.ePos[2];
+    param[3][3] = exaxis.ePos[3];
+    param[4] = acc;
+    param[5] = vel;
+    param[6] = cmdT;
+    param[7] = filterT;
+    param[8] = gain;
 
     if (c.execute("ServoCart", param, result))
     {
@@ -3756,6 +3780,9 @@ errno_t FRRobot::SetLimitNegative(float limit[6])
  */
 errno_t FRRobot::ResetAllError()
 {
+    robotProgramErrLinNum = 0;
+    robotProgramErrCode = 0;
+
     if (IsSockError())
     {
         return g_sock_com_err;
@@ -3980,8 +4007,8 @@ errno_t FRRobot::GetRobotInstallAngle(float *yangle, float *zangle)
         errcode = int(result[0]);
         if (errcode == 0)
         {
-            *yangle = double(result[1]);
-            *zangle = double(result[2]);
+            *yangle = (float)double(result[1]);
+            *zangle = (float)double(result[2]);
         }
         else{
             logger_error("execute GetRobotInstallAngle fail %d", errcode);
@@ -4021,7 +4048,7 @@ errno_t FRRobot::GetSysVarValue(int id, float *value)
         errcode = int(result[0]);
         if (errcode == 0)
         {
-            *value = double(result[1]);
+            *value = (float)double(result[1]);
         }
         else{
             logger_error("execute GetSysVarValue fail %d", errcode);
@@ -4089,7 +4116,7 @@ errno_t FRRobot::GetActualJointSpeedsDegree(uint8_t flag, float speed[6])
     {
         for (i = 0; i < 6; i++)
         {
-            speed[i] = robot_state_pkg->actual_qd[i];
+            speed[i] = (float)robot_state_pkg->actual_qd[i];
         }
     }
     else
@@ -4124,7 +4151,7 @@ errno_t FRRobot::GetActualJointAccDegree(uint8_t flag, float acc[6])
     {
         for (i = 0; i < 6; i++)
         {
-            acc[i] = robot_state_pkg->actual_qdd[i];
+            acc[i] = (float)robot_state_pkg->actual_qdd[i];
         }
     }
     else
@@ -4157,8 +4184,8 @@ errno_t FRRobot::GetTargetTCPCompositeSpeed(uint8_t flag, float *tcp_speed, floa
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *tcp_speed = robot_state_pkg->target_TCP_CmpSpeed[0];
-        *ori_speed = robot_state_pkg->target_TCP_CmpSpeed[1];
+        *tcp_speed = (float)robot_state_pkg->target_TCP_CmpSpeed[0];
+        *ori_speed = (float)robot_state_pkg->target_TCP_CmpSpeed[1];
     }
     else
     {
@@ -4190,8 +4217,8 @@ errno_t FRRobot::GetActualTCPCompositeSpeed(uint8_t flag, float *tcp_speed, floa
 
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *tcp_speed = robot_state_pkg->actual_TCP_CmpSpeed[0];
-        *ori_speed = robot_state_pkg->actual_TCP_CmpSpeed[1];
+        *tcp_speed = (float)robot_state_pkg->actual_TCP_CmpSpeed[0];
+        *ori_speed = (float)robot_state_pkg->actual_TCP_CmpSpeed[1];
     }
     else
     {
@@ -4225,7 +4252,7 @@ errno_t FRRobot::GetTargetTCPSpeed(uint8_t flag, float speed[6])
     {
         for (i = 0; i < 6; i++)
         {
-            speed[i] = robot_state_pkg->target_TCP_Speed[i];
+            speed[i] = (float)robot_state_pkg->target_TCP_Speed[i];
         }
     }
     else
@@ -4260,7 +4287,7 @@ errno_t FRRobot::GetActualTCPSpeed(uint8_t flag, float speed[6])
     {
         for (i = 0; i < 6; i++)
         {
-            speed[i] = robot_state_pkg->actual_TCP_Speed[i];
+            speed[i] = (float)robot_state_pkg->actual_TCP_Speed[i];
         }
     }
     else
@@ -4512,6 +4539,67 @@ errno_t FRRobot::GetInverseKinRef(int type, DescPose *desc_pos, JointPos *joint_
 }
 
 /**
+ * @brief 逆运动学求解，笛卡尔空间包含扩展轴位置
+ * @param [in] type 0-绝对位姿(基坐标系)，1-增量位姿(基坐标系)，2-增量位姿(工具坐标系)
+ * @param [in] desc_pos 笛卡尔位姿
+ * @param [in] exaxis 扩展轴位置
+ * @param [in] tool 工具号
+ * @param [in] workPiece 工件号
+ * @param [out] joint_pos 关节位置
+ * @return 错误码
+ */
+errno_t FRRobot::GetInverseKinExaxis(int type, DescPose desc_pos, ExaxisPos exaxis, int tool, int workPiece, JointPos& joint_pos)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = type;
+    param[1][0] = desc_pos.tran.x;
+    param[1][1] = desc_pos.tran.y;
+    param[1][2] = desc_pos.tran.z;
+    param[1][3] = desc_pos.rpy.rx;
+    param[1][4] = desc_pos.rpy.ry;
+    param[1][5] = desc_pos.rpy.rz;
+    param[2][0] = exaxis.ePos[0];
+    param[2][1] = exaxis.ePos[1];
+    param[2][2] = exaxis.ePos[2];
+    param[2][3] = exaxis.ePos[3];
+    param[3] = tool;
+    param[4] = workPiece;
+
+    if (c.execute("GetInverseKinExaxis", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            joint_pos.jPos[0] = double(result[1]);
+            joint_pos.jPos[1] = double(result[2]);
+            joint_pos.jPos[2] = double(result[3]);
+            joint_pos.jPos[3] = double(result[4]);
+            joint_pos.jPos[4] = double(result[5]);
+            joint_pos.jPos[5] = double(result[6]);
+        }
+        else {
+            logger_error("execute GetInverseKinExaxis fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
  * @brief  逆运动学求解，参考指定关节位置判断是否有解
  * @param  [in] posMode 0 绝对位姿，1 相对位姿-基坐标系，2 相对位姿-工具坐标系
  * @param  [in] desc_pos 笛卡尔位姿
@@ -4634,7 +4722,7 @@ errno_t FRRobot::GetJointTorques(uint8_t flag, float torques[6])
     {
         for (i = 0; i < 6; i++)
         {
-            torques[i] = robot_state_pkg->jt_cur_tor[i];
+            torques[i] = (float)robot_state_pkg->jt_cur_tor[i];
         }
     }
     else
@@ -4673,7 +4761,7 @@ errno_t FRRobot::GetTargetPayload(uint8_t flag, float *weight)
         errcode = int(result[0]);
         if (errcode == 0)
         {
-            *weight = double(result[1]);
+            *weight = (float)double(result[1]);
         }
         else{
             logger_error("execute GetTargetPayload fail %d", errcode);
@@ -4846,18 +4934,18 @@ errno_t FRRobot::GetJointSoftLimitDeg(uint8_t flag, float negative[6], float pos
         errcode = int(result[0]);
         if (errcode == 0)
         {
-            negative[0] = double(result[1]);
-            positive[0] = double(result[2]);
-            negative[1] = double(result[3]);
-            positive[1] = double(result[4]);
-            negative[2] = double(result[5]);
-            positive[2] = double(result[6]);
-            negative[3] = double(result[7]);
-            positive[3] = double(result[8]);
-            negative[4] = double(result[9]);
-            positive[4] = double(result[10]);
-            negative[5] = double(result[11]);
-            positive[5] = double(result[12]);
+            negative[0] = (float)double(result[1]);
+            positive[0] = (float)double(result[2]);
+            negative[1] = (float)double(result[3]);
+            positive[1] = (float)double(result[4]);
+            negative[2] = (float)double(result[5]);
+            positive[2] = (float)double(result[6]);
+            negative[3] = (float)double(result[7]);
+            positive[3] = (float)double(result[8]);
+            negative[4] = (float)double(result[9]);
+            positive[4] = (float)double(result[10]);
+            negative[5] = (float)double(result[11]);
+            positive[5] = (float)double(result[12]);
         }
         else{
             logger_error("execute GetJointSoftLimitDeg fail %d", errcode);
@@ -4894,7 +4982,7 @@ errno_t FRRobot::GetSystemClock(float *t_ms)
         errcode = int(result[0]);
         if (errcode == 0)
         {
-            *t_ms = double(result[1]);
+            *t_ms = (float)double(result[1]);
         }
         else{
             logger_error("execute GetSystemClock fail %d", errcode);
@@ -4968,7 +5056,7 @@ errno_t FRRobot::GetDefaultTransVel(float *vel)
         errcode = int(result[0]);
         if (errcode == 0)
         {
-            *vel = double(result[1]);
+            *vel = (float)double(result[1]);
         }
         else{
             logger_error("execute GetDefaultTransVel fail %d", errcode);
@@ -5071,7 +5159,7 @@ errno_t FRRobot::GetRobotTeachingPoint(char name[64], float data[20])
             }
             for (int i = 0; i < 20; i++)
             {
-                data[i] = stod(parS[i]);
+                data[i] = (float)stod(parS[i]);
             }
         }
         else{
@@ -5921,6 +6009,9 @@ errno_t FRRobot::GetCurrentLine(int *line)
  */
 errno_t FRRobot::ProgramRun()
 {
+    robotProgramErrLinNum = 0;
+    robotProgramErrCode = 0;
+
     if (IsSockError())
     {
         return g_sock_com_err;
@@ -12847,7 +12938,9 @@ errno_t FRRobot::ExtAxisSyncMoveJ(JointPos joint_pos, DescPose desc_pos, int too
     }
 
     c.close();
+    printf("moveJ start \n");
     errcode = MoveJ(&joint_pos, &desc_pos, tool, user, vel, acc, ovl, &epos, blendT, offset_flag, &offset_pos);
+    printf("moveJ end \n");
     return errcode;
 }
 
@@ -14410,11 +14503,12 @@ errno_t FRRobot::AxleSensorRegWrite(int devAddr, int regHAddr, int regLAddr, int
 }
 
 /**
- * @brief  设置控制箱DO停止/暂停后输出是否复位
- * @param  [in] resetFlag  0-不复位；1-复位
- * @return  错误码
+ * @brief 设置控制箱DO停止/暂停后输出是否复位
+ * @param [in] resetFlag  0-不复位；1-复位
+ * @param [in] reloadFlag 暂停恢复后是否重加载，0-不加载；1-加载
+ * @return 错误码
  */
-errno_t FRRobot::SetOutputResetCtlBoxDO(int resetFlag)
+errno_t FRRobot::SetOutputResetCtlBoxDO(int resetFlag, int reloadFlag)
 {
     if (IsSockError())
     {
@@ -14425,6 +14519,7 @@ errno_t FRRobot::SetOutputResetCtlBoxDO(int resetFlag)
     XmlRpcValue param, result;
 
     param[0] = resetFlag;
+    param[1] = reloadFlag;
 
     if (c.execute("SetOutputResetCtlBoxDO", param, result))
     {
@@ -14447,11 +14542,12 @@ errno_t FRRobot::SetOutputResetCtlBoxDO(int resetFlag)
 }
 
 /**
- * @brief  设置控制箱AO停止/暂停后输出是否复位
- * @param  [in] resetFlag  0-不复位；1-复位
- * @return  错误码
+ * @brief 设置控制箱AO停止/暂停后输出是否复位
+ * @param [in] resetFlag  0-不复位；1-复位
+ * @param [in] reloadFlag 暂停恢复后是否重加载，0-不加载；1-加载
+ * @return 错误码
  */
-errno_t FRRobot::SetOutputResetCtlBoxAO(int resetFlag)
+errno_t FRRobot::SetOutputResetCtlBoxAO(int resetFlag, int reloadFlag)
 {
     if (IsSockError())
     {
@@ -14462,6 +14558,7 @@ errno_t FRRobot::SetOutputResetCtlBoxAO(int resetFlag)
     XmlRpcValue param, result;
 
     param[0] = resetFlag;
+    param[1] = reloadFlag;
 
     if (c.execute("SetOutputResetCtlBoxAO", param, result))
     {
@@ -14484,11 +14581,12 @@ errno_t FRRobot::SetOutputResetCtlBoxAO(int resetFlag)
 }
 
 /**
- * @brief  设置末端工具DO停止/暂停后输出是否复位
- * @param  [in] resetFlag  0-不复位；1-复位
- * @return  错误码
+ * @brief 设置末端工具DO停止/暂停后输出是否复位
+ * @param [in] resetFlag  0-不复位；1-复位
+ * @param [in] reloadFlag 暂停恢复后是否重加载，0-不加载；1-加载
+ * @return 错误码
  */
-errno_t FRRobot::SetOutputResetAxleDO(int resetFlag)
+errno_t FRRobot::SetOutputResetAxleDO(int resetFlag, int reloadFlag)
 {
     if (IsSockError())
     {
@@ -14499,6 +14597,7 @@ errno_t FRRobot::SetOutputResetAxleDO(int resetFlag)
     XmlRpcValue param, result;
 
     param[0] = resetFlag;
+    param[1] = reloadFlag;
 
     if (c.execute("SetOutputResetAxleDO", param, result))
     {
@@ -14521,11 +14620,12 @@ errno_t FRRobot::SetOutputResetAxleDO(int resetFlag)
 }
 
 /**
- * @brief  设置末端工具AO停止/暂停后输出是否复位
- * @param  [in] resetFlag  0-不复位；1-复位
- * @return  错误码
+ * @brief 设置末端工具AO停止/暂停后输出是否复位
+ * @param [in] resetFlag  0-不复位；1-复位
+ * @param [in] reloadFlag 暂停恢复后是否重加载，0-不加载；1-加载
+ * @return 错误码
  */
-errno_t FRRobot::SetOutputResetAxleAO(int resetFlag)
+errno_t FRRobot::SetOutputResetAxleAO(int resetFlag, int reloadFlag)
 {
     if (IsSockError())
     {
@@ -14536,6 +14636,7 @@ errno_t FRRobot::SetOutputResetAxleAO(int resetFlag)
     XmlRpcValue param, result;
 
     param[0] = resetFlag;
+    param[1] = reloadFlag;
 
     if (c.execute("SetOutputResetAxleAO", param, result))
     {
@@ -14558,11 +14659,12 @@ errno_t FRRobot::SetOutputResetAxleAO(int resetFlag)
 }
 
 /**
- * @brief  设置扩展DO停止/暂停后输出是否复位
- * @param  [in] resetFlag  0-不复位；1-复位
- * @return  错误码
+ * @brief 设置扩展DO停止/暂停后输出是否复位
+ * @param [in] resetFlag  0-不复位；1-复位
+ * @param [in] reloadFlag 暂停恢复后是否重加载，0-不加载；1-加载
+ * @return 错误码
  */
-errno_t FRRobot::SetOutputResetExtDO(int resetFlag)
+errno_t FRRobot::SetOutputResetExtDO(int resetFlag, int reloadFlag)
 {
     if (IsSockError())
     {
@@ -14573,6 +14675,7 @@ errno_t FRRobot::SetOutputResetExtDO(int resetFlag)
     XmlRpcValue param, result;
 
     param[0] = resetFlag;
+    param[1] = reloadFlag;
 
     if (c.execute("SetOutputResetExtDO", param, result))
     {
@@ -14596,11 +14699,12 @@ errno_t FRRobot::SetOutputResetExtDO(int resetFlag)
 
 
 /**
- * @brief  设置扩展AO停止/暂停后输出是否复位
- * @param  [in] resetFlag  0-不复位；1-复位
- * @return  错误码
+ * @brief 设置扩展AO停止/暂停后输出是否复位
+ * @param [in] resetFlag  0-不复位；1-复位
+ * @param [in] reloadFlag 暂停恢复后是否重加载，0-不加载；1-加载
+ * @return 错误码
  */
-errno_t FRRobot::SetOutputResetExtAO(int resetFlag)
+errno_t FRRobot::SetOutputResetExtAO(int resetFlag, int reloadFlag)
 {
     if (IsSockError())
     {
@@ -14611,6 +14715,7 @@ errno_t FRRobot::SetOutputResetExtAO(int resetFlag)
     XmlRpcValue param, result;
 
     param[0] = resetFlag;
+    param[1] = reloadFlag;
 
     if (c.execute("SetOutputResetExtAO", param, result))
     {
@@ -14633,11 +14738,12 @@ errno_t FRRobot::SetOutputResetExtAO(int resetFlag)
 }
 
 /**
- * @brief  设置SmartTool停止/暂停后输出是否复位
- * @param  [in] resetFlag  0-不复位；1-复位
- * @return  错误码
+ * @brief 设置SmartTool停止/暂停后输出是否复位
+ * @param [in] resetFlag  0-不复位；1-复位
+ * @param [in] reloadFlag 暂停恢复后是否重加载，0-不加载；1-加载
+ * @return 错误码
  */
-errno_t FRRobot::SetOutputResetSmartToolDO(int resetFlag)
+errno_t FRRobot::SetOutputResetSmartToolDO(int resetFlag, int reloadFlag)
 {
     if (IsSockError())
     {
@@ -14648,6 +14754,7 @@ errno_t FRRobot::SetOutputResetSmartToolDO(int resetFlag)
     XmlRpcValue param, result;
 
     param[0] = resetFlag;
+    param[1] = reloadFlag;
 
     if (c.execute("SetOutputResetSmartToolDO", param, result))
     {
@@ -16264,32 +16371,32 @@ errno_t FRRobot::GetAxleLuaEnableDevice(int forceSensorEnable[], int gripperEnab
                 logger_error("GetAxleLuaEnableDevice fail");
                 return -1;
             }
-            forceSensorEnable[0] = stod(parS[0]);
-            forceSensorEnable[1] = stod(parS[1]);
-            forceSensorEnable[2] = stod(parS[2]);
-            forceSensorEnable[3] = stod(parS[3]);
-            forceSensorEnable[4] = stod(parS[4]);
-            forceSensorEnable[5] = stod(parS[5]);
-            forceSensorEnable[6] = stod(parS[6]);
-            forceSensorEnable[7] = stod(parS[7]);
+            forceSensorEnable[0] = stoi(parS[0]);
+            forceSensorEnable[1] = stoi(parS[1]);
+            forceSensorEnable[2] = stoi(parS[2]);
+            forceSensorEnable[3] = stoi(parS[3]);
+            forceSensorEnable[4] = stoi(parS[4]);
+            forceSensorEnable[5] = stoi(parS[5]);
+            forceSensorEnable[6] = stoi(parS[6]);
+            forceSensorEnable[7] = stoi(parS[7]);
 
-            gripperEnable[0] = stod(parS[8]);
-            gripperEnable[1] = stod(parS[9]);
-            gripperEnable[2] = stod(parS[10]);
-            gripperEnable[3] = stod(parS[11]);
-            gripperEnable[4] = stod(parS[12]);
-            gripperEnable[5] = stod(parS[13]);
-            gripperEnable[6] = stod(parS[14]);
-            gripperEnable[7] = stod(parS[15]);
+            gripperEnable[0] = stoi(parS[8]);
+            gripperEnable[1] = stoi(parS[9]);
+            gripperEnable[2] = stoi(parS[10]);
+            gripperEnable[3] = stoi(parS[11]);
+            gripperEnable[4] = stoi(parS[12]);
+            gripperEnable[5] = stoi(parS[13]);
+            gripperEnable[6] = stoi(parS[14]);
+            gripperEnable[7] = stoi(parS[15]);
 
-            IODeviceEnable[0] = stod(parS[16]);
-            IODeviceEnable[1] = stod(parS[17]);
-            IODeviceEnable[2] = stod(parS[18]);
-            IODeviceEnable[3] = stod(parS[19]);
-            IODeviceEnable[4] = stod(parS[20]);
-            IODeviceEnable[5] = stod(parS[21]);
-            IODeviceEnable[6] = stod(parS[22]);
-            IODeviceEnable[7] = stod(parS[23]);
+            IODeviceEnable[0] = stoi(parS[16]);
+            IODeviceEnable[1] = stoi(parS[17]);
+            IODeviceEnable[2] = stoi(parS[18]);
+            IODeviceEnable[3] = stoi(parS[19]);
+            IODeviceEnable[4] = stoi(parS[20]);
+            IODeviceEnable[5] = stoi(parS[21]);
+            IODeviceEnable[6] = stoi(parS[22]);
+            IODeviceEnable[7] = stoi(parS[23]);
         }
         else {
             logger_error("execute GetRobotTeachingPoint fail %d", errcode);
@@ -16377,22 +16484,22 @@ errno_t FRRobot::GetAxleLuaGripperFunc(int id, int func[])
                 logger_error("GetAxleLuaGripperFunc fail");
                 return -1;
             }
-            func[0] = stod(parS[0]);
-            func[1] = stod(parS[1]);
-            func[2] = stod(parS[2]);
-            func[3] = stod(parS[3]);
-            func[4] = stod(parS[4]);
-            func[5] = stod(parS[5]);
-            func[6] = stod(parS[6]);
-            func[7] = stod(parS[7]);
-            func[8] = stod(parS[8]);
-            func[9] = stod(parS[9]);
-            func[10] = stod(parS[10]);
-            func[11] = stod(parS[11]);
-            func[12] = stod(parS[12]);
-            func[13] = stod(parS[13]);
-            func[14] = stod(parS[14]);
-            func[15] = stod(parS[15]);
+            func[0] = stoi(parS[0]);
+            func[1] = stoi(parS[1]);
+            func[2] = stoi(parS[2]);
+            func[3] = stoi(parS[3]);
+            func[4] = stoi(parS[4]);
+            func[5] = stoi(parS[5]);
+            func[6] = stoi(parS[6]);
+            func[7] = stoi(parS[7]);
+            func[8] = stoi(parS[8]);
+            func[9] = stoi(parS[9]);
+            func[10] = stoi(parS[10]);
+            func[11] = stoi(parS[11]);
+            func[12] = stoi(parS[12]);
+            func[13] = stoi(parS[13]);
+            func[14] = stoi(parS[14]);
+            func[15] = stoi(parS[15]);
         }
         else {
             logger_error("execute GetAxleLuaGripperFunc fail %d", errcode);
@@ -18976,7 +19083,7 @@ errno_t FRRobot::ComputeFocusCalib(int pointNum, DescTran& resultPos, float& acc
             resultPos.x = (double)result[1];
             resultPos.y = (double)result[2];
             resultPos.z = (double)result[3];
-            accuracy = (double)result[4];
+            accuracy = (float)(double)result[4];
         }
         else
         {
@@ -19798,7 +19905,7 @@ errno_t FRRobot::FieldBusSlaveReadAI(uint8_t AIIndex, uint8_t readNum, int statu
         {
             for (int i = 0; i < readNum; i++)
             {
-                status[i] = (double)result[i + 1];
+                status[i] = (int)result[i + 1];
             }
         }
     }
@@ -21127,7 +21234,7 @@ errno_t FRRobot::GetCurToolCoord(DescPose& coord)
     {
         return g_sock_com_err;
     }
-    int i;
+  
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -21161,7 +21268,7 @@ errno_t FRRobot::GetCurWObjCoord(DescPose& coord)
     {
         return g_sock_com_err;
     }
-    int i;
+ 
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -21200,7 +21307,7 @@ errno_t FRRobot::GetCurExToolCoord(DescPose& coord)
     {
         return g_sock_com_err;
     }
-    int i;
+ 
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -21239,7 +21346,7 @@ errno_t FRRobot::GetCurExAxisCoord(DescPose& coord)
     {
         return g_sock_com_err;
     }
-    int i;
+  
     int errcode = 0;
 
     if (g_sock_com_err == ERR_SUCCESS)
@@ -21462,8 +21569,8 @@ errno_t FRRobot::CustomWeaveGetPara(int id, int& pointNum, DescTran point[10], d
             }
 
             frequency = stod(parS[41]);
-            incStayType = stod(parS[42]);
-            stationary = stod(parS[43]);
+            incStayType = stoi(parS[42]);
+            stationary = stoi(parS[43]);
         }
     }
     else
@@ -22609,17 +22716,17 @@ errno_t FRRobot::PhotoelectricSensorTCPCalibration(std::string luaPath, DescTran
 
     int rtn = 0;
 
-    rtn = SetSysVarValue(1, offset.x);
+    rtn = SetSysVarValue(1, (float)offset.x);
     if (rtn != 0)
     {
         return rtn;
     }
-    rtn = SetSysVarValue(2, offset.y);
+    rtn = SetSysVarValue(2, (float)offset.y);
     if (rtn != 0)
     {
         return rtn;
     }
-    rtn = SetSysVarValue(3, offset.z);
+    rtn = SetSysVarValue(3, (float)offset.z);
     if (rtn != 0)
     {
         return rtn;
@@ -22702,3 +22809,15 @@ errno_t FRRobot::MoveStationary()
     return errcode;
 }
 
+/**
+ * @brief 获取lua程序错误行号和错误码
+ * @param [out] errLinNum lua程序执行错误行号
+ * @param [out] luaErrCode lua程序执行错误码
+ * @return 错误码
+ */
+errno_t FRRobot::GetProgramRunErrCode(int& errLinNum, int& luaErrCode)
+{
+    errLinNum = robotProgramErrLinNum;
+    luaErrCode = robotProgramErrCode;
+    return 0;
+}

@@ -3206,46 +3206,7 @@ int TestServoJ(void)
     return 0;
 }
 
- int TestServoCart(void)
- {
-     ROBOT_STATE_PKG pkg = {};
-     FRRobot robot;
-
-     robot.LoggerInit();
-     robot.SetLoggerLevel(1);
-     int rtn = robot.RPC("192.168.58.2");
-     if (rtn != 0)
-     {
-         return -1;
-     }
-     robot.SetReConnectParam(true, 30000, 500);
-
-     DescPose desc_pos_dt;
-     memset(&desc_pos_dt, 0, sizeof(DescPose));
-
-     desc_pos_dt.tran.z = -0.5;
-     float pos_gain[6] = { 0.0,0.0,1.0,0.0,0.0,0.0 };
-     int mode = 2;
-     float vel = 0.0;
-     float acc = 0.0;
-     float cmdT = 0.008;
-     float filterT = 0.0;
-     float gain = 0.0;
-     uint8_t flag = 0;
-     int count = 100;
-
-     robot.SetSpeed(20);
-
-     while (count)
-     {
-         robot.ServoCart(mode, &desc_pos_dt, pos_gain, acc, vel, cmdT, filterT, gain);
-         count -= 1;
-         robot.WaitMs(cmdT * 1000);
-     }
-
-     robot.CloseRPC();
-     return 0;
- }
+ 
 
  int TestSpline(void)
  {
@@ -3670,7 +3631,7 @@ int TestServoJ(void)
      FRRobot robot;
 
      robot.LoggerInit();
-     robot.SetLoggerLevel(1);
+     robot.SetLoggerLevel(3);
      int rtn = robot.RPC("192.168.58.2");
      if (rtn != 0)
      {
@@ -3681,20 +3642,27 @@ int TestServoJ(void)
      for (int i = 0; i < 16; i++)
      {
          robot.SetDO(i, 1, 0, 0);
-         robot.Sleep(300);
+         robot.Sleep(200);
      }
 
-     int resetFlag = 1;
-     rtn = robot.SetOutputResetCtlBoxDO(resetFlag);
-     robot.SetOutputResetCtlBoxAO(resetFlag);
-     robot.SetOutputResetAxleDO(resetFlag);
-     robot.SetOutputResetAxleAO(resetFlag);
-     robot.SetOutputResetExtDO(resetFlag);
-     robot.SetOutputResetExtAO(resetFlag);
-     robot.SetOutputResetSmartToolDO(resetFlag);
+     int resetFlag = 0;
+     int resumeReloadFlag = 0;
+     rtn = robot.SetOutputResetCtlBoxDO(resetFlag, resumeReloadFlag);
+     robot.SetOutputResetCtlBoxAO(resetFlag, resumeReloadFlag);
+     robot.SetOutputResetAxleDO(resetFlag, resumeReloadFlag);
+     robot.SetOutputResetAxleAO(resetFlag, resumeReloadFlag);
+     robot.SetOutputResetExtDO(resetFlag, resumeReloadFlag);
+     robot.SetOutputResetExtAO(resetFlag, resumeReloadFlag);
+     robot.SetOutputResetSmartToolDO(resetFlag, resumeReloadFlag);
 
      robot.ProgramLoad("/fruser/test.lua");
      robot.ProgramRun();
+
+     robot.Sleep(2000);
+     robot.PauseMotion();
+     robot.Sleep(2000);
+     robot.ResumeMotion();
+     robot.Sleep(2000);
 
      robot.CloseRPC();
      return 0;
@@ -9241,11 +9209,83 @@ int TestLaserStationary(void)
     return 0;
 }
 
+int TestInverseKinExaxis()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return 0;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    DescPose desc(99.957, -0.002, 29.994, -176.569, -6.757, -167.462);
+    ExaxisPos exaxis(100.0, 0.0, 0.0, 0.0);
+    JointPos jointPos = {};
+    DescPose offsetPos = {};
+
+    robot.GetRobotRealTimeState(&pkg);
+    int toolnum = pkg.tool;
+    int workPcsNum = pkg.user;
+    robot.GetInverseKinExaxis(0, desc, exaxis, toolnum, workPcsNum, jointPos);
+    printf("GetInverseKinExaxis joint is %f, %f, %f, %f, %f, %f\n", jointPos.jPos[0], jointPos.jPos[1], jointPos.jPos[2], jointPos.jPos[3], jointPos.jPos[4], jointPos.jPos[5]);
+    
+    robot.ExtAxisMove(exaxis, 100, -1);
+    robot.MoveJ(&jointPos, &desc, toolnum, workPcsNum, 100.0, 100.0, 100.0, &exaxis, -1, 0, &offsetPos);
+    
+    robot.CloseRPC();
+
+    robot.Sleep(9999999);
+    return 0;
+}
+
+int TestServoCart(void)
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    DescPose desc_pos_dt = { 83.00800, 50.525000 , 29.246 , 179.629 , -7.138 , -166.975 };
+    ExaxisPos exaxis = { 100.0, 0.0, 0.0, 0.0 };
+    float pos_gain[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    int mode = 0;
+    float vel = 0.0;
+    float acc = 0.0;
+    float cmdT = 0.001;
+    float filterT = 0.0;
+    float gain = 0.0;
+    uint8_t flag = 0;
+    int count = 5000;
+
+    robot.SetSpeed(20);
+
+    while (count)
+    {
+        rtn = robot.ServoCart(mode, &desc_pos_dt, exaxis, pos_gain, acc, vel, cmdT, filterT, gain);
+        printf("ServoCart rtn is %d\n", rtn);
+        count -= 1;
+        desc_pos_dt.tran.x += 0.01;
+        exaxis.ePos[0] += 0.01;
+    }
+
+    robot.CloseRPC();
+    return 0;
+}
+
  int main(void)
  {
-
-     TestRotInsert();
-     return 0;
      ROBOT_STATE_PKG pkg = {};
      FRRobot robot;
 
@@ -9258,10 +9298,13 @@ int TestLaserStationary(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     DescTran offset = { 10.0, 10.0, 3.0 };
-     DescPose TCP = {};
-     rtn = robot.PhotoelectricSensorTCPCalibration("/fruser/FR_CalibrateTheToolTcp.lua", offset, TCP);
-     printf("PhotoelectricSensorTCPCalibration rtn is %d %f %f %f %f %f %f \n", rtn, TCP.tran.x, TCP.tran.y, TCP.tran.z, TCP.rpy.rx, TCP.rpy.ry, TCP.rpy.rz);
+     while (true)
+     {
+         robot.Mode(0);
+         robot.Sleep(1000);
+         robot.Mode(1);
+         robot.Sleep(1000);
+     }
 
      robot.CloseRPC();
 

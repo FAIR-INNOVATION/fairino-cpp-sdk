@@ -72,6 +72,10 @@ int FRTcpClient::Connect()
     if (connect(fd, (struct sockaddr*)&servAddr, sizeof(servAddr)) < 0)
     {
         logger_error("connect fail, %s.", strerror(errno));
+        if (errno != EINPROGRESS && errno != EALREADY)
+        {
+            usleep(1000 * timeOut);
+        }
         return -1;
     }
 #endif

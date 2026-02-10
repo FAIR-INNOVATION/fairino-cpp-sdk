@@ -374,18 +374,19 @@ public:
 	errno_t ServoJ(JointPos* joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id = 0);
 
 	/**
-    *@brief  Cartesian space servo mode motion
-    *@param  [in]  mode  0- absolute motion (base coordinates), 1- incremental motion (base coordinates), 2- incremental motion (tool coordinates)
-    *@param  [in]  desc_pos  Target Cartesian pose or pose increment
-    *@param  [in]  pos_gain  Proportional coefficient of pose increment, effective only for incremental motion, range [0~1]
-    *@param  [in] acc  Acceleration percentage range[0~100], not open yet, default: 0
-    *@param  [in] vel  The value ranges from 0 to 100. The value is not available. The default value is 0
-    *@param  [in] cmdT Instruction delivery period, unit: s, recommended range [0.001~0.0016]
-    *@param  [in] filterT Filtering time (unit: s), temporarily disabled. The default value is 0
-    *@param  [in] gain  The proportional amplifier at the target position, not yet open, defaults to 0
-    *@return  Error code
+    *@brief Cartesian space servo mode motion
+    *@param [in] mode  0- absolute motion (base coordinates), 1- incremental motion (base coordinates), 2- incremental motion (tool coordinates)
+    *@param [in] desc_pos  Target Cartesian pose or pose increment
+	*@param [in] exaxis Extended axis position
+    *@param [in] pos_gain  Proportional coefficient of pose increment, effective only for incremental motion, range [0~1]
+    *@param [in] acc  Acceleration percentage range[0~100], not open yet, default: 0
+    *@param [in] vel  The value ranges from 0 to 100. The value is not available. The default value is 0
+    *@param [in] cmdT Instruction delivery period, unit: s, recommended range [0.001~0.016]
+    *@param [in] filterT Filtering time (unit: s), temporarily disabled. The default value is 0
+    *@param [in] gain  The proportional amplifier at the target position, not yet open, defaults to 0
+    *@return Error code
 	 */
-	errno_t  ServoCart(int mode, DescPose *desc_pose, float pos_gain[6], float acc, float vel, float cmdT, float filterT, float gain);
+	errno_t  ServoCart(int mode, DescPose *desc_pose, ExaxisPos exaxis, float pos_gain[6], float acc, float vel, float cmdT, float filterT, float gain);
    
 	/**
     *@brief  Point to point motion in Cartesian space
@@ -1054,6 +1055,18 @@ public:
     *@return  Error code
 	 */	
 	errno_t  GetInverseKinHasSolution(int type, DescPose *desc_pos, JointPos *joint_pos_ref, uint8_t *result);
+
+	/**
+	 * @brief Inverse kinematics solution, Cartesian space includes extended axis position
+	 * @param [in] type 0- absolute pose (base frame), 1- incremental pose (base frame), 2- incremental pose (tool frame)
+     * @param [in] desc_pos Cartesian pose
+	 * @param [in] exaxis Extended axis position
+	 * @param [in] tool Tool number
+	 * @param [in] workPiece Workpiece number
+	 * @param [out] joint_pos Joint position
+	 * @return Error code
+	 */
+	errno_t GetInverseKinExaxis(int type, DescPose desc_pos, ExaxisPos exaxis, int tool, int workPiece, JointPos& joint_pos);
 
     /**
     *@brief  Forward kinematics solution
@@ -3042,58 +3055,65 @@ public:
 	/**
 	* @brief sets whether the output is reset after the DO stop/pause of the control box
 	* @param [in] resetFlag 0- no more bits; 1- Reset
+	* @param [in] reloadFlag Whether to reload after resuming the program. 0 - Do not reload; 1 - Load
 	* @return  error code
 	*/
-	errno_t SetOutputResetCtlBoxDO(int resetFlag);
+	errno_t SetOutputResetCtlBoxDO(int resetFlag, int reloadFlag = 0);
 
 	 /**
 	  * @brief sets whether the output is reset after the control box AO is stopped/paused
 	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @param [in] reloadFlag Whether to reload after resuming the program. 0 - Do not reload; 1 - Load
 	  * @return  error code
 	  */
-		errno_t SetOutputResetCtlBoxAO(int resetFlag);
+	errno_t SetOutputResetCtlBoxAO(int resetFlag, int reloadFlag = 0);
 
 	 /**
 	  * @brief Sets whether the output is reset after the end tool DO is stopped/paused
 	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @param [in] reloadFlag Whether to reload after resuming the program. 0 - Do not reload; 1 - Load
 	  * @return  error code
 	  */
-		errno_t SetOutputResetAxleDO(int resetFlag);
+	errno_t SetOutputResetAxleDO(int resetFlag, int reloadFlag = 0);
 	 
 	 /**
 	  * @brief sets whether the output is reset after the end tool AO is stopped/paused
 	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @param [in] reloadFlag Whether to reload after resuming the program. 0 - Do not reload; 1 - Load
 	  * @return  error code
 	  */
-		errno_t SetOutputResetAxleAO(int resetFlag);
+	errno_t SetOutputResetAxleAO(int resetFlag, int reloadFlag = 0);
 	
 	 /**
 	  * @brief Sets whether the output is reset after the extension DO is stopped/paused
 	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @param [in] reloadFlag Whether to reload after resuming the program. 0 - Do not reload; 1 - Load
 	  * @return  error code
 	  */
-		errno_t SetOutputResetExtDO(int resetFlag);
+	errno_t SetOutputResetExtDO(int resetFlag, int reloadFlag = 0);
 
 	 /**
 	  * @brief sets whether the output is reset after the extended AO is stopped/paused
 	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @param [in] reloadFlag Whether to reload after resuming the program. 0 - Do not reload; 1 - Load
 	  * @return  error code
 	  */
-		errno_t SetOutputResetExtAO(int resetFlag);
+	errno_t SetOutputResetExtAO(int resetFlag, int reloadFlag = 0);
 
 	 /**
 	  * @brief sets whether the output is reset after SmartTool stops/pauses
 	  * @param [in] resetFlag 0- no more bits; 1- Reset
+	  * @param [in] reloadFlag Whether to reload after resuming the program. 0 - Do not reload; 1 - Load
 	  * @return  error code
 	  */
-		errno_t SetOutputResetSmartToolDO(int resetFlag);
+	errno_t SetOutputResetSmartToolDO(int resetFlag, int reloadFlag = 0);
 	
 	 /**
 	  * @brief simulation swing starts
 	  * @param [in] weaveNum Swing parameter number
 	  * @return  error code
 	  */
-		errno_t WeaveStartSim(int weaveNum);
+	errno_t WeaveStartSim(int weaveNum);
 
 	 /**
 	  * @brief simulation swing is over
@@ -4630,6 +4650,14 @@ public:
 	errno_t MoveStationary();
 
 	/**
+	 * @brief Get the error line number and error code of the lua program
+	 * @param [out] errLinNum The error line number of the Lua program execution
+	 * @param [out] luaErrCode The error code of the Lua program execution
+	 * @return Error code
+	 */
+	errno_t GetProgramRunErrCode(int& errLinNum, int& luaErrCode);
+
+	/**
 	 *@brief  Robot interface class destructor
 	 */
 	~FRRobot();
@@ -4688,6 +4716,8 @@ private:
 	char g_recvbuf[1024 * 4] = { 0 };
 	int g_sock_com_err;
 	double fileUploadPercent;
+	int robotProgramErrLinNum = 0;
+	int robotProgramErrCode = 0;
 
 	char robot_ip[64];
 	std::shared_ptr<ROBOT_STATE_PKG> robot_state_pkg;
