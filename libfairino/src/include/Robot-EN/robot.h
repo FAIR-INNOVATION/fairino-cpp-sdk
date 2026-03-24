@@ -18,6 +18,7 @@
 #include <memory>
 
 class FRTcpClient;
+class FRUdpClient;
 
 class FR_LIB_EXPORT FRRobot
 {
@@ -348,30 +349,33 @@ public:
 	errno_t  NewSpiral(DescPose *desc_pos, int tool, int user, float vel, float acc, ExaxisPos *epos, float ovl, uint8_t offset_flag, DescPose *offset_pos, SpiralParam spiral_param, int config = -1);	
 
 	/**
-	 * @brief Servo movement starts, used with ServoJ and ServoCart instructions
+	 * @brief Start servo motion, used with ServoJ and ServoCart commands
+	 * @param [in] comType Command transmission type; 0-xmlrpc; 1-UDP (corresponds to robot port 20007)
 	 * @return  Error code
 	 */
-    errno_t ServoMoveStart();
+	errno_t ServoMoveStart(int comType = 0);
 
 	/**
-	 * @brief Servo movement end, used with ServoJ and ServoCart instructions
+	 * @brief End servo motion, used with ServoJ and ServoCart commands
+	 * @param [in] comType Command transmission type; 0-xmlrpc; 1-UDP (corresponds to robot port 20007)
 	 * @return  Error code
 	 */
-    errno_t ServoMoveEnd();
+	errno_t ServoMoveEnd(int comType = 0);
 
 	/**
-    *@brief  Joint space servo mode motion
-    *@param  [in] joint_pos  Target joint location, unit: deg
-	*@param  [in] axisPos  External axis position, unit: mm
-    *@param  [in] acc  Acceleration percentage range[0~100], not open yet, default: 0
-    *@param  [in] vel  The value ranges from 0 to 100. The value is not available. The default value is 0
-    *@param  [in] cmdT Instruction delivery period, unit: s, recommended range [0.001~0.0016]
-    *@param  [in] filterT Filtering time (unit: s), temporarily disabled. The default value is 0
-    *@param  [in] gain  The proportional amplifier at the target position, not yet open, defaults to 0
-	*@param  [in] id servoJ command ID,default:0
-    *@return  Error code
-	*/
-	errno_t ServoJ(JointPos* joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id = 0);
+	 * @brief Joint space servo mode motion
+	 * @param [in] joint_pos Target joint position, unit: deg
+	 * @param [in] axisPos External axis position, unit: mm
+	 * @param [in] acc Acceleration percentage, range [0~100], temporarily not available, default is 0
+	 * @param [in] vel Velocity percentage, range [0~100], temporarily not available, default is 0
+	 * @param [in] cmdT Command transmission period, unit: s, recommended range [0.001~0.0016]
+	 * @param [in] filterT Filter time, unit: s, temporarily not available, default is 0
+	 * @param [in] gain Proportional amplifier for target position, temporarily not available, default is 0
+	 * @param [in] id ServoJ command ID, default is 0
+	 * @param [in] comType Command transmission type; 0-xmlrpc; 1-UDP (corresponds to robot port 20007)
+	 * @return  Error code
+	 */
+	errno_t ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id = 0, int comType = 0);
 
 	/**
     *@brief Cartesian space servo mode motion
@@ -665,6 +669,162 @@ public:
     *@return  Error code
 	 */
 	errno_t  WaitToolAI(int id, int sign, float value, int max_time, int opt);	
+
+	/**
+	 * @brief Set configurable CI port functions of the control box
+	 * @param [in] config CI0-CI7 function codes;
+	 * 0-None; 1-Arc started successfully; 2-Welder ready; 3-Conveyor detection; 4-Pause; 5-Resume; 6-Start; 7-Stop;
+	 * 8-Pause/Resume; 9-Start/Stop; 10-Foot pedal dragging; 11-Move to operation origin; 12-Manual/Automatic switching;
+	 * 13-Wire search successful; 14-Motion interrupted; 15-Start main program; 16-Start rewind; 17-Start confirmation;
+	 * 18-Photoelectric detection signal X; 19-Photoelectric detection signal Y; 20-External emergency stop input signal 1; 21-External emergency stop input signal 2;
+	 * 22-Level 1 reduction mode; 23-Level 2 reduction mode; 24-Level 3 reduction mode (stop); 25-Resume welding; 26-Terminate welding;
+	 * 27-Auxiliary dragging enable; 28-Auxiliary dragging disable; 29-Auxiliary dragging enable/disable; 30-Clear all errors;
+	 * 31-Manual/Automatic switching (high/low level); 32-Enable; 33-Disable; 34-Enable/Disable (rising/falling edge); 35-Fixed point tracking start/end
+	 * @return Error code
+	 */
+	errno_t SetDIConfig(int config[8]);
+
+	/**
+	 * @brief Get configurable CI port functions of the control box
+	 * @param [in] config CI0-CI7 function codes;
+	 * 0-None; 1-Arc started successfully; 2-Welder ready; 3-Conveyor detection; 4-Pause; 5-Resume; 6-Start; 7-Stop;
+	 * 8-Pause/Resume; 9-Start/Stop; 10-Foot pedal dragging; 11-Move to operation origin; 12-Manual/Automatic switching;
+	 * 13-Wire search successful; 14-Motion interrupted; 15-Start main program; 16-Start rewind; 17-Start confirmation;
+	 * 18-Photoelectric detection signal X; 19-Photoelectric detection signal Y; 20-External emergency stop input signal 1; 21-External emergency stop input signal 2;
+	 * 22-Level 1 reduction mode; 23-Level 2 reduction mode; 24-Level 3 reduction mode (stop); 25-Resume welding; 26-Terminate welding;
+	 * 27-Auxiliary dragging enable; 28-Auxiliary dragging disable; 29-Auxiliary dragging enable/disable; 30-Clear all errors;
+	 * 31-Manual/Automatic switching (high/low level); 32-Enable; 33-Disable; 34-Enable/Disable (rising/falling edge); 35-Fixed point tracking start/end
+	 * @return Error code
+	 */
+	errno_t GetDIConfig(int config[8]);
+
+	/**
+	 * @brief Set configurable CO port functions
+	 * @param [out] config CO0-CO7 function codes;
+	 * 0-None; 1-Robot error; 2-Robot in motion; 3-Spraying start/stop; 4-Spraying gun cleaning; 5-Gas supply signal; 6-Arc ignition signal; 7-Jog wire feeding;
+	 * 8-Reverse wire feeding; 9-JOB input 1; 10-JOB input 2; 11-JOB input 3; 12-Conveyor start/stop control; 13-Robot paused; 14-Reached operation origin;
+	 * 15-Reached interference zone; 16-Wire search start/stop control; 17-Robot start completed; 18-Program start/stop; 19-Automatic/Manual mode; 20-Emergency stop output signal 1 - Safety;
+	 * 21-Emergency stop output signal 2 - Safety; 22-LUA script program running/stopped; 23-Safety status output - Safety; 24-Protective stop status output - Safety;
+	 * 25-Robot in motion - Safety; 26-Robot reduction mode - Safety; 27-Robot non-reduction mode - Safety; 28-Robot not stopped; 29-Robot error - Command point error;
+	 * 30-Robot error - Driver error; 31-Robot error - Soft limit exceeded; 32-Robot error - Collision error; 33-Robot error - Active slave count error;
+	 * 34-Robot error - Slave error; 35-Robot error - IO error; 36-Robot error - Gripper error; 37-Robot error - File error; 38-Robot error - Singular pose error;
+	 * 39-Robot error - Driver communication error; 40-Robot error - Parameter error; 41-Robot error - External axis soft limit exceeded; 42-Robot warning - Warning;
+	 * 43-Robot warning - Safety door warning; 44-Robot warning - Motion warning; 45-Robot warning - Interference zone warning; 46-Robot warning - Safety wall warning;
+	 * 47-Enable status; 48-Automatic lifting during disconnection; 49-Cuboid 1 interference warning; 50-Cuboid 2 interference warning; 51-Cuboid 3 interference warning; 52-Cuboid 4 interference warning;
+	 * @return Error code
+	 */
+	errno_t SetDOConfig(int config[8]);
+
+	/**
+	 * @brief Get configurable CO port functions
+	 * @param [out] config CO0-CO7 function codes;
+	 * 0-None; 1-Robot error; 2-Robot in motion; 3-Spraying start/stop; 4-Spraying gun cleaning; 5-Gas supply signal; 6-Arc ignition signal; 7-Jog wire feeding;
+	 * 8-Reverse wire feeding; 9-JOB input 1; 10-JOB input 2; 11-JOB input 3; 12-Conveyor start/stop control; 13-Robot paused; 14-Reached operation origin;
+	 * 15-Reached interference zone; 16-Wire search start/stop control; 17-Robot start completed; 18-Program start/stop; 19-Automatic/Manual mode; 20-Emergency stop output signal 1 - Safety;
+	 * 21-Emergency stop output signal 2 - Safety; 22-LUA script program running/stopped; 23-Safety status output - Safety; 24-Protective stop status output - Safety;
+	 * 25-Robot in motion - Safety; 26-Robot reduction mode - Safety; 27-Robot non-reduction mode - Safety; 28-Robot not stopped; 29-Robot error - Command point error;
+	 * 30-Robot error - Driver error; 31-Robot error - Soft limit exceeded; 32-Robot error - Collision error; 33-Robot error - Active slave count error;
+	 * 34-Robot error - Slave error; 35-Robot error - IO error; 36-Robot error - Gripper error; 37-Robot error - File error; 38-Robot error - Singular pose error;
+	 * 39-Robot error - Driver communication error; 40-Robot error - Parameter error; 41-Robot error - External axis soft limit exceeded; 42-Robot warning - Warning;
+	 * 43-Robot warning - Safety door warning; 44-Robot warning - Motion warning; 45-Robot warning - Interference zone warning; 46-Robot warning - Safety wall warning;
+	 * 47-Enable status; 48-Automatic lifting during disconnection; 49-Cuboid 1 interference warning; 50-Cuboid 2 interference warning; 51-Cuboid 3 interference warning; 52-Cuboid 4 interference warning;
+	 * @return Error code
+	 */
+	errno_t GetDOConfig(int config[8]);
+
+	/**
+	 * @brief Set configurable End-CI port functions
+	 * @param [in] config End CI0-CI1 function codes;
+	 * 0-None; 1-Drag teaching tool switch; 2-Point recording signal; 3-Manual/Automatic switching (pulse signal); 4-TPD recording start/stop; 5-Pause motion;
+	 * 6-Resume motion; 7-Start; 8-Stop; 9-Pause/Resume; 10-Start/Stop; 11-Force sensor auxiliary dragging enable; 12-Force sensor auxiliary dragging disable;
+	 * 13-Force sensor auxiliary dragging enable/disable; 14-Laser detection signal X; 15-Laser detection signal Y; 16-PTP move to operation origin; 17-Motion interrupt, stop current motion based on signal;
+	 * 18-Start main program; 19-Start rewind; 20-Start confirmation; 21-Resume welding; 22-Terminate welding; 23-Clear errors; 24-Manual/Automatic switching (high/low level);
+	 * 25-Enable; 26-Disable; 27-Enable/Disable; 28-Laser servo tracking start/stop signal;
+	 * @return Error code
+	 */
+	errno_t SetToolDIConfig(int config[2]);
+
+	/**
+	 * @brief Get configurable End-CI port functions
+	 * @param [out] config End CI0-CI1 function codes;
+	 * 0-None; 1-Drag teaching tool switch; 2-Point recording signal; 3-Manual/Automatic switching (pulse signal); 4-TPD recording start/stop; 5-Pause motion;
+	 * 6-Resume motion; 7-Start; 8-Stop; 9-Pause/Resume; 10-Start/Stop; 11-Force sensor auxiliary dragging enable; 12-Force sensor auxiliary dragging disable;
+	 * 13-Force sensor auxiliary dragging enable/disable; 14-Laser detection signal X; 15-Laser detection signal Y; 16-PTP move to operation origin; 17-Motion interrupt, stop current motion based on signal;
+	 * 18-Start main program; 19-Start rewind; 20-Start confirmation; 21-Resume welding; 22-Terminate welding; 23-Clear errors; 24-Manual/Automatic switching (high/low level);
+	 * 25-Enable; 26-Disable; 27-Enable/Disable; 28-Laser servo tracking start/stop signal;
+	 * @return Error code
+	 */
+	errno_t GetToolDIConfig(int config[2]);
+
+	/**
+	 * @brief Set configurable CI active states of the control box
+	 * @param [in] config CI0-CI7 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t SetDIConfigLevel(int config[8]);
+
+	/**
+	 * @brief Get configurable CI active states of the control box
+	 * @param [out] config CI0-CI7 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t GetDIConfigLevel(int config[8]);
+
+	/**
+	 * @brief Set configurable CO active states of the control box
+	 * @param [in] config CO0-CO7 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t SetDOConfigLevel(int config[8]);
+
+	/**
+	 * @brief Get configurable CO active states of the control box
+	 * @param [out] config CO0-CO7 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t GetDOConfigLevel(int config[8]);
+
+	/**
+	 * @brief Set configurable CI active states of the end tool
+	 * @param [in] config CI0-CI1 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t SetToolDIConfigLevel(int config[2]);
+
+	/**
+	 * @brief Get configurable CI active states of the end tool
+	 * @param [out] config CI0-CI1 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t GetToolDIConfigLevel(int config[2]);
+
+	/**
+	 * @brief Set standard DI active states of the control box
+	 * @param [in] config DI0-DI7 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t SetStandardDILevel(int config[8]);
+
+	/**
+	 * @brief Get standard DI active states of the control box
+	 * @param [out] config DI0-DI7 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t GetStandardDILevel(int config[8]);
+
+	/**
+	 * @brief Set standard DO active states of the control box
+	 * @param [in] config DO0-DO7 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t SetStandardDOLevel(int config[8]);
+
+	/**
+	 * @brief Get standard DO active states of the control box
+	 * @param [out] config DO0-DO7 port active states; 0-Active high; 1-Active low
+	 * @return Error code
+	 */
+	errno_t GetStandardDOLevel(int config[8]);
 
     /**
     *@brief  Set global speed
@@ -1235,6 +1395,15 @@ public:
     *@return  Error code
 	 */
 	errno_t  MoveTPD(char name[30], uint8_t blend, float ovl);
+
+	/**
+	 * @brief Move to the starting point of the TPD trajectory record
+	 * @param [in] name Trajectory file name
+	 * @param [in] moveType Motion type; 0-PTP; 1-LIN
+	 * @param [in] ovl Speed scaling percentage, range [0~100]
+	 * @return Error code
+	 */
+	errno_t MoveToTPDStart(char name[30], uint8_t moveType, float ovl);
 
 	/**
 	 * @brief  trajectory preprocessing
@@ -1864,7 +2033,7 @@ public:
 	 * @param [in] followType Tracking motion type, 0- tracking motion; 1- Follow-up inspection campaign
 	 * @param [in] startDis Tracking and grasping need to be set. The starting distance for tracking is -1: automatic calculation (automatic tracking and grasping after the workpiece reaches under the robot), unit: mm, default value: 0
 	 * @param [in] endDis tracking and grasping need to be set. The tracking termination distance, in mm, the default value is 100
-	 * @return 错误码
+	 * @return Error code
 	 */
 	errno_t ConveyorSetParam(float para[6], int followType = 0, int startDis = 0, int endDis = 100);
 
@@ -2408,19 +2577,20 @@ public:
 	errno_t ExtDevSetUDPComParam(std::string ip, int port, int period, int lossPkgTime, int lossPkgNum, int disconnectTime, int reconnectEnable, int reconnectPeriod, int reconnectNum, int selfConnect = 1);
 
 	/**
-	* @brief Get the UDP extension axis communication parameter configuration
-	* @param [out] ip PLC IP address
-	* @param [out] port port num
-	* @param [out] period	Communication period(ms，default 2ms)
-	* @param [out] lossPkgTime Packet loss detection time(ms)
-	* @param [out] lossPkgNum	 Indicates the number of packet loss times
-	* @param [out] disconnectTime	 the duration of communication disconnection confirmation
-	* @param [out] reconnectEnable Automatic reconnection when communication is disconnected Enable;0-Disable, 1-Enable
-	* @param [out] reconnectPeriod Reconnection period(ms)
-	* @param [out] reconnectNum	Reconnection times
-	* @return error code
-	*/
-	errno_t ExtDevGetUDPComParam(std::string& ip, int& port, int& period, int& lossPkgTime, int& lossPkgNum, int& disconnectTime, int& reconnectEnable, int& reconnectPeriod, int& reconnectNum);
+	 * @brief Get UDP external axis communication parameters
+	 * @param [out] ip PLC IP address
+	 * @param [out] port Port number
+	 * @param [out] period Communication cycle (ms, default is 2, do not modify this parameter)
+	 * @param [out] lossPkgTime Packet loss detection time (ms)
+	 * @param [out] lossPkgNum Packet loss count
+	 * @param [out] disconnectTime Communication disconnection confirmation duration
+	 * @param [out] reconnectEnable Automatic reconnection after communication disconnection enable 0-Disable 1-Enable
+	 * @param [out] reconnectPeriod Reconnection cycle interval (ms)
+	 * @param [out] reconnectNum Reconnection attempts
+	 * @param [out] selfStart Whether to automatically reconnect after control box restart; 0-No reconnection; 1-Reconnection
+	 * @return Error code
+	 */
+	errno_t ExtDevGetUDPComParam(std::string& ip, int& port, int& period, int& lossPkgTime, int& lossPkgNum, int& disconnectTime, int& reconnectEnable, int& reconnectPeriod, int& reconnectNum, int& selfConnect);
 
 	/**
 	* @brief Load the UDP communication connection
@@ -3209,11 +3379,12 @@ public:
 	  */
 	 errno_t SetPowerLimit(int status, double power);
 	
-	/**
-	* @brief Joint torque control starts
-	* @return  error code
-	*/
-	errno_t ServoJTStart();
+	 /**
+	  * @brief Start joint torque control
+	  * @param [in] comType Command transmission type; 0-xmlrpc; 1-UDP (corresponds to robot port 20007)
+	  * @return  Error code
+	  */
+	errno_t ServoJTStart(int comType = 0);
 
 	/**
 	* @brief joint torque control
@@ -3224,21 +3395,23 @@ public:
 	errno_t ServoJT(float torque[], double interval);
 
 	/**
-	* @brief joint torque control
-	* @param [in] torque j1 to j6 Joint torque, unit: Nm
-	* @param [in] interval Instruction period, unit s, range [0.001~0.016]
-	* @param [in] checkFlag Detection strategy: 0- no limit; 1- Power limit; 2- Speed limit; 3- Both power and speed are limited simultaneously
-	* @param [in] jPowerLimit Maximum power limit of the joint(W)
-	* @param [in] jVelLimit Maximum speed limit of the joint(°/s)
-	* @return error code
-	*/
-	errno_t ServoJT(float torque[], double interval, int checkFlag, double jPowerLimit[6], double jVelLimit[6]);
+	 * @brief Joint torque control
+	 * @param [in] torque Joint torque for j1~j6, unit: Nm
+	 * @param [in] interval Command cycle, unit: s, range [0.001~0.008]
+	 * @param [in] checkFlag Detection strategy 0-No restriction; 1-Power limitation; 2-Speed limitation; 3-Both power and speed limitation
+	 * @param [in] jPowerLimit Joint maximum power limit (W)
+	 * @param [in] jVelLimit Joint maximum velocity (°/s)
+	 * @param [in] comType Command transmission type; 0-xmlrpc; 1-UDP (corresponds to robot port 20007)
+	 * @return Error code
+	 */
+	errno_t ServoJT(float torque[], double interval, int checkFlag, double jPowerLimit[6], double jVelLimit[6], int comType = 0);
 
 	/**
-	* @brief Joint torque control end
-	* @return  error code
-	*/
-	errno_t ServoJTEnd();
+	 * @brief End joint torque control
+	 * @param [in] comType Command transmission type; 0-xmlrpc; 1-UDP (corresponds to robot port 20007)
+	 * @return  Error code
+	 */
+	errno_t ServoJTEnd(int comType = 0);
 
 	/**
 	* @brief set the robot 20004 port feedback cycle
@@ -3539,11 +3712,12 @@ public:
 	errno_t SetWeldMachineCtrlModeExtDoNum(int DONum);
 
 	/**
-	 * @brief sets the welder control mode
-	 * @param mode welding machine control mode; 0-Unified mode； 1-separate mode
-	 * @return error code
+	 * @brief Set welder control mode
+	 * @param [in] mode Welder control mode; 0-Unified mode
+	 * @param [in] ioType Control type; 0-Control box IO; 1-Digital communication protocol (UDP); 2-Digital communication protocol (ModbusTCP)
+	 * @return Error code
 	 */
-	errno_t SetWeldMachineCtrlMode(int mode);
+	errno_t SetWeldMachineCtrlMode(int mode, int ioType = 1);
 
 	/**
 	* @brief Start singular pose protection
@@ -4284,6 +4458,27 @@ public:
 	errno_t OpenLuaUpload(std::string filePath);
 
 	/**
+	 * @brief Download open protocol Lua file
+	 * @param [in] fileName Open protocol file name "CtrlDev_XXX.lua"
+	 * @param [in] savePath Open protocol save file path
+	 * @return Error code
+	 */
+	errno_t OpenLuaDownload(std::string fileName, std::string savePath);
+
+	/**
+	* @brief Delete the open protocol Lua file
+	* @param [in] fileName The name of the open protocol Lua file to be deleted, e.g., "CtrlDev_XXX.lua"
+	* @return Error code
+	*/
+	errno_t OpenLuaDelete(std::string fileName);
+
+	/**
+	 * @brief Delete all of the open protocol Lua file
+	 * @return Error code
+	 */
+	errno_t AllOpenLuaDelete();
+
+	/**
 	* @brief Impedance Control
 	* @param [in] status 0：OFF；1-ON
 	* @param [in] workSpace 0-joint space;1 -Dicard space
@@ -4657,6 +4852,105 @@ public:
 	 */
 	errno_t GetProgramRunErrCode(int& errLinNum, int& luaErrCode);
 
+
+	/**
+	* @brief Enable the end device general passthrough function
+	* @param [in] mode Enable status: 0-disable, 1-enable
+	* @return Error code
+	*/
+	errno_t SetAxleGenComEnable(int mode);
+
+	/**
+	* @brief Get periodic data by specified length
+	* @param [in] len Length of data to retrieve
+	* @param [out] cycleData Array of periodic data returned (size 130)
+	* @return Error code
+	*/
+	errno_t GetAxleGenComCycleData(int len, int cycleData[130]);
+
+	/**
+	* @brief Send aperiodic command data to the end-effector and wait for response
+	* @param [in] lenSnd Length of data to send
+	* @param [in] sndBuff Buffer containing data to send
+	* @param [in] lenRcv Expected length of data to receive
+	* @param [out] rcvData Buffer for received response data
+	* @return Error code
+	*/
+	errno_t SndRcvAxleGenComCmdData(int lenSnd, int sndBuff[130], int lenRcv, int rcvData[130]);
+
+	/**
+	* @brief Set whether to stop robot motion when communication is disconnected on a specific port
+	* @param [in] portID Port number: 0-8080; 1-8083; 2-20002; 3-20004
+	* @param [in] enable Enable flag: 0-disable, 1-enable
+	* @param [in] confirmTime Communication disconnection confirmation time (ms), range: [0-5000]
+	* @return Error code
+	*/
+	errno_t SetRobotStopOnComDisc(int pordID, bool enable, int confirmTime);
+
+	/**
+	* @brief Get the parameters for stopping robot motion on communication disconnection
+	* @param [in] portID Port number: 0-8080; 1-8083; 2-20002; 3-20004
+	* @param [out] enable Enable flag: 0-disable, 1-enable
+	* @param [out] confirmTime Communication disconnection confirmation time (ms)
+	* @return Error code
+	*/
+	errno_t GetRobotStopOnComDisc(int pordID, bool &enable, int &confirmTime);
+
+	/**
+	 * @brief Set UDP external axis positioning completion time
+	 * @param [in] time Positioning completion time [ms]
+	 * @return Error code
+	 */
+	errno_t SetExAxisCmdDoneTime(double time);
+
+	/**
+	 * @brief Send one frame of UDP command
+	 * @param [in] frame Send data frame string e.g.: /f/bIII20III303III7IIIMode(0)III/b/f
+	 * @return Error code
+	 */
+	errno_t SendUDPFrame(std::string frame);
+
+	/**
+	 * @brief Set callback function for SDK command execution results sent via UDP
+	 * @param [in] CallBack Callback function; comType-Command result communication reply type 0-TCP, 1-UDP; count-Command reply frame count; cmdID-Command ID; contentLen-Data length; content-Data content
+	 * @return Error code
+	 */
+	errno_t SetCmdRpyCallback(void (*CallBack)(int comType, int count, int cmdID, int contentLen, std::string content));
+
+	/**
+	 * @brief Set safety speed parameters
+	 * @param [in] enable 0-Off; 1-Enabled in manual mode; 2-Enabled in all modes
+	 * @param [in] maxTCPVel Maximum TCP speed limit; [0-1000] mm/s
+	 * @param [in] strategy Strategy after overspeed; 0-Stop and alarm; 1-Automatic speed limiting; 2-Stop, alarm and disable
+	 * @return Error code
+	 */
+	errno_t SetVelReducePara(int enable, double maxTCPVel, int strategy);
+
+	/**
+	 * @brief Start fixed-point weaving
+	 * @param [in] weaveNum Weave number [0-7]
+	 * @param [in] mode 0-Tool coordinate system; 1-Reference point
+	 * @param [in] refPoint Reference point Cartesian coordinates [x, y, z, a, b, c]
+	 * @param [in] weaveTime Weave time [s]
+	 * @return Error code
+	 */
+	errno_t OriginPointWeaveStart(int weaveNum, int mode, DescPose refPoint, double weaveTime);
+
+	/**
+	 * @brief End fixed-point weaving
+	 * @return Error code
+	 */
+	errno_t OriginPointWeaveEnd();
+
+	/**
+	 * @brief Set the user-defined color of the robot end-effector light
+	 * @param [in] r Red light control; 0 - off, 1 - on
+	 * @param [in] g Green light control; 0 - off, 1 - on
+	 * @param [in] b Blue light control; 0 - off, 1 - on
+	 * @return Error code
+	 */
+	errno_t SetUserLEDColor(bool r, bool g, bool b);
+
 	/**
 	 *@brief  Robot interface class destructor
 	 */
@@ -4672,31 +4966,31 @@ private:
 	bool rpc_done = false;
 
 	/**
-* @brief download file
-* @param [in] fileType File type 0-lua file
-* @param [in] fileName File name "test.lua"
-* @param [in] saveFilePath Save file path C: //test/
-* @return error code
-	 */
+	* @brief download file
+	* @param [in] fileType File type 0-lua file
+	* @param [in] fileName File name "test.lua"
+	* @param [in] saveFilePath Save file path C: //test/
+	* @return error code
+	*/
 	errno_t FileDownLoad(int fileType, std::string fileName, std::string saveFilePath);
 
 	/**
-* @brief Upload file
-* @param [in] fileType File type 0-lua file
-* @param [in] fileName File name "test.lua"
-* @param [in] upLoadFilePath Save file C: //test/
-* @return error code
-	 */
+	* @brief Upload file
+	* @param [in] fileType File type 0-lua file
+	* @param [in] fileName File name "test.lua"
+	* @param [in] upLoadFilePath Save file C: //test/
+	* @return error code
+	*/
 	errno_t FileUpLoad(int fileType, std::string filePath, int reUp = 0);
 
 	errno_t GetFileUploadBreakState(int& breakFlag, std::string& md5, int& fileSize, int& curSentSize);
 
 	/**
-* @brief Upload file
-* @param [in] fileType File type 0-lua file
-* @param [in] fileName File name "test.lua"
-	 * @return error code
-	 */
+	* @brief Upload file
+	* @param [in] fileType File type 0-lua file
+	* @param [in] fileName File name "test.lua"
+	* @return error code
+	*/
 	errno_t FileDelete(int fileType, std::string fileName);
 
 	std::vector<std::string> split(const std::string& s, char delim);
@@ -4718,12 +5012,13 @@ private:
 	double fileUploadPercent;
 	int robotProgramErrLinNum = 0;
 	int robotProgramErrCode = 0;
+	uint8_t cmdFrameCnt = 0;
 
 	char robot_ip[64];
 	std::shared_ptr<ROBOT_STATE_PKG> robot_state_pkg;
-
 	std::shared_ptr <FRTcpClient> rtClient;
 	std::shared_ptr <FRTcpClient> cmdClient;
+	std::shared_ptr <FRUdpClient> udpCmdClient;
 
 };
 

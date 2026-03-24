@@ -23,7 +23,8 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <FRTcpClient.h>
+#include "FRTcpClient.h"
+#include "FRUdpClient.h"
 #include "FrameHandle.h"
 
 
@@ -48,10 +49,11 @@
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.3.3.0-robot v3.9.3"
+#define SDK_RELEASE "SDK V2.3.4.0-robot v3.9.4"
 
 #define ROBOT_REALTIME_PORT 20004
 #define ROBOT_CMD_PORT 8080
+#define ROBOT_UDP_CMD_PORT 20007
 
 /* 文件上传下载都是走的这个接口 */
 #define DOWNLOAD_POINT_TABLE_PORT 20011
@@ -99,6 +101,7 @@ FRRobot::FRRobot(void)
     g_sock_com_err = ERR_SUCCESS;
     rtClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_REALTIME_PORT);
     cmdClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_CMD_PORT);
+    udpCmdClient = std::make_shared<FRUdpClient>();
 }
 
 /**
@@ -170,7 +173,6 @@ void FRRobot::RobotInstCmdSendRoutineThread()
         }
     }
 
-    cmdClient->Close();
     g_sock_com_err = ERR_SOCKET_COM_FAILED;
     memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
     
@@ -187,7 +189,7 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
     while (!robot_instcmd_recv_exit)
     {
         memset(g_recvbuf, 0, BUFFER_SIZE * sizeof(char));
-        recvbyte = cmdClient->Recv(g_recvbuf, BUFFER_SIZE * sizeof(char));
+        recvbyte = cmdClient->RecvFrame(g_recvbuf, BUFFER_SIZE * sizeof(char));
         if (recvbyte > 0)
         {
             logger_info("recv cmd is %s.", (char*)g_recvbuf);
@@ -210,15 +212,6 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
                 }
             }
         }
-        
-        //if (recvbyte < 0)
-        //{
-        //    cmdClient->Close();
-        //    g_sock_com_err = ERR_SOCKET_COM_FAILED;
-        //    memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
-        //    logger_error("cmd recv fail.");
-        //    return;
-        //}
     }
 
     cmdClient->Close();
@@ -328,6 +321,8 @@ errno_t FRRobot::RPC(const char *ip)
     thread taskRoutineThread(&FRRobot::RobotTaskRoutineThread, this);
     taskRoutineThread.detach();
 
+    udpCmdClient->Connect(string(robot_ip), ROBOT_UDP_CMD_PORT);
+
     Sleep(1000);
     logger_info("RPC SUCCESS.");
     rpc_done = true;
@@ -355,6 +350,11 @@ errno_t FRRobot::CloseRPC()
     if (cmdClient != nullptr)
     {
         cmdClient->Close();
+    }
+
+    if (udpCmdClient != nullptr)
+    {
+        udpCmdClient->Close();
     }
     
     g_sock_com_err = ERR_SOCKET_COM_FAILED;
@@ -1439,9 +1439,10 @@ errno_t FRRobot::NewSpiral(DescPose* desc_pos, int tool, int user, float vel, fl
 
 /**
  * @brief 伺服运动开始，配合ServoJ、ServoCart指令使用
+ * @param [in] comType 指令下发类型；0-xmlrpc；1-UDP(对应机器人20007端口)
  * @return  错误码
  */
-errno_t FRRobot::ServoMoveStart()
+errno_t FRRobot::ServoMoveStart(int comType)
 {
     if (IsSockError())
     {
@@ -1454,29 +1455,49 @@ errno_t FRRobot::ServoMoveStart()
     }
 
     int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
 
-    if (c.execute("ServoMoveStart", param, result))
+    if (comType == 0)
     {
-        errcode = int(result);
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("ServoMoveStart", param, result))
+        {
+            errcode = int(result);
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+    }
+    else if (comType == 1)
+    {
+        string cmdStr = string("ServoMoveStart()");
+        FRAME frame(cmdFrameCnt, 689, cmdStr);
+        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        if (rtn != 0)
+        {
+            return ERR_SOCKET_SEND_FAILED;
+        }
+        cmdFrameCnt++;
     }
     else
     {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
+        return ERR_PARAM_VALUE;
     }
-
-    c.close();
 
     return errcode;
 }
 
 /**
  * @brief 伺服运动结束，配合ServoJ、ServoCart指令使用
+ * @param [in] comType 指令下发类型；0-xmlrpc；1-UDP(对应机器人20007端口)
  * @return  错误码
  */
-errno_t FRRobot::ServoMoveEnd()
+errno_t FRRobot::ServoMoveEnd(int comType)
 {
     if (IsSockError())
     {
@@ -1489,37 +1510,57 @@ errno_t FRRobot::ServoMoveEnd()
     }
 
     int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
 
-    if (c.execute("ServoMoveEnd", param, result))
+    if (comType == 0)
     {
-        errcode = int(result);
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("ServoMoveEnd", param, result))
+        {
+            errcode = int(result);
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+    }
+    else if (comType == 1)
+    {
+        string cmdStr = string("ServoMoveEnd()");
+        FRAME frame(cmdFrameCnt, 690, cmdStr);
+        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        if (rtn != 0)
+        {
+            return ERR_SOCKET_SEND_FAILED;
+        }
+        cmdFrameCnt++;
     }
     else
     {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
+        return ERR_PARAM_VALUE;
     }
-
-    c.close();
 
     return errcode;
 }
 
 /**
- *@brief  关节空间伺服模式运动
- *@param  [in] joint_pos  目标关节位置,单位deg
- *@param  [in] axisPos  外部轴位置,单位mm
- *@param  [in] acc  加速度百分比，范围[0~100],暂不开放，默认为0
- *@param  [in] vel  速度百分比，范围[0~100]，暂不开放，默认为0
- *@param  [in] cmdT  指令下发周期，单位s，建议范围[0.001~0.0016]
- *@param  [in] filterT 滤波时间，单位s，暂不开放，默认为0
- *@param  [in] gain  目标位置的比例放大器，暂不开放，默认为0
- *@param  [in] id servoJ指令ID,默认为0
+ *@brief 关节空间伺服模式运动
+ *@param [in] joint_pos 目标关节位置,单位deg
+ *@param [in] axisPos 外部轴位置,单位mm
+ *@param [in] acc 加速度百分比，范围[0~100],暂不开放，默认为0
+ *@param [in] vel 速度百分比，范围[0~100]，暂不开放，默认为0
+ *@param [in] cmdT 指令下发周期，单位s，建议范围[0.001~0.0016]
+ *@param [in] filterT 滤波时间，单位s，暂不开放，默认为0
+ *@param [in] gain 目标位置的比例放大器，暂不开放，默认为0
+ *@param [in] id servoJ指令ID,默认为0
+ *@param [in] comType 指令下发类型；0-xmlrpc；1-UDP(对应机器人20007端口)
  *@return  错误码
  */
-errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id)
+errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id, int comType)
 {
     if (IsSockError())
     {
@@ -1532,37 +1573,60 @@ errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, floa
     }
 
     int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
-
-    param[0][0] = joint_pos->jPos[0];
-    param[0][1] = joint_pos->jPos[1];
-    param[0][2] = joint_pos->jPos[2];
-    param[0][3] = joint_pos->jPos[3];
-    param[0][4] = joint_pos->jPos[4];
-    param[0][5] = joint_pos->jPos[5];
-    param[1][0] = axisPos->ePos[0];
-    param[1][1] = axisPos->ePos[1];
-    param[1][2] = axisPos->ePos[2];
-    param[1][3] = axisPos->ePos[3];
-    param[2] = acc;
-    param[3] = vel;
-    param[4] = cmdT;
-    param[5] = filterT;
-    param[6] = gain;
-    param[7] = id;
-
-    if (c.execute("ServoJ", param, result))
+    if (comType == 0)
     {
-        errcode = int(result);
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        param[0][0] = joint_pos->jPos[0];
+        param[0][1] = joint_pos->jPos[1];
+        param[0][2] = joint_pos->jPos[2];
+        param[0][3] = joint_pos->jPos[3];
+        param[0][4] = joint_pos->jPos[4];
+        param[0][5] = joint_pos->jPos[5];
+        param[1][0] = axisPos->ePos[0];
+        param[1][1] = axisPos->ePos[1];
+        param[1][2] = axisPos->ePos[2];
+        param[1][3] = axisPos->ePos[3];
+        param[2] = acc;
+        param[3] = vel;
+        param[4] = cmdT;
+        param[5] = filterT;
+        param[6] = gain;
+        param[7] = id;
+
+        if (c.execute("ServoJ", param, result))
+        {
+            errcode = int(result);
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+    }
+    else if (comType == 1)
+    {
+        char jointStr[128] = { 0 };
+        snprintf(jointStr, 128, "{%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}", joint_pos->jPos[0], joint_pos->jPos[1], joint_pos->jPos[2], joint_pos->jPos[3], joint_pos->jPos[4], joint_pos->jPos[5]);
+        char axisStr[128] = { 0 };
+        snprintf(axisStr, 128, "{%.3f,%.3f,%.3f,%.3f}", axisPos->ePos[0], axisPos->ePos[1], axisPos->ePos[2], axisPos->ePos[3]);
+       
+        string cmdStr = string("ServoJ(") + jointStr + "," + axisStr  + "," + to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
+        FRAME frame(cmdFrameCnt, 376, cmdStr);
+        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        if (rtn != 0)
+        {
+            return ERR_SOCKET_SEND_FAILED;
+        }
+        cmdFrameCnt++;
     }
     else
     {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
+        return ERR_PARAM_VALUE;
     }
-
-    c.close();
 
     return errcode;
 }
@@ -5446,6 +5510,42 @@ errno_t FRRobot::MoveTPD(char name[30], uint8_t blend, float ovl)
     param[2] = ovl;
 
     if (c.execute("MoveTPD", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 运动到TPD轨迹记录起点
+ * @param [in] name 轨迹文件名
+ * @param [in] moveType 运动类型；0-PTP; 1-LIN
+ * @param [in] ovl 速度缩放百分比，范围[0~100]
+ * @return 错误码
+ */
+errno_t FRRobot::MoveToTPDStart(char name[30], uint8_t moveType, float ovl)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = name;
+    param[1] = moveType;
+    param[2] = ovl;
+
+    if (c.execute("MoveToTPDStart", param, result))
     {
         errcode = int(result);
     }
@@ -10791,7 +10891,7 @@ errno_t FRRobot::FileDelete(int fileType, std::string fileName)
 }
 
 /**
- * @brief 下载Lua文件
+ * @brief 删除Lua文件
  * @param [in] fileName 要下载的lua文件名“test.lua”
  * @return 错误码
  */
@@ -11341,7 +11441,7 @@ errno_t FRRobot::AuxServosetStatusID(int servoId)
 
     param = servoId;
 
-    if (c.execute("AuxServosetStatusID", param, result))
+    if (c.execute("AuxServoSetStatusID", param, result))
     {
         errcode = int(result);
         if (0 != errcode)
@@ -11421,7 +11521,7 @@ errno_t FRRobot::GetExDevProtocol(int *protocol)
 }
 
 /**
- * @brief 获取机器人外设协议
+ * @brief 设置机器人外设协议
  * @param [in] protocol 机器人外设协议号 4096-扩展轴控制卡；4097-ModbusSlave；4098-ModbusMaster
  * @return 错误码
  */
@@ -11711,9 +11811,10 @@ errno_t FRRobot::ExtDevSetUDPComParam(string ip, int port, int period, int lossP
  * @param [out] reconnectEnable	通讯断开自动重连使能 0-不使能 1-使能
  * @param [out] reconnectPeriod	重连周期间隔(ms)
  * @param [out] reconnectNum	重连次数
+ * @param [out] selfConnect 重启控制箱后是否自动重连；0-不重连；1-重连
  * @return 错误码
  */
-errno_t FRRobot::ExtDevGetUDPComParam(string& ip, int& port, int& period, int& lossPkgTime, int& lossPkgNum, int& disconnectTime, int& reconnectEnable, int& reconnectPeriod, int& reconnectNum)
+errno_t FRRobot::ExtDevGetUDPComParam(string& ip, int& port, int& period, int& lossPkgTime, int& lossPkgNum, int& disconnectTime, int& reconnectEnable, int& reconnectPeriod, int& reconnectNum, int& selfConnect)
 {
     if (IsSockError())
     {
@@ -11743,6 +11844,7 @@ errno_t FRRobot::ExtDevGetUDPComParam(string& ip, int& port, int& period, int& l
             reconnectEnable = (int)(result[7]);
             reconnectPeriod = (int)(result[8]);
             reconnectNum = (int)(result[9]);
+            selfConnect = (int)(result[10]);
         }
     }
     else
@@ -12938,9 +13040,7 @@ errno_t FRRobot::ExtAxisSyncMoveJ(JointPos joint_pos, DescPose desc_pos, int too
     }
 
     c.close();
-    printf("moveJ start \n");
     errcode = MoveJ(&joint_pos, &desc_pos, tool, user, vel, acc, ovl, &epos, blendT, offset_flag, &offset_pos);
-    printf("moveJ end \n");
     return errcode;
 }
 
@@ -15302,9 +15402,10 @@ errno_t FRRobot::SetPowerLimit(int status, double power)
 
 /**
 * @brief 关节扭矩控制开始
+* @param [in] comType 指令下发类型；0-xmlrpc；1-UDP(对应机器人20007端口)
 * @return  错误码
 */
-errno_t FRRobot::ServoJTStart()
+errno_t FRRobot::ServoJTStart(int comType)
 {
     if (IsSockError())
     {
@@ -15315,26 +15416,46 @@ errno_t FRRobot::ServoJTStart()
         return GetSafetyCode();
     }
     int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
 
-    if (c.execute("ServoJTStart", param, result))
+    if (comType == 0)
     {
-        errcode = int(result);
-        if (0 != errcode)
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("ServoJTStart", param, result))
         {
-            logger_error("execute ServoJTStart fail: %d.", errcode);
-            c.close();
-            return errcode;
+            errcode = int(result);
+            if (0 != errcode)
+            {
+                logger_error("execute ServoJTStart fail: %d.", errcode);
+                c.close();
+                return errcode;
+            }
         }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+    }
+    else if (comType == 1)
+    {
+        string cmdStr = string("ServoJTStart()");
+        FRAME frame(cmdFrameCnt, 1199, cmdStr);
+        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        if (rtn != 0)
+        {
+            return ERR_SOCKET_SEND_FAILED;
+        }
+        cmdFrameCnt++;
     }
     else
     {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
+        return ERR_PARAM_VALUE;
     }
 
-    c.close();
     return errcode;
 }
 
@@ -15368,9 +15489,10 @@ errno_t FRRobot::ServoJT(float torque[], double interval)
  * @param  [in] checkFlag 检测策略 0-不限制；1-限制功率；2-限制速度；3-功率和速度同时限制
  * @param  [in] jPowerLimit 关节最大功率限制(W)
  * @param  [in] jVelLimit 关节最大速度(°/s)
+ * @param  [in] comType 指令下发类型；0-xmlrpc；1-UDP(对应机器人20007端口)
  * @return  错误码
  */
-errno_t FRRobot::ServoJT(float torque[], double interval, int checkFlag, double jPowerLimit[6], double jVelLimit[6])
+errno_t FRRobot::ServoJT(float torque[], double interval, int checkFlag, double jPowerLimit[6], double jVelLimit[6], int comType)
 {
     if (IsSockError())
     {
@@ -15381,83 +15503,131 @@ errno_t FRRobot::ServoJT(float torque[], double interval, int checkFlag, double 
         return GetSafetyCode();
     }
 
-    int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
-
-    param[0][0] = torque[0];
-    param[0][1] = torque[1];
-    param[0][2] = torque[2];
-    param[0][3] = torque[3];
-    param[0][4] = torque[4];
-    param[0][5] = torque[5];
-    param[1] = interval;
-    param[2] = checkFlag;
-    param[3][0] = jPowerLimit[0];
-    param[3][1] = jPowerLimit[1];
-    param[3][2] = jPowerLimit[2];
-    param[3][3] = jPowerLimit[3];
-    param[3][4] = jPowerLimit[4];
-    param[3][5] = jPowerLimit[5];
-    param[4][0] = jVelLimit[0];
-    param[4][1] = jVelLimit[1];
-    param[4][2] = jVelLimit[2];
-    param[4][3] = jVelLimit[3];
-    param[4][4] = jVelLimit[4];
-    param[4][5] = jVelLimit[5];
-
-
-    if (c.execute("ServoJT", param, result))
+    if (comType == 0)
     {
-        errcode = int(result);
-        if (0 != errcode)
+        int errcode = 0;
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        param[0][0] = torque[0];
+        param[0][1] = torque[1];
+        param[0][2] = torque[2];
+        param[0][3] = torque[3];
+        param[0][4] = torque[4];
+        param[0][5] = torque[5];
+        param[1] = interval;
+        param[2] = checkFlag;
+        param[3][0] = jPowerLimit[0];
+        param[3][1] = jPowerLimit[1];
+        param[3][2] = jPowerLimit[2];
+        param[3][3] = jPowerLimit[3];
+        param[3][4] = jPowerLimit[4];
+        param[3][5] = jPowerLimit[5];
+        param[4][0] = jVelLimit[0];
+        param[4][1] = jVelLimit[1];
+        param[4][2] = jVelLimit[2];
+        param[4][3] = jVelLimit[3];
+        param[4][4] = jVelLimit[4];
+        param[4][5] = jVelLimit[5];
+
+
+        if (c.execute("ServoJT", param, result))
         {
-            logger_error("execute ServoJT fail: %d.", errcode);
-            c.close();
-            return errcode;
+            errcode = int(result);
+            if (0 != errcode)
+            {
+                logger_error("execute ServoJT fail: %d.", errcode);
+                c.close();
+                return errcode;
+            }
         }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+        return errcode;
+    }
+    else if (comType == 1)
+    {
+        char torqueStr[128] = { 0 };
+        snprintf(torqueStr, 128, "{%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}", torque[0], torque[1], torque[2], torque[3], torque[4], torque[5]);
+        char jPowerLimitStr[128] = { 0 };
+        snprintf(jPowerLimitStr, 128, "{%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}", jPowerLimit[0], jPowerLimit[1], jPowerLimit[2], jPowerLimit[3], jPowerLimit[4], jPowerLimit[5]);
+        char jVelLimitStr[128] = { 0 };
+        snprintf(jVelLimitStr, 128, "{%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}", jVelLimit[0], jVelLimit[1], jVelLimit[2], jVelLimit[3], jVelLimit[4], jVelLimit[5]);
+
+        string cmdStr = string("ServoJT(") + torqueStr + "," + to_string(interval) + "," + to_string(checkFlag) + "," + jPowerLimitStr + "," + jVelLimitStr + ")";
+        FRAME frame(cmdFrameCnt, 1200, cmdStr);
+        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        if (rtn != 0)
+        {
+            return ERR_SOCKET_SEND_FAILED;
+        }
+        cmdFrameCnt++;
     }
     else
     {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
+        return ERR_PARAM_VALUE;
     }
 
-    c.close();
-    return errcode;
+    return 0;
+   
 }
 
 /**
  * @brief 关节扭矩控制结束
+ * @param [in] comType 指令下发类型；0-xmlrpc；1-UDP(对应机器人20007端口)
  * @return  错误码
  */
-errno_t FRRobot::ServoJTEnd()
+errno_t FRRobot::ServoJTEnd(int comType)
 {
     if (IsSockError())
     {
         return g_sock_com_err;
     }
     int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
 
-    if (c.execute("ServoJTEnd", param, result))
+    if (comType == 0)
     {
-        errcode = int(result);
-        if (0 != errcode)
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("ServoJTEnd", param, result))
         {
-            logger_error("execute ServoJTEnd fail: %d.", errcode);
-            c.close();
-            return errcode;
+            errcode = int(result);
+            if (0 != errcode)
+            {
+                logger_error("execute ServoJTEnd fail: %d.", errcode);
+                c.close();
+                return errcode;
+            }
         }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+    }
+    else if (comType == 1)
+    {
+        string cmdStr = string("ServoJTEnd()");
+        FRAME frame(cmdFrameCnt, 1201, cmdStr);
+        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        if (rtn != 0)
+        {
+            return ERR_SOCKET_SEND_FAILED;
+        }
+        cmdFrameCnt++;
     }
     else
     {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
+        return ERR_PARAM_VALUE;
     }
-
-    c.close();
     return errcode;
 }
 
@@ -16575,18 +16745,15 @@ errno_t FRRobot::GetCtrlOpenLUAName(std::string name[])
         if (errcode == 0)
         {
             string paramStr = (string)result[1];
+
             std::vector<std::string> parS = split(paramStr, ',');
-            if (parS.size() != 24)
+            for (int i = 0; i < parS.size(); i++)
             {
-                logger_error("GetCtrlOpenLUAName fail");
-                return -1;
+                name[i] = parS[i];
             }
-            name[0] = parS[0];
-            name[1] = parS[1];
-            name[2] = parS[2];
-            name[3] = parS[3];
         }
-        else {
+        else 
+        {
             logger_error("execute GetCtrlOpenLUAName fail %d", errcode);
         }
     }
@@ -17046,10 +17213,11 @@ errno_t FRRobot::SetWeldMachineCtrlModeExtDoNum(int DONum)
 
 /**
  * @brief 设置焊机控制模式
- * @param mode 焊机控制模式;0-一元化
+ * @param [in] ioType 控制类型；0-控制箱IO；1-数字通信协议(UDP);2-数字通信协议(ModbusTCP)
+ * @param [in] mode 焊机控制模式;0-一元化
  * @return 错误码
  */
-errno_t FRRobot::SetWeldMachineCtrlMode(int mode)
+errno_t FRRobot::SetWeldMachineCtrlMode(int mode, int ioType)
 {
     if (IsSockError())
     {
@@ -17059,7 +17227,8 @@ errno_t FRRobot::SetWeldMachineCtrlMode(int mode)
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
 
-    param[0] = mode;
+    param[0] = ioType;
+    param[1] = mode;
 
     if (c.execute("SetWeldMachineCtrlMode", param, result))
     {
@@ -19587,6 +19756,71 @@ errno_t FRRobot::OpenLuaUpload(std::string filePath)
     return errcode;
 }
 
+/**
+ * @brief 下载开放协议Lua文件
+ * @param [in] fileName 开放协议文件名称“CtrlDev_XXX.lua”
+ * @param [in] savePath 开放协议保存文件路径
+ * @return 错误码
+ */
+errno_t FRRobot::OpenLuaDownload(std::string fileName, std::string savePath)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+
+    /* 先检查，lua包和tar.gz压缩包的逻辑不同 */
+    if (fileName.size() == 0)
+    {
+        logger_error("file name can not be empty.");
+        return ERR_UPLOAD_FILE_NOT_FOUND;
+    }
+    std::vector<std::string> _file_name = split(fileName, '.');
+
+    if ((_file_name.size() == 2) && (_file_name[1] == "lua"))
+    {
+        logger_info("download open lua.");
+    }
+    else 
+    {
+        logger_error("can not download %s, file name should be xxx.lua", fileName.c_str());
+        errcode = ERR_FILE_NAME;
+    }
+
+    errcode = FileDownLoad(11, fileName, savePath);
+    return errcode;
+}
+
+/**
+ * @brief 删除开放协议Lua文件
+ * @param [in] fileName 要删除的开放协议lua文件名“CtrlDev_XXX.lua”
+ * @return 错误码
+ */
+errno_t FRRobot::OpenLuaDelete(std::string fileName)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = FileDelete(11, fileName);
+    return errcode;
+}
+
+/**
+ * @brief 删除所有开放协议Lua文件
+ * @return 错误码
+ */
+errno_t FRRobot::AllOpenLuaDelete()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = FileDelete(12, "openluas");
+    return errcode;
+}
+
 /* 根据字符分割字符串 */
 std::vector<std::string> FRRobot::split(const std::string &s, char delim)
 {
@@ -19681,12 +19915,12 @@ FRRobot::~FRRobot(void)
 }
 
 /**
-     * @brief  获取从站板卡参数
-     * @param  [out] type  0-Ethercat，1-CClink, 3-Ethercat, 4-EIP
-     * @param  [out] version  协议版本
-     * @param  [out] connState  0-未连接 1-已连接
-     * @return  错误码
-     */
+* @brief  获取从站板卡参数
+* @param  [out] type  0-Ethercat，1-CClink, 3-Ethercat, 4-EIP
+* @param  [out] version  协议版本
+* @param  [out] connState  0-未连接 1-已连接
+* @return  错误码
+*/
 errno_t FRRobot::GetFieldBusConfig(uint8_t* type, uint8_t* version, uint8_t* connState)
 {
     if (IsSockError())
@@ -22821,3 +23055,197 @@ errno_t FRRobot::GetProgramRunErrCode(int& errLinNum, int& luaErrCode)
     luaErrCode = robotProgramErrCode;
     return 0;
 }
+
+/**
+* @brief 设置端口通讯断开时停止机器人运行
+* @param [in] pordID 端口编号 0-8080；1-8083；2-20002；3-20004
+* @param [in] enable 0-关闭；1-开启
+* @param [in] confirmTime 通讯中断确认时长(ms)[0-5000]
+* @return  错误码
+*/
+errno_t FRRobot::SetRobotStopOnComDisc(int pordID, bool enable, int confirmTime)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = pordID;
+    param[0][1] = enable ? 1 : 0;
+    param[0][2] = confirmTime;
+
+    if (c.execute("SetRobotStopOnComDisc", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 获取端口通讯断开时停止机器人运行参数
+* @param [in] pordID 端口编号 0-8080；1-8083；2-20002；3-20004
+* @param [out] enable 0-关闭；1-开启
+* @param [out] confirmTime 通讯中断确认时长(ms)[0-5000]
+* @return  错误码
+*/
+errno_t FRRobot::GetRobotStopOnComDisc(int pordID, bool& enable, int& confirmTime)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = pordID;
+
+    if (c.execute("GetRobotStopOnComDisc", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            enable = int(result[1]) == 1 ? 1 : 0;
+            confirmTime = int(result[2]);
+        }
+        else {
+            logger_error("execute GetRobotStopOnComDisc fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief UDP发送一帧指令
+ * @param [in] frame 发送数据帧字符串如：/f/bIII20III303III7IIIMode(0)III/b/f
+ * @return 错误码
+ */
+errno_t FRRobot::SendUDPFrame(std::string frame)
+{
+    if (!VerifyFrame(frame))
+    {
+        return ERR_PARAM_VALUE;
+    }
+
+    int rtn = udpCmdClient->SendFrame(frame);
+    if (rtn != 0)
+    {
+        return ERR_SOCKET_SEND_FAILED;
+    }
+    cmdFrameCnt++;
+    return 0;
+}
+
+/**
+ * @brief 设置SDK通过UDP发送指令的执行结果回调函数
+ * @param [in] CallBack 回调函数；comType-指令结果通讯回复类型0-TCP，1-UDP；count-指令回复帧计数；cmdID-指令编号；contentLen-数据长度；content-数据内容
+ * @return 错误码
+ */
+errno_t FRRobot::SetCmdRpyCallback(void (*CallBack)(int comType, int count, int cmdID, int contentLen, std::string content))
+{
+    if (CallBack == nullptr)
+    {
+        return ERR_PARAM_VALUE;
+    }
+
+    udpCmdClient->SetUDPCmdRpyCallback(CallBack);
+    return 0;
+}
+
+/**
+ * @brief 设置安全速度参数
+ * @param [in] enable 0-关；1-手动模式启用；2-所有模式启用(不支持自动限速)
+ * @param [in] maxTCPVel 限制最大TCP速度;[0-1000]mm/s
+ * @param [in] strategy 超速后策略；0-停止报警；1-自动限速；2-停止报警并去使能
+ * @return 错误码
+ */
+errno_t FRRobot::SetVelReducePara(int enable, double maxTCPVel, int strategy)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (enable == 2 && strategy == 1)
+    {
+        return ERR_PARAM_VALUE;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = enable;
+    param[0][1] = maxTCPVel;
+    param[0][2] = strategy;
+
+    if (c.execute("SetVelReducePara", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置用户自定义机器人末端灯色
+ * @param [in] r 末端红灯控制；0-灭；1-亮
+ * @param [in] g 末端绿灯控制；0-灭；1-亮
+ * @param [in] b 末端蓝灯控制；0-灭；1-亮
+ * @return 错误码
+ */
+errno_t FRRobot::SetUserLEDColor(bool r, bool g, bool b)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = r ? 1 : 0;
+    param[1] = g ? 1 : 0;
+    param[2] = b ? 1 : 0;
+
+    if (c.execute("SetUserLEDColor", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+

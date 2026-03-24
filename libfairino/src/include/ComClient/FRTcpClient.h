@@ -48,6 +48,7 @@ public:
     int Recv(char* recvBuf, int recvSize);
 
     int RecvPkg(char* recvBuf, int recvSize);
+    int RecvFrame(char* recvBuf, int recvSize);
 
     int Close();
 

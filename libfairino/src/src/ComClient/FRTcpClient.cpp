@@ -104,7 +104,7 @@ int FRTcpClient::ReConnect()
         int connRtn = Connect();
         if (connRtn != 0)
         {
-            logger_error("TCPClient reconnect to Robot fail %d/%d, error code is %d", i, maxConnTimes, connRtn);
+            logger_error("TCPClient pord %d reconnect to Robot fail %d/%d, error code is %d", robotPort, i, maxConnTimes, connRtn);
 //#ifdef WIN32
 //            std::this_thread::sleep_for(std::chrono::milliseconds(timeOut));  //设置不同的延时时间，用于凑1s一次连接
 //#else
@@ -214,6 +214,57 @@ int FRTcpClient::Recv(char* recvBuf, int recvSize)
     return recvlength;
 }
 
+int FRTcpClient::RecvFrame(char* recvBuf, int recvSize)
+{
+
+        int tmpRecvSize = Recv(recvBuf, recvSize);
+        if (tmpRecvSize <= 0)
+        {
+#ifdef WIN32
+            if (WSAGetLastError() == WSAETIMEDOUT) 
+            {
+                return 0;
+            }
+#else
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                return 0;
+            }
+
+#endif
+
+            logger_error("robot get cmd rpy frame failed");
+            Close();
+            if (reconnEnable == false)  //没有使能重连
+            {
+                return -1;
+            }
+
+#ifdef WIN32
+            WSADATA wsaData;
+            WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif // WIN32
+
+            fd = socket(AF_INET, SOCK_STREAM, 0);
+            SetTimeOut(timeOut);
+            bool reconnectSuccess = ReConnect();
+            if (reconnectSuccess)
+            {
+                logger_error("port 8080 reconnect success");
+                tmpRecvSize = RecvFrame(recvBuf, recvSize);
+                return tmpRecvSize;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        else
+        {
+            return tmpRecvSize;
+        }
+}
+
 int FRTcpClient::RecvPkg(char* recvBuf, int recvSize)
 {
     uint8_t allRecvBuf[2048] = {};
@@ -243,7 +294,7 @@ int FRTcpClient::RecvPkg(char* recvBuf, int recvSize)
             bool reconnectSuccess = ReConnect();
             if (reconnectSuccess)
             {
-                logger_error("reconnect success");
+                logger_error("port 20004 reconnect success");
                 curRecvTotalSize = 0;
             }
             else
@@ -270,7 +321,7 @@ int FRTcpClient::RecvPkg(char* recvBuf, int recvSize)
                     recvSize = len + 7;
                     continue;
                 }
-                else if(len + 7 == recvSize)
+                else if (len + 7 == recvSize)
                 {
                     int j;
                     uint16_t checksum = 0;
@@ -301,9 +352,9 @@ int FRTcpClient::RecvPkg(char* recvBuf, int recvSize)
                     logger_error("error SDK version");
                     return -3;  //SDK 比机器人版本新，得更新机器人版本
                 }
-                  
+
             }
-        }    
+        }
     }
     return 0;
 }

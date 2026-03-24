@@ -122,3 +122,58 @@ void GetRobotLUAProgram500ErrCode(const std::string& content, int& errLinNum, in
     }
     luaErrCode = std::stoi(codeStr);
 }
+
+std::string PackFrame(FRAME frame)
+{
+    string frameStr = "";
+    frameStr += "/f/bIII";
+    frameStr += to_string(frame.count);
+    frameStr += "III";
+    frameStr += to_string(frame.cmdID);
+    frameStr += "III";
+    frameStr += to_string(frame.content.length());
+    frameStr += "III";
+    frameStr += frame.content;
+    frameStr += "III/b/f";
+
+    return frameStr;
+}
+
+bool VerifyFrame(const std::string& frameStr)
+{
+    if (frameStr.length() < 20 ||
+        frameStr.substr(0, 4) != "/f/b" ||
+        frameStr.substr(frameStr.length() - 4) != "/b/f")
+    {
+        return false;
+    }
+
+    std::string data = frameStr.substr(4, frameStr.length() - 8);
+
+    std::vector<std::string> parts;
+    size_t start = 0;
+    size_t pos;
+
+    for (int i = 0; i < 5; i++)
+    {
+        pos = data.find("III", start);
+        if (pos == std::string::npos)
+        {
+            return false;
+        }
+        parts.push_back(data.substr(start, pos - start));
+        start = pos + 3;
+    }
+    parts.push_back(data.substr(start)); 
+
+    try
+    {
+        return parts.size() == 6 &&                   
+            !parts[1].empty() && !parts[2].empty() && !parts[3].empty() && !parts[4].empty() &&
+            std::stoi(parts[3]) == (int)parts[4].length(); 
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
