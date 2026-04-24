@@ -3,6 +3,14 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include <string.h>
+#include <chrono>
+
+#ifdef __MINGW32__
+#define TCP_MAXRT 5
+#include <mingw.thread.h>
+#else
+#include <thread>
+#endif
 
 #ifdef WIN32
 #include <Shlwapi.h>
@@ -71,4 +79,15 @@ bool CheckFileIsExist(std::string filePath)
 #endif
 
     return true;
+}
+
+
+int _Sleep(int ms)
+{
+#ifdef WIN32
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+#else
+    usleep(ms * 1000);
+#endif
+    return 0;
 }

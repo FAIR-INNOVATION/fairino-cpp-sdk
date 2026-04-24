@@ -19,6 +19,7 @@
 
 class FRTcpClient;
 class FRUdpClient;
+class FRCNDEClient;
 
 class FR_LIB_EXPORT FRRobot
 {
@@ -1434,11 +1435,12 @@ public:
 	errno_t  GetTrajectoryPointNum(int *pnum);
 
 	/**
-	 * @brief  Set the speed during trajectory running
-	 * @param  [in] ovl speed percentage
-	 * @return  error code 
+	 * @brief Set the speed during trajectory running
+	 * @param [in] ovl speed percentage
+	 * @param [in] mode Mode; 0 - deceleration mode; 1 - direct switching
+	 * @return error code 
 	 */     	
-	errno_t  SetTrajectoryJSpeed(float ovl);
+	errno_t  SetTrajectoryJSpeed(float ovl, int mode = 0);
 
 	/**
 	 * @brief  Set the force and torque during trajectory operation
@@ -2086,7 +2088,7 @@ public:
 
 	/**
 	 * @brief Get the communication status between SDK and robot
-	 * @param [out]  state communication status, 0-communication is normal, 1-communication is abnormal
+	 * @param [out]  state communication status, 0-communication is normal, 1-communication disconnected，2-in reconnecting
 	 * @return Error code 
 	 */
     errno_t GetSDKComState(int *state);
@@ -2383,11 +2385,19 @@ public:
 	errno_t LuaDownLoad(std::string fileName, std::string savePath);
 
 	/**
+	 * @brief Upload Lua file
+	 * @param [in] filePath local lua file path name
+	 * @return error code
+	 */
+	errno_t LuaUpload(std::string filePath);
+
+	/**
      * @brief Upload Lua file
      * @param [in] filePath local lua file path name
+	 * @param [in] luaFormatErrStr lua format error information
      * @return error code
      */
-	errno_t LuaUpload(std::string filePath);
+	errno_t LuaUpload(std::string filePath, std::string& luaFormatErrStr);
 
 	/**
      * @brief Delete Lua files
@@ -4375,7 +4385,7 @@ public:
 	 * @param  [in] status[8] Values to write (max 8)
 	 * @return  Error code
 	 */
-	errno_t FieldBusSlaveWriteAO(uint8_t AOIndex, uint8_t wirteNum, int status[8]);
+	errno_t FieldBusSlaveWriteAO(uint8_t AOIndex, uint8_t wirteNum, double status[8]);
 
 	/**
 	 * @brief  Read slave DI (Digital Input)
@@ -4393,7 +4403,7 @@ public:
 	 * @param  [out] status[8] Read values (max 8)
 	 * @return  Error code
 	 */
-	errno_t FieldBusSlaveReadAI(uint8_t AIIndex, uint8_t readNum, int status[8]);
+	errno_t FieldBusSlaveReadAI(uint8_t AIIndex, uint8_t readNum, double status[8]);
 
 	/**
 	 * @brief Wait for extended DI input
@@ -4952,12 +4962,48 @@ public:
 	errno_t SetUserLEDColor(bool r, bool g, bool b);
 
 	/**
+	 * @brief Configure the robot's CNDE real-time status feedback
+	 * @param [in] states List of configurable states
+	 * @param [in] period Status feedback period (ms)
+	 * @return Error code
+	 */
+	errno_t SetRobotRealtimeStateConfig(std::vector<RobotState> states, int period);
+
+	/**
+	 * @brief Add a robot state to the CNDE status configuration
+	 * @param [in] state Configurable state
+	 * @return Error code
+	 */
+	errno_t AddRobotRealtimeState(RobotState state);
+
+	/**
+	 * @brief Remove a robot state from the CNDE status configuration
+	 * @param [in] state Configurable state
+	 * @return Error code
+	 */
+	errno_t DeleteRobotRealtimeState(RobotState state);
+
+	/**
+	 * @brief Set the CNDE status feedback period
+	 * @param [in] period Configurable status feedback period (4-1000 ms)
+	 * @return Error code
+	 */
+	errno_t SetRobotRealtimeStatePeriod(int period);
+
+	/**
+	 * @brief Get the current set of all CNDE status feedback states and the feedback period
+	 * @param [out] states List of configurable states
+	 * @param [out] period Configurable status feedback period (ms)
+	 * @return Error code
+	 */
+	errno_t GetRobotRealtimeStateConfig(std::vector<RobotState>& states, int& period);
+
+	/**
 	 *@brief  Robot interface class destructor
 	 */
 	~FRRobot();
 
 private:
-	void RobotStateRoutineThread();
 	void RobotInstCmdSendRoutineThread();
 	void RobotInstCmdRecvRoutineThread();
 	void RobotTaskRoutineThread();
@@ -5001,7 +5047,6 @@ private:
 	int GetSafetyCode();
 
 private:
-	uint8_t robot_realstate_exit = 0;
 	uint8_t robot_instcmd_send_exit = 0;
 	uint8_t robot_instcmd_recv_exit = 0;
 	uint8_t robot_task_exit = 0;
@@ -5016,10 +5061,9 @@ private:
 
 	char robot_ip[64];
 	std::shared_ptr<ROBOT_STATE_PKG> robot_state_pkg;
-	std::shared_ptr <FRTcpClient> rtClient;
 	std::shared_ptr <FRTcpClient> cmdClient;
 	std::shared_ptr <FRUdpClient> udpCmdClient;
-
+	std::shared_ptr <FRCNDEClient> cndeClient;
 };
 
 #endif

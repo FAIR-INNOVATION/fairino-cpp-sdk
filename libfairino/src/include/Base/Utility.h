@@ -11,6 +11,8 @@
 #include <unistd.h>
 #endif
 
+#define CNDE_MAX_PKG_SIZE 4096
+
 // 跨平台获取文件大小的函数
 std::streampos GetFileSize(const std::string& filePath);
 
@@ -19,3 +21,5 @@ std::string GetFileNameInPath(std::string path);
 
 //检查本地文件是否存在
 bool CheckFileIsExist(std::string path);
+
+int _Sleep(int ms);

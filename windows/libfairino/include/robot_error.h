@@ -1,15 +1,19 @@
-#ifndef   ROBOTERROR_H_
-#define   ROBOTERROR_H_
+#pragma once
 
-#define     ERR_SOCKET_RECV_FAILED                 -16    /* socket recv failed */
-#define     ERR_SOCKET_SEND_FAILED                 -15    /* socket send failed */
-#define     ERR_FILE_OPEN_FAILED                   -14    /* open file failed */
-#define     ERR_FILE_TOO_LARGE                     -13    /* file size too large */
-#define     ERR_UPLOAD_FILE_ERROR                  -12    /* upload file error */
-#define     ERR_FILE_NAME                          -11    /* file name error */
-#define     ERR_DOWN_LOAD_FILE_WRITE_FAILED        -10    /* file download write file failed */
-#define     ERR_DOWN_LOAD_FILE_CHECK_FAILED        -9     /* file download check failed */
-#define     ERR_DOWN_LOAD_FILE_FAILED              -8     /* file download failed */
+#define     ERR_CNDE_STATES_START_FAILED           -21	  //Failed to start the robot's CNDE status feedback
+#define     ERR_TOO_MANY_STATES                    -20    // Configuration state list length exceeds limit
+#define     ERR_NEED_AT_LEAST_ONE_STATE            -19    // At least one state is required
+#define     ERR_STATE_INVALID                      -18    // Invalid state value
+#define     ERR_STATE_ALREADY_EXISTS               -17    // The specified state already exists
+#define     ERR_SOCKET_RECV_FAILED                 -16    // socket recv failed 
+#define     ERR_SOCKET_SEND_FAILED                 -15    // socket send failed 
+#define     ERR_FILE_OPEN_FAILED                   -14    // open file failed 
+#define     ERR_FILE_TOO_LARGE                     -13    // file size too large 
+#define     ERR_UPLOAD_FILE_ERROR                  -12    // upload file error 
+#define     ERR_FILE_NAME                          -11    // file name error 
+#define     ERR_DOWN_LOAD_FILE_WRITE_FAILED        -10    // file download write file failed 
+#define     ERR_DOWN_LOAD_FILE_CHECK_FAILED        -9     // file download check failed 
+#define     ERR_DOWN_LOAD_FILE_FAILED              -8     // file download failed 
 #define     ERR_UPLOAD_FILE_NOT_FOUND              -7       //The file to be uploaded does not exist
 #define     ERR_SAVE_FILE_PATH_NOT_FOUND           -6       //The file path does not exist
 #define     ERR_LUA_FILE_NOT_FOUND                 -5       //The lua file does not exist
@@ -50,9 +54,7 @@
 #define     ERR_TPD_CMD_POINT                      82      //The TPD command point is incorrect
 #define     ERR_TPD_CMD_TOOL                       83      //The TPD tool number is incorrect
 #define     ERR_SPLINE_POINT                       94      //The spline command point is incorrect
-#define     ERR_SAFETY_STOP	                       99	   /* safety stop */
+#define     ERR_SAFETY_STOP	                       99	   // safety stop 
 #define     ERR_SPIRAL_START_POINT                 108     //The helix start point is incorrect
 #define     ERR_TARGET_POSE_CANNOT_REACHED         112     //The target pose cannot be reached
 #define     ERR_POINTTABLE_NOTFOUND                130     //The point table does not exist
-
-#endif

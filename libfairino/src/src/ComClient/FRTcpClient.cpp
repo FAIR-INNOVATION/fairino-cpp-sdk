@@ -1,4 +1,5 @@
 ﻿#include "FRTcpClient.h"
+#include "CNDEFrameHandle.h"
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -20,6 +21,7 @@
 #include <iostream>
 #include "XmlRpc.h"
 #include "logger.h"
+#include "Utility.h"
 
 using namespace std;
 
@@ -226,7 +228,7 @@ int FRTcpClient::RecvFrame(char* recvBuf, int recvSize)
                 return 0;
             }
 #else
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(errno == EAGAIN || errno == EWOULDBLOCK || errno == ETIMEDOUT)
             {
                 return 0;
             }
@@ -359,6 +361,109 @@ int FRTcpClient::RecvPkg(char* recvBuf, int recvSize)
     return 0;
 }
 
+int FRTcpClient::RecvCNDEPkg(char* recvBuf)
+{
+    char allRecvBuf[CNDE_MAX_PKG_SIZE] = {};
+    int curRecvTotalSize = 0;
+    int tmpRecvSize = 0;
+    char tmpRecvBuf[CNDE_MAX_PKG_SIZE] = {};
+    uint16_t toRecvSize = 6;
+    bool findHeadFlag = false;
+    uint16_t frameLen = 0;
+    while (toRecvSize > 0)  //还有数据未接收
+    {
+        memset(tmpRecvBuf, 0, CNDE_MAX_PKG_SIZE);
+        tmpRecvSize = Recv(tmpRecvBuf, toRecvSize - curRecvTotalSize);
+        //printf("cnde recv size is %d\n", tmpRecvSize);
+        //printf("recv err str is %d\n", WSAGetLastError());
+
+        //for (int i = 0; i < tmpRecvSize; i++)
+        //{
+        //    printf(" %x", tmpRecvBuf[i]);
+        //}
+        //printf("\n");
+
+        //printf("   %s\n", tmpRecvBuf);
+        if (tmpRecvSize <= 0)
+        {
+#ifdef WIN32
+            if (WSAGetLastError() == WSAETIMEDOUT)
+            {
+                Sleep(50);
+                continue;
+            }
+#else
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                usleep(50 * 1000);
+                continue;
+            }
+#endif
+
+            logger_error("robot get realtime pkg failed  %d", tmpRecvSize);
+            Close();
+            if (reconnEnable == false)  //没有使能重连
+            {
+                return -1;
+            }
+
+#ifdef WIN32
+            WSADATA wsaData;
+            WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif // WIN32
+
+            fd = socket(AF_INET, SOCK_STREAM, 0);
+            SetTimeOut(timeOut);
+            bool reconnectSuccess = ReConnect();
+            if (reconnectSuccess)
+            {
+                logger_error("port 20005 reconnect success");
+                findHeadFlag == false;
+                curRecvTotalSize = 0;
+                return 0;  //重连成功，需要重新发送启动指令
+            }
+            else
+            {
+                return -2;
+            }
+        }
+        else
+        {
+            memcpy(allRecvBuf + curRecvTotalSize, tmpRecvBuf, tmpRecvSize);
+            curRecvTotalSize += tmpRecvSize;
+            if (findHeadFlag == false && curRecvTotalSize >= 6)
+            {
+                if (allRecvBuf[0] == 0x5A && allRecvBuf[1] == 0x5A)
+                {
+                    findHeadFlag = true;
+                    uint16_t dataLen = 0;
+                    ByteToInt16((unsigned char*)allRecvBuf + 4, dataLen);
+                    frameLen = dataLen + 8;
+                    toRecvSize = frameLen;
+                }
+                else
+                {
+                    return -3;
+                }
+            }
+
+            if (findHeadFlag == true && curRecvTotalSize >= frameLen)
+            {
+                if (((uint8_t)allRecvBuf[frameLen - 1]) == 0xA5 && ((uint8_t)allRecvBuf[frameLen - 2]) == 0xA5)
+                {
+                    memcpy(recvBuf, allRecvBuf, frameLen);
+                    return frameLen;
+                }
+                else
+                {
+                    //TODO 报错
+                    return -4;
+                }
+            }
+        }
+    }
+}
+
 int FRTcpClient::Close() 
 {
 #ifdef WIN32
@@ -413,5 +518,11 @@ int FRTcpClient::SetIpConfig(std::string IP)
 
     fd = socket(AF_INET, SOCK_STREAM, 0);
     SetTimeOut(timeOut);
+    return 0;
+}
+
+int FRTcpClient::SetPortConfig(int port)
+{
+    robotPort = port;
     return 0;
 }

@@ -49,6 +49,7 @@ public:
 
     int RecvPkg(char* recvBuf, int recvSize);
     int RecvFrame(char* recvBuf, int recvSize);
+    int RecvCNDEPkg(char* recvBuf);
 
     int Close();
 
@@ -58,6 +59,7 @@ public:
     bool GetReConnState();
 
     int SetIpConfig(std::string IP);
+    int SetPortConfig(int port);
 
 
 private:
@@ -78,7 +80,7 @@ private:
     int reConnTime = 30000;        //30000 ms
     bool reconnEnable = true;  //重连使能
 
-    int timeOut = 500;  // 默认1s
+    int timeOut = 50000;  // 默认1s
 
     bool reconnFlag = false;
 };

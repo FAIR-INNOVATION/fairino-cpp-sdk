@@ -1,6 +1,7 @@
 #include "robot.h"
 #include "robot_types.h"
 #include "robot_error.h"
+#include "FRCNDEClient.h"
 #include "Utility.h"
 
 #include "logger.h"
@@ -45,13 +46,13 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "3"
-    #define SDK_VERSION_RELEASE "3"
+    #define SDK_VERSION_RELEASE "5"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.3.4.0-robot v3.9.4"
+#define SDK_RELEASE "SDK V2.3.5.0-robot v3.9.5"
 
-#define ROBOT_REALTIME_PORT 20004
+#define ROBOT_CNDE_TCP_PORT 20005
 #define ROBOT_CMD_PORT 8080
 #define ROBOT_UDP_CMD_PORT 20007
 
@@ -96,45 +97,11 @@ FRRobot::FRRobot(void)
     memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
     robot_instcmd_recv_exit = 0;
     robot_instcmd_send_exit = 0;
-    robot_realstate_exit = 0;
     robot_task_exit = 0;
     g_sock_com_err = ERR_SUCCESS;
-    rtClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_REALTIME_PORT);
     cmdClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_CMD_PORT);
     udpCmdClient = std::make_shared<FRUdpClient>();
-}
-
-/**
- * @brief 机器人状态反馈处理线程
- */
-void FRRobot::RobotStateRoutineThread()
-{
-    int rtn = rtClient->Connect();
-    if (rtn != 0)
-    {
-        logger_error("RobotStateRoutineThread connect fail");
-        g_sock_com_err = ERR_SOCKET_COM_FAILED;
-        return;
-    }
-
-    uint8_t pkgBuf[2048] = {};
-    int pkgSize = sizeof(ROBOT_STATE_PKG);
-    while (!robot_realstate_exit)
-    {
-        int rtn = rtClient->RecvPkg((char*)pkgBuf, pkgSize);
-        if (rtn != 0)
-        {   // -1 网络断开；-2 和校验失败；-3 机器人版本不对应
-            g_sock_com_err = ERR_SOCKET_COM_FAILED;
-            return;
-        }
-        else
-        {
-            memcpy(robot_state_pkg.get(), pkgBuf, sizeof(ROBOT_STATE_PKG));
-            memset(pkgBuf, 0, 2048);
-        }
-    }
-    rtClient->Close();
-    return;
+    cndeClient = std::make_shared<FRCNDEClient>(robot_state_pkg, &g_sock_com_err);
 }
 
 /**
@@ -253,7 +220,7 @@ void FRRobot::RobotTaskRoutineThread()
                 if (((robot_state_pkg->frame_cnt - s_last_frame_cnt) == 0) && ((curtime - s_last_time) < 2 * 8000))
                 {
                     s_check_cnt++;
-                    if (s_check_cnt >= MAX_CHECK_CNT_COM && !rtClient->GetReConnectEnable())
+                    if (s_check_cnt >= MAX_CHECK_CNT_COM && !cndeClient->GetReConnectEnable())
                     {
                         logger_error("the robot RobotTaskRoutineThread is error");
                         g_sock_com_err = ERR_SOCKET_COM_FAILED;
@@ -288,7 +255,6 @@ errno_t FRRobot::RPC(const char *ip)
 {
     robot_instcmd_recv_exit = 0;
     robot_instcmd_send_exit = 0;
-    robot_realstate_exit = 0;
     robot_task_exit = 0;
     g_sock_com_err = ERR_SUCCESS;
 
@@ -299,11 +265,13 @@ errno_t FRRobot::RPC(const char *ip)
     memset(robot_ip, 0, 64);
     strncpy(robot_ip, ip, strlen(ip));
 
-    rtClient->SetIpConfig(robot_ip);
     cmdClient->SetIpConfig(robot_ip);
 
-    thread stateThread(&FRRobot::RobotStateRoutineThread, this);
-    stateThread.detach();
+    int rtn = cndeClient->Connect(robot_ip, ROBOT_CNDE_TCP_PORT);
+    if (rtn != 0)
+    {
+        return rtn;
+    }
 
     thread cmdsendThread(&FRRobot::RobotInstCmdSendRoutineThread, this);
     cmdsendThread.detach();
@@ -337,15 +305,9 @@ errno_t FRRobot::CloseRPC()
 {
     robot_instcmd_send_exit = 1;
     robot_instcmd_recv_exit = 1;
-    robot_realstate_exit = 1;
     robot_task_exit = 1;
 
     Sleep(500);
-
-    if (rtClient != nullptr)
-    {
-        rtClient->Close();
-    }
 
     if (cmdClient != nullptr)
     {
@@ -1699,7 +1661,7 @@ errno_t FRRobot::ServoCart(int mode, DescPose *desc_pose, ExaxisPos exaxis, floa
 
 /**
  *@brief  笛卡尔空间点到点运动
- *@param  [in]  desc_pos  目标笛卡尔位姿或位姿增量
+ *@param  [in] desc_pos  目标笛卡尔位姿或位姿增量
  *@param  [in] tool  工具坐标号，范围[1~15]
  *@param  [in] user  工件坐标号，范围[1~15]
  *@param  [in] vel  速度百分比，范围[0~100]
@@ -5699,11 +5661,12 @@ errno_t FRRobot::GetTrajectoryPointNum(int *pnum)
 }
 
 /**
- * @brief  设置轨迹运行中的速度
- * @param  [in] ovl 速度百分比
- * @return  错误码
+ * @brief 设置轨迹运行中的速度
+ * @param [in] ovl 速度百分比
+ * @param [in] mode 模式；0-降速模式；1-直接切换
+ * @return 错误码
  */
-errno_t FRRobot::SetTrajectoryJSpeed(float ovl)
+errno_t FRRobot::SetTrajectoryJSpeed(float ovl, int mode)
 {
     if (IsSockError())
     {
@@ -5713,7 +5676,8 @@ errno_t FRRobot::SetTrajectoryJSpeed(float ovl)
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
 
-    param = ovl;
+    param[0] = ovl;
+    param[1] = mode;
 
     if (c.execute("SetTrajectoryJSpeed", param, result))
     {
@@ -8419,30 +8383,28 @@ errno_t FRRobot::GetRobotEmergencyStopState(uint8_t *state)
 
 /**
  * @brief 获取SDK与机器人的通讯状态
- * @param [out]  state 通讯状态，0-通讯正常，1-通讯异常
+ * @param [out]  state 通讯状态，0-通讯正常;1-通讯断开;2-正在重连
+ * @return 错误码
  */
 errno_t FRRobot::GetSDKComState(int *state)
 {
-    if (IsSockError())
-    {
-        return g_sock_com_err;
-    }
-    int errcode = 0;
-
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        *state = 0;
+        if (cndeClient->GetReConnState() || cmdClient->GetReConnState())
+        {
+            *state = 2;  //正在重连
+        }
+        else
+        {
+            *state = 0;  //连接正常
+        }
     }
     else if (g_sock_com_err == ERR_SOCKET_COM_FAILED)
     {
-        *state = 1;
+        *state = 1;  //连接断开
     }
 
-    int tmp_state = *state;
-
-    logger_info("com state = %d\n", tmp_state);
-
-    return errcode;
+    return 0;
 }
 
 /**
@@ -10800,6 +10762,65 @@ errno_t FRRobot::LuaUpload(std::string filePath)
     }
     /* 先上传，再发起rpc通知做远程检查 */
     int errcode = FileUpLoad(0, filePath);
+    if (0 == errcode)
+    {
+        logger_info("upload file success. try to check lua format.");
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        /* 提取文件名称 */
+        size_t pos = filePath.find_last_of("/\\");
+        if (std::string::npos == pos)
+        {
+            c.close();
+            logger_error("format of path is wrong, should be like /home/fd/xxx.tar.gz");
+            return ERR_FILE_NAME;
+        }
+        std::string filename = filePath.substr(pos + 1);
+
+        // std::string filename = "2222.tar.gz";
+        param[0] = filename;
+        logger_info("LuaUpLoadUpdate start, file name is: [%s]", filename.c_str());
+        if (c.execute("LuaUpLoadUpdate", param, result))
+        {
+            errcode = int(result[0]);
+            std::string luaFormatErrStr = std::string(result[1]);
+            logger_info("lua format, error code is: %d, %s", errcode, luaFormatErrStr.c_str());
+            if (0 != errcode)
+            {
+                logger_error("lua format error.,error code is: %d, %s", errcode, luaFormatErrStr.c_str());
+            }
+            c.close();
+            logger_info("LuaUpLoadUpdate end");
+            return errcode;
+        }
+        else {
+            logger_error("execute LuaUpLoadUpdate fail.");
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+    }
+    else {
+        logger_error("upload file fail. errcode is: %d.", errcode);
+    }
+
+    return errcode;
+}
+
+/**
+ * @brief 上传Lua文件
+ * @param [in] filePath 本地lua文件路径名
+ * @param [in] luaFormatErrStr lua文件校验错误信息
+ * @return 错误码
+ */
+errno_t FRRobot::LuaUpload(std::string filePath, std::string& luaFormatErrStr)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    /* 先上传，再发起rpc通知做远程检查 */
+    int errcode = FileUpLoad(0, filePath);
     if(0 == errcode)
     {
         logger_info("upload file success. try to check lua format.");
@@ -10822,11 +10843,11 @@ errno_t FRRobot::LuaUpload(std::string filePath)
         if(c.execute("LuaUpLoadUpdate", param, result))
         {
             errcode = int(result[0]);
-            std::string res_str = std::string(result[1]);
-            logger_info("lua format, error code is: %d, %s", errcode, res_str.c_str());
+            luaFormatErrStr = std::string(result[1]);
+            logger_info("lua format, error code is: %d, %s", errcode, luaFormatErrStr.c_str());
             if(0 != errcode)
             {
-                logger_error("lua format error.,error code is: %d, %s", errcode, res_str.c_str());
+                logger_error("lua format error.,error code is: %d, %s", errcode, luaFormatErrStr.c_str());
             }
             c.close();
             logger_info("LuaUpLoadUpdate end");
@@ -10839,8 +10860,6 @@ errno_t FRRobot::LuaUpload(std::string filePath)
     }else{
         logger_error("upload file fail. errcode is: %d.", errcode);
     }
-
-    
 
     return errcode;
 }
@@ -19855,7 +19874,13 @@ std::vector<std::string> FRRobot::split(std::string s, std::string delimiter)
 
 bool FRRobot::IsSockError()
 {
-    while (rtClient->GetReConnState())
+    while (cndeClient->GetReConnState())
+    {
+        //如果正在重连，就等待重连结果
+        Sleep(100);
+    }
+
+    while (cmdClient->GetReConnState())
     {
         //如果正在重连，就等待重连结果
         Sleep(100);
@@ -19874,6 +19899,11 @@ bool FRRobot::IsSockError()
 //判断当前安全状态，安全停止、主子故障等
 int FRRobot::GetSafetyCode()
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
     if (robot_state_pkg->safety_stop0_state == 1 || robot_state_pkg->safety_stop1_state == 1)
     {
         return 99;
@@ -19891,7 +19921,7 @@ int FRRobot::GetSafetyCode()
  */
 errno_t FRRobot::SetReConnectParam(bool enable, int reconnectTime, int period)
 {
-    rtClient->SetReConnectParam(enable, reconnectTime, period);
+    cndeClient->SetReConnectParam(enable, reconnectTime, period);
     cmdClient->SetReConnectParam(enable, reconnectTime, period);
     return 0;
 }
@@ -20015,7 +20045,7 @@ errno_t FRRobot::FieldBusSlaveWriteDO(uint8_t DOIndex, uint8_t wirteNum, uint8_t
  * @param  [in] status[8] 写入的数值，最多写8个
  * @return  错误码
  */
-errno_t FRRobot::FieldBusSlaveWriteAO(uint8_t AOIndex, uint8_t wirteNum, int status[8])
+errno_t FRRobot::FieldBusSlaveWriteAO(uint8_t AOIndex, uint8_t wirteNum, double status[8])
 {
     if (IsSockError())
     {
@@ -20113,7 +20143,7 @@ errno_t FRRobot::FieldBusSlaveReadDI(uint8_t DOIndex, uint8_t readNum, uint8_t s
  * @param  [out] status[8] 读取到的数值，最多读8个
  * @return  错误码
  */
-errno_t FRRobot::FieldBusSlaveReadAI(uint8_t AIIndex, uint8_t readNum, int status[8])
+errno_t FRRobot::FieldBusSlaveReadAI(uint8_t AIIndex, uint8_t readNum, double status[8])
 {
     if (IsSockError())
     {
@@ -20139,7 +20169,7 @@ errno_t FRRobot::FieldBusSlaveReadAI(uint8_t AIIndex, uint8_t readNum, int statu
         {
             for (int i = 0; i < readNum; i++)
             {
-                status[i] = (int)result[i + 1];
+                status[i] = (double)result[i + 1];     
             }
         }
     }
@@ -23051,6 +23081,11 @@ errno_t FRRobot::MoveStationary()
  */
 errno_t FRRobot::GetProgramRunErrCode(int& errLinNum, int& luaErrCode)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
     errLinNum = robotProgramErrLinNum;
     luaErrCode = robotProgramErrCode;
     return 0;
@@ -23141,6 +23176,11 @@ errno_t FRRobot::GetRobotStopOnComDisc(int pordID, bool& enable, int& confirmTim
  */
 errno_t FRRobot::SendUDPFrame(std::string frame)
 {
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
     if (!VerifyFrame(frame))
     {
         return ERR_PARAM_VALUE;

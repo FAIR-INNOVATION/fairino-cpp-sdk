@@ -1,4 +1,4 @@
-#include "robot.h"
+﻿#include "robot.h"
 #ifdef WIN32
 #include <string.h>
 #include <windows.h>
@@ -18,6 +18,7 @@
 #include "md5.hpp"
 #include "FRTcpClient.h"
 #include <bitset>
+#include <algorithm>
 
 using namespace std;
 using std::chrono::duration_cast;
@@ -232,17 +233,17 @@ int PowerLimitOn(FRRobot* robot)
     robot->GetJointTorques(1, torques);
 
     int count = 100;
-    robot->ServoJTStart(); //   #servoJT��ʼ
+    robot->ServoJTStart(); //   #servoJT开始
     int error = 0;
     while (count > 0)
     {
-        torques[0] = torques[0] + 0.1;//  #ÿ��1������0.1NM���˶�100��
-        error = robot->ServoJT(torques, 0.001);  //# �ؽڿռ��ŷ�ģʽ�˶�
+        torques[0] = torques[0] + 0.1;//  #每次1轴增加0.1NM，运动100次
+        error = robot->ServoJT(torques, 0.001);  //# 关节空间伺服模式运动
         count = count - 1;
         robot->Sleep(1);
     }
 
-    error = robot->ServoJTEnd();  //#�ŷ��˶�����
+    error = robot->ServoJTEnd();  //#伺服运动结束
     return 0;
 }
 
@@ -253,16 +254,16 @@ int TestServoJ1(FRRobot* robot)
     robot->GetJointTorques(1, torques);
 
     int count = 100;
-    robot->ServoJTStart(); //   #servoJT��ʼ
+    robot->ServoJTStart(); //   #servoJT开始
     int error = 0;
     while (count > 0)
     {
-        error = robot->ServoJT(torques, 0.008);  //# �ؽڿռ��ŷ�ģʽ�˶�
+        error = robot->ServoJT(torques, 0.008);  //# 关节空间伺服模式运动
         count = count - 1;
         robot->Sleep(1);
     }
 
-    error = robot->ServoJTEnd();  //#�ŷ��˶�����
+    error = robot->ServoJTEnd();  //#伺服运动结束
     robot->DragTeachSwitch(1);
     return 0;
 }
@@ -275,17 +276,17 @@ int PowerLimitOff(FRRobot* robot)
     robot->GetJointTorques(1, torques);
 
     int count = 100;
-    robot->ServoJTStart(); //   #servoJT��ʼ
+    robot->ServoJTStart(); //   #servoJT开始
     int error = 0;
     while (count > 0)
     {
-        torques[0] = torques[0] + 0.1;//  #ÿ��1������0.1NM���˶�100��
-        error = robot->ServoJT(torques, 0.001);  //# �ؽڿռ��ŷ�ģʽ�˶�
+        torques[0] = torques[0] + 0.1;//  #每次1轴增加0.1NM，运动100次
+        error = robot->ServoJT(torques, 0.001);  //# 关节空间伺服模式运动
         count = count - 1;
         robot->Sleep(1);
     }
 
-    error = robot->ServoJTEnd();  //#�ŷ��˶�����
+    error = robot->ServoJTEnd();  //#伺服运动结束
     return 0;
 }
 
@@ -391,26 +392,26 @@ void Wiresearch(FRRobot* robot)
     JointPos jointREF1B = { -133.133, -119.029, -83.326, -70.976, 89.069, 91.401 };
 
     rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-    robot->MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //���
-    robot->MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //�����
+    robot->MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //起点
+    robot->MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //方向点
     rtn1 = robot->WireSearchWait("REF0");
     rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
     rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-    robot->MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //���
-    robot->MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //�����
+    robot->MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //起点
+    robot->MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //方向点
     rtn1 = robot->WireSearchWait("REF1");
     rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
     rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-    robot->MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //���
-    robot->MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //�����
+    robot->MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //起点
+    robot->MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //方向点
     rtn1 = robot->WireSearchWait("RES0");
     rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
     rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-    robot->MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //���
-    robot->MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //�����
+    robot->MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //起点
+    robot->MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //方向点
     rtn1 = robot->WireSearchWait("RES1");
     rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
@@ -1090,26 +1091,26 @@ void AxleSensorConfig(FRRobot* robot)
      JointPos jointREF1B = { 82.117, -87.146, 116.470, -117.737, -93.145, -61.090 };
 
      rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot->MoveL(&jointREF0A, &descREF0A, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //���
-     robot->MoveL(&jointREF0B, &descREF0B, 1, 0, 10, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //�����
+     robot->MoveL(&jointREF0A, &descREF0A, 1, 0, 100, 100, 100, -1, 0, &exaxisPos, 0, 0, &offdese);  //起点
+     robot->MoveL(&jointREF0B, &descREF0B, 1, 0, 10, 100, 100, -1, 0, &exaxisPos, 1, 0, &offdese);  //方向点
      rtn1 = robot->WireSearchWait("REF0");
      rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot->MoveL(&jointREF1A, &descREF1A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //���
-     robot->MoveL(&jointREF1B, &descREF1B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //�����
+     robot->MoveL(&jointREF1A, &descREF1A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //起点
+     robot->MoveL(&jointREF1B, &descREF1B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //方向点
      rtn1 = robot->WireSearchWait("REF1");
      rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot->MoveL(&jointREF0A, &descREF0A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //���
-     robot->MoveL(&jointREF0B, &descREF0B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //�����
+     robot->MoveL(&jointREF0A, &descREF0A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //起点
+     robot->MoveL(&jointREF0B, &descREF0B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //方向点
      rtn1 = robot->WireSearchWait("RES0");
      rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot->WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot->MoveL(&jointREF1A, &descREF1A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //���
-     robot->MoveL(&jointREF1B, &descREF1B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //�����
+     robot->MoveL(&jointREF1A, &descREF1A, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //起点
+     robot->MoveL(&jointREF1B, &descREF1B, 1, 0, 10, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //方向点
      rtn1 = robot->WireSearchWait("RES1");
      rtn2 = robot->WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
@@ -1862,10 +1863,10 @@ void AxleSensorConfig(FRRobot* robot)
      //robot.MoveC(&midjointPos, &middescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, &endjointPos, &enddescPose, 0, 0, 100, 100, &exaxisPos, 0, &offdese, 100, -1);
      //robot.Circle(&midjointPos, &middescPose, tool, 0, 100, 100, &exaxisPos, &endjointPos, &enddescPose, tool, 0, 100, 100, &exaxisPos, 100, -1, &offdese);
 
-     //robot.StartJOG(0, 1, 0, 20.0, 20.0, 30.0);   //���ؽ��˶���StartJOGΪ������ָ��˶�״̬�½��������˶�ָ�����StartJOG���ᱻ����
+     //robot.StartJOG(0, 1, 0, 20.0, 20.0, 30.0);   //单关节运动，StartJOG为非阻塞指令，运动状态下接收其他运动指令（包含StartJOG）会被丢弃
      //robot.Sleep(500);
-     //robot.StopJOG(1);  //�����˵���㶯����ֹͣ
-     //robot.ImmStopJOG();  //�����˵���㶯����ֹͣ
+     //robot.StopJOG(1);  //机器人单轴点动减速停止
+     //robot.ImmStopJOG();  //机器人单轴点动立即停止
 
      //robot.MoveCart(&p1Desc, 0, 0, 100, 100, 100, -1, -1);
 
@@ -2036,10 +2037,10 @@ void AxleSensorConfig(FRRobot* robot)
      char nameA[30] = "/fruser/traj/A.txt";
      char nameB[30] = "/fruser/traj/B.txt";
      
-     //rtn = robot->LoadTrajectoryLA(nameA, 2, 0.0, 0, 1.0, 100.0, 200.0, 1000.0);    //B����
+     //rtn = robot->LoadTrajectoryLA(nameA, 2, 0.0, 0, 1.0, 100.0, 200.0, 1000.0);    //B样条
      //cout << "LoadTrajectoryLA rtn is " << rtn << endl;
-     //robot->LoadTrajectoryLA(nameB, 0, 0, 0, 1, 100, 100, 1000);//ֱ������
-     robot->LoadTrajectoryLA(nameA, 1, 2, 0, 2, 100, 200, 1000);    //ֱ�����
+     //robot->LoadTrajectoryLA(nameB, 0, 0, 0, 1, 100, 100, 1000);//直线连接
+     robot->LoadTrajectoryLA(nameA, 1, 2, 0, 2, 100, 200, 1000);    //直线拟合
      DescPose startPos(0, 0, 0, 0, 0, 0);
      robot->GetTrajectoryStartPose(nameA, &startPos);
      //robot->GetTrajectoryStartPose(nameB, &startPos);
@@ -2218,7 +2219,7 @@ void AxleSensorConfig(FRRobot* robot)
      uint8_t block = 0;
      rtn = 0;
 
-     /* ������һ�����ʹ�ץȡ���� */
+     /* 下面是一个传送带抓取流程 */
      DescPose startdescPose(139.176, 4.717, 9.088, -179.999, -0.004, -179.990);
      JointPos startjointPos(-34.129, -88.062, 97.839, -99.780, -90.003, -34.140);
      
@@ -2339,8 +2340,8 @@ void AxleSensorConfig(FRRobot* robot)
      robot->WeldingSetCurrentRelation(0, 495, 1, 10, 0);
      robot->WeldingSetVoltageRelation(10, 45, 1, 10, 1);
 
-     robot->WeldingSetVoltage(0, 25, 1, 0);// ----���õ�ѹ
-     robot->WeldingSetCurrent(0, 260, 0, 0);// ----���õ���
+     robot->WeldingSetVoltage(0, 25, 1, 0);// ----设置电压
+     robot->WeldingSetCurrent(0, 260, 0, 0);// ----设置电流
 
      int rtn = robot->ArcWeldTraceAIChannelCurrent(4);
      cout << "ArcWeldTraceAIChannelCurrent rtn is " << rtn << endl;
@@ -2379,8 +2380,8 @@ void AxleSensorConfig(FRRobot* robot)
      robot->WeldingSetCurrentRelation(0, 495, 1, 10, 0);
      robot->WeldingSetVoltageRelation(10, 45, 1, 10, 1);
 
-     //robot->WeldingSetVoltage(0, 25, 1, 0);// ----���õ�ѹ
-     //robot->WeldingSetCurrent(0, 260, 0, 0);// ----���õ���
+     //robot->WeldingSetVoltage(0, 25, 1, 0);// ----设置电压
+     //robot->WeldingSetCurrent(0, 260, 0, 0);// ----设置电流
 
      //return 0;
 
@@ -3159,12 +3160,13 @@ int TestServoJ(void)
 
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
     int rtn = robot.RPC("192.168.58.2");
     if (rtn != 0)
     {
         return -1;
     }
-    robot.SetReConnectParam(true, 30000, 500);
+    
 
     JointPos j(0, 0, 0, 0, 0, 0);
     ExaxisPos epos(0, 0, 0, 0);
@@ -4686,7 +4688,7 @@ int TestServoJUDP(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     /* ��ȡlua���� */
+     /* 获取lua名称 */
      list<std::string> luaNames;
      rtn = robot.GetLuaList(&luaNames);
      std::cout << "res is: " << rtn << std::endl;
@@ -4696,15 +4698,15 @@ int TestServoJUDP(void)
          std::cout << it->c_str() << std::endl;
      }
 
-     /* ����lua */
+     /* 下载lua */
      rtn = robot.LuaDownLoad("test.lua", "D://zDOWN/");
      printf("LuaDownLoad rtn is %d\n", rtn);
 
-     /* �ϴ�lua */
+     /* 上传lua */
      rtn = robot.LuaUpload("D://zUP/airlab.lua");
      printf("LuaUpload rtn is %d\n", rtn);
 
-     /* ɾ��lua */
+     /* 删除lua */
      rtn = robot.LuaDelete("test.lua");
      printf("LuaDelete rtn is %d\n", rtn);
 
@@ -5628,26 +5630,26 @@ int TestServoJUDP(void)
      JointPos jointREF1B = { -119.088, -69.676, 98.692, -121.761, -89.219, 74.303 };
 
      rtn0 = robot.WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot.MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //���
-     robot.MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //�����
+     robot.MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //起点
+     robot.MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //方向点
      rtn1 = robot.WireSearchWait("REF0");
      rtn2 = robot.WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot.WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot.MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //���
-     robot.MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //�����
+     robot.MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //起点
+     robot.MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //方向点
      rtn1 = robot.WireSearchWait("REF1");
      rtn2 = robot.WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot.WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot.MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //���
-     robot.MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //�����
+     robot.MoveL(&jointREF0A, &descREF0A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //起点
+     robot.MoveL(&jointREF0B, &descREF0B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //方向点
      rtn1 = robot.WireSearchWait("RES0");
      rtn2 = robot.WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
      rtn0 = robot.WireSearchStart(0, 10, 100, 0, 10, 100, 0);
-     robot.MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //���
-     robot.MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //�����
+     robot.MoveL(&jointREF1A, &descREF1A, 1, 1, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese);  //起点
+     robot.MoveL(&jointREF1B, &descREF1B, 1, 1, 100, 100, 100, -1, &exaxisPos, 1, 0, &offdese);  //方向点
      rtn1 = robot.WireSearchWait("RES1");
      rtn2 = robot.WireSearchEnd(0, 10, 100, 0, 10, 100, 0);
 
@@ -5997,7 +5999,7 @@ int TestServoJUDP(void)
      return 0;
  }
 
- //�������ص���ϵ���ĺ������ƴ���ʵ��
+ //带有力矩调节系数的恒力控制代码实例
  int TestFTControlWithAdjustCoeff(void)
  {
      ROBOT_STATE_PKG pkg = {};
@@ -6089,41 +6091,41 @@ int TestServoJUDP(void)
      robot.FT_SetZero(0);
      robot.Sleep(1000);
 
-     //��������
-     uint8_t status = 1;  //�������ƿ�����־��0-�أ�1-��
-     int sensor_num = 1; //�����������
-     float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //�����ֵ
-     uint8_t adj_sign = 0;  //����Ӧ��ͣ״̬��0-�رգ�1-����
-     uint8_t ILC_sign = 0;  //ILC������ͣ״̬��0-ֹͣ��1-ѵ����2-ʵ��
-     float max_dis = 100.0;  //����������
-     float max_ang = 5.0;  //�������Ƕ�
+     //恒力参数
+     uint8_t status = 1;  //恒力控制开启标志，0-关，1-开
+     int sensor_num = 1; //力传感器编号
+     float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //最大阈值
+     uint8_t adj_sign = 0;  //自适应启停状态，0-关闭，1-开启
+     uint8_t ILC_sign = 0;  //ILC控制启停状态，0-停止，1-训练，2-实操
+     float max_dis = 100.0;  //最大调整距离
+     float max_ang = 5.0;  //最大调整角度
 
      ForceTorque ft;
      memset(&ft, 0, sizeof(ForceTorque));
 
-     //������̽������
-     int rcs = 0;  //�ο�����ϵ��0-��������ϵ��1-������ϵ
-     float dr = 0.7;  //ÿȦ�뾶����������λmm
-     float fFinish = 1.0; //����������ֵ��0~100������λN��Nm
-     float t = 60000.0; //���̽��ʱ�䣬��λms
-     float vmax = 3.0; //���ٶ����ֵ����λmm/s
+     //螺旋线探索参数
+     int rcs = 0;  //参考坐标系，0-工具坐标系，1-基坐标系
+     float dr = 0.7;  //每圈半径进给量，单位mm
+     float fFinish = 1.0; //力或力矩阈值（0~100），单位N或Nm
+     float t = 60000.0; //最大探索时间，单位ms
+     float vmax = 3.0; //线速度最大值，单位mm/s
 
-     //ֱ�߲������
-     float force_goal = 20.0;  //����������ֵ��0~100������λN��Nm
-     float lin_v = 0.0; //ֱ���ٶȣ���λmm/s
-     float lin_a = 0.0; //ֱ�߼��ٶȣ���λmm/s^2,�ݲ�ʹ��
-     float disMax = 100.0; //��������룬��λmm
-     uint8_t linorn = 1; //���뷽��1-������2-������
+     //直线插入参数
+     float force_goal = 20.0;  //力或力矩阈值（0~100），单位N或Nm
+     float lin_v = 0.0; //直线速度，单位mm/s
+     float lin_a = 0.0; //直线加速度，单位mm/s^2,暂不使用
+     float disMax = 100.0; //最大插入距离，单位mm
+     uint8_t linorn = 1; //插入方向，1-正方向，2-负方向
 
-     //��ת�������
-     float angVelRot = 2.0;  //��ת���ٶȣ���λ��/s
-     float forceInsertion = 1.0; //����������ֵ��0~100������λN��Nm
-     int angleMax = 45; //�����ת�Ƕȣ���λ��
-     uint8_t orn = 1; //���ķ���1-fz,2-mz
-     float angAccmax = 0.0; //�����ת�Ǽ��ٶȣ���λ��/s^2,�ݲ�ʹ��
-     uint8_t rotorn = 1; //��ת����1-˳ʱ�룬2-��ʱ��
+     //旋转插入参数
+     float angVelRot = 2.0;  //旋转角速度，单位°/s
+     float forceInsertion = 1.0; //力或力矩阈值（0~100），单位N或Nm
+     int angleMax = 45; //最大旋转角度，单位°
+     uint8_t orn = 1; //力的方向，1-fz,2-mz
+     float angAccmax = 0.0; //最大旋转角加速度，单位°/s^2,暂不使用
+     uint8_t rotorn = 1; //旋转方向，1-顺时针，2-逆时针
 
-     uint8_t select1[6] = { 0,0,1,1,1,0 }; //�������ɶ�ѡ��[fx,fy,fz,mx,my,mz]��0-����Ч��1-��Ч
+     uint8_t select1[6] = { 0,0,1,1,1,0 }; //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
      ft.fz = -10.0;
      robot.FT_Control(status, sensor_num, select1, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
      rtn = robot.FT_SpiralSearch(rcs, dr, fFinish, t, vmax);
@@ -6131,7 +6133,7 @@ int TestServoJUDP(void)
      status = 0;
      robot.FT_Control(status, sensor_num, select1, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
-     uint8_t select2[6] = { 1,1,1,0,0,0 };  //�������ɶ�ѡ��[fx,fy,fz,mx,my,mz]��0-����Ч��1-��Ч
+     uint8_t select2[6] = { 1,1,1,0,0,0 };  //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
      gain[0] = 0.00005;
      ft.fz = -30.0;
      status = 1;
@@ -6141,7 +6143,7 @@ int TestServoJUDP(void)
      status = 0;
      robot.FT_Control(status, sensor_num, select2, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
-     uint8_t select4[6] = { 1,1,1,0,0,0 };  //�������ɶ�ѡ��[fx,fy,fz,mx,my,mz]��0-����Ч��1-��Ч
+     uint8_t select4[6] = { 1,1,1,0,0,0 };  //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
      ft.fz = -30.0;
      status = 1;
      robot.FT_Control(status, sensor_num, select4, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
@@ -6168,22 +6170,22 @@ int TestServoJUDP(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     float forceInsertion = 2.0; //����������ֵ��0~100������λN��Nm
-     int angleMax = 12; //�����ת�Ƕȣ���λ��
-     uint8_t orn = 2; //���ķ���1-fz,2-mz
-     float angAccmax = 5; //�����ת�Ǽ��ٶȣ���λ��/s^2,�ݲ�ʹ��
-     uint8_t status = 1;  //�������ƿ�����־��0-�أ�1-��
-     int sensor_num = 2; //�����������
-     float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //�����ֵ
-     uint8_t adj_sign = 0;  //����Ӧ��ͣ״̬��0-�رգ�1-����
-     uint8_t ILC_sign = 0;  //ILC������ͣ״̬��0-ֹͣ��1-ѵ����2-ʵ��
-     float max_dis = 1000.0;  //����������
-     float max_ang = 5.0;  //�������Ƕ�
+     float forceInsertion = 2.0; //力或力矩阈值（0~100），单位N或Nm
+     int angleMax = 12; //最大旋转角度，单位°
+     uint8_t orn = 2; //力的方向，1-fz,2-mz
+     float angAccmax = 5; //最大旋转角加速度，单位°/s^2,暂不使用
+     uint8_t status = 1;  //恒力控制开启标志，0-关，1-开
+     int sensor_num = 2; //力传感器编号
+     float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //最大阈值
+     uint8_t adj_sign = 0;  //自适应启停状态，0-关闭，1-开启
+     uint8_t ILC_sign = 0;  //ILC控制启停状态，0-停止，1-训练，2-实操
+     float max_dis = 1000.0;  //最大调整距离
+     float max_ang = 5.0;  //最大调整角度
      ForceTorque ft;
      memset(&ft, 0, sizeof(ForceTorque));
-     int rcs = 0;  //�ο�����ϵ��0-��������ϵ��1-������ϵ
-     float angVelRot = 2.0;  //��ת���ٶȣ���λ��/s
-     uint8_t rotorn = 1; //��ת����1-˳ʱ�룬2-��ʱ��
+     int rcs = 0;  //参考坐标系，0-工具坐标系，1-基坐标系
+     float angVelRot = 2.0;  //旋转角速度，单位°/s
+     uint8_t rotorn = 1; //旋转方向，1-顺时针，2-逆时针
 
      JointPos j1(58.417, -85.578, -100.516, -83.915, 90.000, -31.662);
      JointPos j2(58.417, -87.111, -107.956, -74.942, 90.000, -31.662);
@@ -6193,7 +6195,7 @@ int TestServoJUDP(void)
      DescPose offset_pos(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
      robot.MoveL(&j1, &desc_p1, 0, 0, 100.0, 180.0, 100.0, -1.0, &epos, 0, 1, &offset_pos);
-     uint8_t select3[6] = { 0,0,1,0,0,0 };  //�������ɶ�ѡ��[fx,fy,fz,mx,my,mz]��0-����Ч��1-��Ч
+     uint8_t select3[6] = { 0,0,1,0,0,0 };  //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
      ft.fz = -10.0;
      gain[0] = 0.0001;
      status = 1;
@@ -7231,39 +7233,39 @@ int TestServoJUDP(void)
  //    printf("LuaUpload rtn is %d\n", rtn);
  //    robot->ProgramLoad("/fruser/Program5.lua");
  //    
- //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//�����˿�ʶ���׽���
+ //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//创建了可识别套接字
  //    if (serSocket != -1)
  //    {
- //        printf("�ɹ������׽��֣�%d\n", serSocket);
+ //        printf("成功创建套接字！%d\n", serSocket);
  //    }
 
- //    //��Ҫ�󶨵Ĳ�������Ҫ�Ǳ��ص�socket��һЩ��Ϣ��
+ //    //需要绑定的参数，主要是本地的socket的一些信息。
  //    SOCKADDR_IN addr;
  //    addr.sin_family = AF_INET;
- //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip��ַ
- //    addr.sin_port = htons(31000);//�󶨶˿�
+ //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip地址
+ //    addr.sin_port = htons(31000);//绑定端口
 
- //    bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));//�����
- //    listen(serSocket, 5);//���еڶ������������ܹ����յ�����������
- //    printf("�ȴ��ͻ���...\n");
+ //    bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));//绑定完成
+ //    listen(serSocket, 5);//其中第二个参数代表能够接收的最多的连接数
+ //    printf("等待客户端...\n");
  //    SOCKADDR_IN clientsocket;
  //    int len = sizeof(SOCKADDR);
 
  //    robot->ProgramRun();
  //    SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
- //    //������ﲻ��accept����conection�Ļ������ͻ᲻�ϵļ���
+ //    //如果这里不是accept而是conection的话。。就会不断的监听
  //    if (serConn)
  //    {
- //        printf("�������µĿͻ���...\n");
+ //        printf("监听到新的客户端...\n");
  //    }
  //    while (1)
  //    {
  //        robot->Sleep(200);
  //        char sendBuf[4000] = "";
- //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//�ҶԶ�Ӧ��IP���ҽ������ִ�ӡ������
- //        //������Ϣ
+ //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//找对对应的IP并且将这行字打印到那里
+ //        //发送信息
  //        send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
- //        char receiveBuf[4000] = "";//����
+ //        char receiveBuf[4000] = "";//接收
  //        memset(receiveBuf, 0, 4000);
  //        int RecvLen;
  //        RecvLen = recv(serConn, receiveBuf, 4000, 0);
@@ -7273,8 +7275,8 @@ int TestServoJUDP(void)
  //        else
  //        {
  //            string txt = receiveBuf;
- //            string::size_type idx = txt.find("ProgramFinish"); //��a�в���b.
- //            if (idx == string::npos) //�����ڡ�
+ //            string::size_type idx = txt.find("ProgramFinish"); //在a中查找b.
+ //            if (idx == string::npos) //不存在。
  //                cout << "not found\n";
  //            else
  //            {
@@ -7284,8 +7286,8 @@ int TestServoJUDP(void)
  //        }
 
  //    }
- //    closesocket(serConn);//�ر�
- //    //WSACleanup();//�ͷ���Դ�Ĳ���
+ //    closesocket(serConn);//关闭
+ //    //WSACleanup();//释放资源的操作
 
  //    rtn = robot->LuaDelete("Program5.lua");
  //    printf("LuaDelete rtn is %d\n", rtn);
@@ -7298,21 +7300,21 @@ int TestServoJUDP(void)
  //    printf("LuaUpload rtn is %d\n", rtn);
  //    robot->ProgramLoad("/fruser/Program6.lua");
 
- //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//�����˿�ʶ���׽���
+ //    SOCKET serSocket = socket(AF_INET, SOCK_STREAM, 0);//创建了可识别套接字
  //    if (serSocket != -1)
  //    {
- //        printf("�ɹ������׽��֣�%d\n", serSocket);
+ //        printf("成功创建套接字！%d\n", serSocket);
  //    }
 
- //    //��Ҫ�󶨵Ĳ�������Ҫ�Ǳ��ص�socket��һЩ��Ϣ��
+ //    //需要绑定的参数，主要是本地的socket的一些信息。
  //    SOCKADDR_IN addr;
  //    addr.sin_family = AF_INET;
- //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip��ַ
- //    addr.sin_port = htons(31000);//�󶨶˿�
+ //    addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);//ip地址
+ //    addr.sin_port = htons(31000);//绑定端口
 
  //    bind(serSocket, (SOCKADDR*)&addr, sizeof(SOCKADDR));
  //    listen(serSocket, 5);
- //    printf("�ȴ��ͻ���...\n");
+ //    printf("等待客户端...\n");
  //    SOCKADDR_IN clientsocket;
  //    int len = sizeof(SOCKADDR);
 
@@ -7320,15 +7322,15 @@ int TestServoJUDP(void)
  //    SOCKET serConn = accept(serSocket, (SOCKADDR*)&clientsocket, &len);
  //    if (serConn)
  //    {
- //        printf("�������µĿͻ���...\n");
+ //        printf("监听到新的客户端...\n");
  //    }
  //    while (1)
  //    {
  //        robot->Sleep(100);
  //        char sendBuf[100];
- //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//�ҶԶ�Ӧ��IP���ҽ������ִ�ӡ������
+ //        sprintf(sendBuf, "welcome %s to here", inet_ntoa(clientsocket.sin_addr));//找对对应的IP并且将这行字打印到那里
  //        send(serConn, sendBuf, strlen(sendBuf) + 1, 0);
- //        char receiveBuf[4000] = "";//����
+ //        char receiveBuf[4000] = "";//接收
  //        memset(receiveBuf, 0, 4000);
  //        int RecvLen;
  //        RecvLen = recv(serConn, receiveBuf, 4000, 0);
@@ -7338,8 +7340,8 @@ int TestServoJUDP(void)
  //        else
  //        {
  //            string txt = receiveBuf;
- //            string::size_type idx = txt.find("ProgramFinish"); //��a�в���b.
- //            if (idx == string::npos) //�����ڡ�
+ //            string::size_type idx = txt.find("ProgramFinish"); //在a中查找b.
+ //            if (idx == string::npos) //不存在。
  //                cout << "not found\n";
  //            else
  //            {
@@ -7349,8 +7351,8 @@ int TestServoJUDP(void)
  //        }
 
  //    }
- //    closesocket(serConn);//�ر�
- //   // WSACleanup();//�ͷ���Դ�Ĳ���
+ //    closesocket(serConn);//关闭
+ //   // WSACleanup();//释放资源的操作
 
  //    rtn = robot->LuaDelete("Program6.lua");
  //    printf("LuaDelete rtn is %d\n", rtn);
@@ -7560,7 +7562,7 @@ int TestServoJUDP(void)
 
      for (int i = 0; i < 100; i++)
      {
-         printf("------------------��  %d  �β���------------------\n", i);
+         printf("------------------第  %d  次测试------------------\n", i);
          j1.jPos[0] += 0.01 * i;
          j1.jPos[1] += 0.01 * i;
          printf("start pos is %f  %f\n", j1.jPos[0], j1.jPos[1]);
@@ -7658,53 +7660,53 @@ int TestServoJUDP(void)
          return -1;
      }
      robot.SetReConnectParam(true, 30000, 500);
-     //1.�궨��Ӧ�û����˹�������ϵ��������ʹ���ĵ㷨�����㷨���й�������ϵ�ı궨��Ӧ�ã��漰��������ϵ�궨�Ľӿ����£�
-     //  int SetToolPoint(int point_num); //���ù��߲ο���-���㷨
-     //  int ComputeTool(ref DescPose tcp_pose); //���㹤������ϵ
-     //  int SetTcp4RefPoint(int point_num);  //���ù��߲ο���-�ĵ㷨
-     //  int ComputeTcp4(ref DescPose tcp_pose);  //���㹤������ϵ-�ĵ㷨
-     //  int SetToolCoord(int id, DescPose coord, int type, int install); //����Ӧ�ù�������ϵ
-     //  int SetToolList(int id, DescPose coord, int type, int install);  //����Ӧ�ù�������ϵ�б�
-     //2.����UDPͨ�Ų�����������UDPͨ��
+     //1.标定并应用机器人工具坐标系，您可以使用四点法或六点法进行工具坐标系的标定和应用，涉及工具坐标系标定的接口如下：
+     //  int SetToolPoint(int point_num); //设置工具参考点-六点法
+     //  int ComputeTool(ref DescPose tcp_pose); //计算工具坐标系
+     //  int SetTcp4RefPoint(int point_num);  //设置工具参考点-四点法
+     //  int ComputeTcp4(ref DescPose tcp_pose);  //计算工具坐标系-四点法
+     //  int SetToolCoord(int id, DescPose coord, int type, int install); //设置应用工具坐标系
+     //  int SetToolList(int id, DescPose coord, int type, int install);  //设置应用工具坐标系列表
+     //2.设置UDP通信参数，并加载UDP通信
      robot.ExtDevSetUDPComParam("192.168.58.88", 2021, 2, 100, 3, 100, 1, 100, 10);
      robot.ExtDevLoadUDPDriver();
-     //3.������չ�������������չ�����͡���չ����������������չ��DH����
-     robot.SetAxisDHParaConfig(4, 200, 200, 0, 0, 0, 0, 0, 0); //�����λ����DH����
-     robot.SetRobotPosToAxis(1); //��չ�ᰲװλ��
-     robot.ExtAxisParamConfig(1, 0, 1, 100, -100, 10, 10, 12, 131072, 0, 1, 0, 0); //�ŷ���������������ʾ��Ϊ�����λ�������ֻ��Ҫ����һ������������������ѡ�������������չ�����ͣ���Ҫÿһ������������������
-     //4.������ѡ����ʹ�ܡ�����
+     //3.设置扩展轴参数，包括扩展轴类型、扩展轴驱动器参数、扩展轴DH参数
+     robot.SetAxisDHParaConfig(4, 200, 200, 0, 0, 0, 0, 0, 0); //单轴变位机及DH参数
+     robot.SetRobotPosToAxis(1); //扩展轴安装位置
+     robot.ExtAxisParamConfig(1, 0, 1, 100, -100, 10, 10, 12, 131072, 0, 1, 0, 0); //伺服驱动器参数，本示例为单轴变位机，因此只需要设置一个驱动器参数，若您选择包含多个轴的扩展轴类型，需要每一个轴设置驱动器参数
+     //4.设置所选的轴使能、回零
      robot.ExtAxisServoOn(1, 0);
      robot.ExtAxisSetHoming(1, 0, 20, 3);
-     //5.������չ������ϵ�궨��Ӧ��
-     DescPose pos = {/* �������ı궨������ */ };
+     //5.进行扩展轴坐标系标定及应用
+     DescPose pos = {/* 输入您的标定点坐标 */ };
      robot.SetRefPointInExAxisEnd(pos);
-     robot.PositionorSetRefPoint(1); /*����Ҫͨ���ĸ���ͬλ�õĵ����궨��չ�ᣬ�����Ҫ���ô˽ӿ�4�β�����ɱ궨 */
+     robot.PositionorSetRefPoint(1); /*您需要通过四个不同位置的点来标定扩展轴，因此需要调用此接口4次才能完成标定 */
      DescPose coord = {};
-     robot.PositionorComputeECoordSys(coord); //������չ��궨���
-     robot.ExtAxisActiveECoordSys(1, 1, coord, 1); //���궨���Ӧ�õ���չ������ϵ
-     //6.����չ���ϱ궨��������ϵ������Ҫ�õ����½ӿ�
+     robot.PositionorComputeECoordSys(coord); //计算扩展轴标定结果
+     robot.ExtAxisActiveECoordSys(1, 1, coord, 1); //将标定结果应用到扩展轴坐标系
+     //6.在扩展轴上标定工件坐标系，您需要用到以下接口
      //int SetWObjCoordPoint(int point_num);
      //int ComputeWObjCoord(int method, ref DescPose wobj_pose);
      //int SetWObjCoord(int id, DescPose coord);
      //int SetWObjList(int id, DescPose coord);
-     //7.��¼����ͬ���ؽ��˶���ʼ��
-     DescPose startdescPose = {/*������������*/ };
-     JointPos startjointPos = {/*������������*/ };
-     ExaxisPos startexaxisPos = {/* ����������չ����ʼ������ */ };
-     //8.��¼����ͬ���ؽ��˶��յ�����
-     DescPose enddescPose = {/*������������*/ };
-     JointPos endjointPos = {/*������������*/ };
-     ExaxisPos endexaxisPos = {/* ����������չ���յ����� */ };
-     //9.��дͬ���˶�����
-     //�˶�����ʼ�㣬����Ӧ�õĹ�������ϵ����������ϵ����1
+     //7.记录您的同步关节运动起始点
+     DescPose startdescPose = {/*输入您的坐标*/ };
+     JointPos startjointPos = {/*输入您的坐标*/ };
+     ExaxisPos startexaxisPos = {/* 输入您的扩展轴起始点坐标 */ };
+     //8.记录您的同步关节运动终点坐标
+     DescPose enddescPose = {/*输入您的坐标*/ };
+     JointPos endjointPos = {/*输入您的坐标*/ };
+     ExaxisPos endexaxisPos = {/* 输入您的扩展轴终点坐标 */ };
+     //9.编写同步运动程序
+     //运动到起始点，假设应用的工具坐标系、工件坐标系都是1
      robot.ExtAxisMove(startexaxisPos, 20);
      DescPose offdese = { 0, 0, 0, 0, 0, 0 };
      robot.MoveJ(&startjointPos, &startdescPose, 1, 1, 100, 100, 100, &startexaxisPos, 0, 0, &offdese);
-     //��ʼͬ���˶�
+     //开始同步运动
      robot.ExtAxisSyncMoveJ(endjointPos, enddescPose, 1, 1, 100, 100, 100, endexaxisPos, -1, 0, offdese);
     
      robot.MoveJ(&startjointPos, 1, 1, 100, 100, 100, &startexaxisPos, 0, 0, &offdese);
-     //��ʼͬ���˶�
+     //开始同步运动
      robot.ExtAxisSyncMoveJ(endjointPos, 1, 1, 100, 100, 100, endexaxisPos, -1, 0, offdese);
      robot.CloseRPC();
  }
@@ -7722,53 +7724,53 @@ int TestServoJUDP(void)
          return -1;
      }
      robot.SetReConnectParam(true, 30000, 500);
-     //1.�궨��Ӧ�û����˹�������ϵ��������ʹ���ĵ㷨�����㷨���й�������ϵ�ı궨��Ӧ�ã��漰��������ϵ�궨�Ľӿ����£�
-     //  int SetToolPoint(int point_num); //���ù��߲ο���-���㷨
-     //  int ComputeTool(ref DescPose tcp_pose); //���㹤������ϵ
-     //  int SetTcp4RefPoint(int point_num);  //���ù��߲ο���-�ĵ㷨
-     //  int ComputeTcp4(ref DescPose tcp_pose);  //���㹤������ϵ-�ĵ㷨
-     //  int SetToolCoord(int id, DescPose coord, int type, int install); //����Ӧ�ù�������ϵ
-     //  int SetToolList(int id, DescPose coord, int type, int install);  //����Ӧ�ù�������ϵ�б�
-     //2.����UDPͨ�Ų�����������UDPͨ��
+     //1.标定并应用机器人工具坐标系，您可以使用四点法或六点法进行工具坐标系的标定和应用，涉及工具坐标系标定的接口如下：
+     //  int SetToolPoint(int point_num); //设置工具参考点-六点法
+     //  int ComputeTool(ref DescPose tcp_pose); //计算工具坐标系
+     //  int SetTcp4RefPoint(int point_num);  //设置工具参考点-四点法
+     //  int ComputeTcp4(ref DescPose tcp_pose);  //计算工具坐标系-四点法
+     //  int SetToolCoord(int id, DescPose coord, int type, int install); //设置应用工具坐标系
+     //  int SetToolList(int id, DescPose coord, int type, int install);  //设置应用工具坐标系列表
+     //2.设置UDP通信参数，并加载UDP通信
      robot.ExtDevSetUDPComParam("192.168.58.88", 2021, 2, 100, 3, 100, 1, 100, 10);
      robot.ExtDevLoadUDPDriver();
-     //3.������չ�������������չ�����͡���չ����������������չ��DH����
-     robot.SetAxisDHParaConfig(4, 200, 200, 0, 0, 0, 0, 0, 0); //�����λ����DH����
-     robot.SetRobotPosToAxis(1); //��չ�ᰲװλ��
-     robot.ExtAxisParamConfig(1, 0, 1, 100, -100, 10, 10, 12, 131072, 0, 1, 0, 0); //�ŷ���������������ʾ��Ϊ�����λ�������ֻ��Ҫ����һ������������������ѡ�������������չ�����ͣ���Ҫÿһ������������������
-     //4.������ѡ����ʹ�ܡ�����
+     //3.设置扩展轴参数，包括扩展轴类型、扩展轴驱动器参数、扩展轴DH参数
+     robot.SetAxisDHParaConfig(4, 200, 200, 0, 0, 0, 0, 0, 0); //单轴变位机及DH参数
+     robot.SetRobotPosToAxis(1); //扩展轴安装位置
+     robot.ExtAxisParamConfig(1, 0, 1, 100, -100, 10, 10, 12, 131072, 0, 1, 0, 0); //伺服驱动器参数，本示例为单轴变位机，因此只需要设置一个驱动器参数，若您选择包含多个轴的扩展轴类型，需要每一个轴设置驱动器参数
+     //4.设置所选的轴使能、回零
      robot.ExtAxisServoOn(1, 0);
      robot.ExtAxisSetHoming(1, 0, 20, 3);
-     //5.������չ������ϵ�궨��Ӧ��
-     DescPose pos = {/* �������ı궨������ */ };
+     //5.进行扩展轴坐标系标定及应用
+     DescPose pos = {/* 输入您的标定点坐标 */ };
      robot.SetRefPointInExAxisEnd(pos);
-     robot.PositionorSetRefPoint(1); /*����Ҫͨ���ĸ���ͬλ�õĵ����궨��չ�ᣬ�����Ҫ���ô˽ӿ�4�β�����ɱ궨 */
+     robot.PositionorSetRefPoint(1); /*您需要通过四个不同位置的点来标定扩展轴，因此需要调用此接口4次才能完成标定 */
      DescPose coord = {};
-     robot.PositionorComputeECoordSys(coord); //������չ��궨���
-     robot.ExtAxisActiveECoordSys(1, 1, coord, 1); //���궨���Ӧ�õ���չ������ϵ
-     //6.����չ���ϱ궨��������ϵ������Ҫ�õ����½ӿ�
+     robot.PositionorComputeECoordSys(coord); //计算扩展轴标定结果
+     robot.ExtAxisActiveECoordSys(1, 1, coord, 1); //将标定结果应用到扩展轴坐标系
+     //6.在扩展轴上标定工件坐标系，您需要用到以下接口
      //int SetWObjCoordPoint(int point_num);
      //int ComputeWObjCoord(int method, ref DescPose wobj_pose);
      //int SetWObjCoord(int id, DescPose coord);
      //int SetWObjList(int id, DescPose coord);
-     //7.��¼����ͬ��ֱ���˶���ʼ��
-     DescPose startdescPose = {/*������������*/ };
-     JointPos startjointPos = {/*������������*/ };
-     ExaxisPos startexaxisPos = {/* ����������չ����ʼ������ */ };
-     //8.��¼����ͬ��ֱ���˶��յ�����
-     DescPose enddescPose = {/*������������*/ };
-     JointPos endjointPos = {/*������������*/ };
-     ExaxisPos endexaxisPos = {/* ����������չ���յ����� */ };
-     //9.��дͬ���˶�����
-     //�˶�����ʼ�㣬����Ӧ�õĹ�������ϵ����������ϵ����1
+     //7.记录您的同步直线运动起始点
+     DescPose startdescPose = {/*输入您的坐标*/ };
+     JointPos startjointPos = {/*输入您的坐标*/ };
+     ExaxisPos startexaxisPos = {/* 输入您的扩展轴起始点坐标 */ };
+     //8.记录您的同步直线运动终点坐标
+     DescPose enddescPose = {/*输入您的坐标*/ };
+     JointPos endjointPos = {/*输入您的坐标*/ };
+     ExaxisPos endexaxisPos = {/* 输入您的扩展轴终点坐标 */ };
+     //9.编写同步运动程序
+     //运动到起始点，假设应用的工具坐标系、工件坐标系都是1
      robot.ExtAxisMove(startexaxisPos, 20);
      DescPose offdese = { 0, 0, 0, 0, 0, 0 };
      robot.MoveJ(&startjointPos, &startdescPose, 1, 1, 100, 100, 100, &startexaxisPos, 0, 0, &offdese);
-     //��ʼͬ���˶�
+     //开始同步运动
      robot.ExtAxisSyncMoveL(endjointPos, enddescPose, 1, 1, 100, 100, 100, 0, endexaxisPos, 0, offdese);
      
      robot.MoveJ(&startjointPos, 1, 1, 100, 100, 100, &startexaxisPos, 0, 0, &offdese);
-     //��ʼͬ���˶�
+     //开始同步运动
      robot.ExtAxisSyncMoveL(enddescPose, 1, 1, 100, 100, 100, 0, endexaxisPos, 0, offdese);
      robot.CloseRPC();
  }
@@ -7791,19 +7793,19 @@ int TestServoJUDP(void)
          return;
      }
      robot.SetReConnectParam(true, 30000, 500);
-     //�ϴ������ؿ���Э���ļ�
-     robot.OpenLuaUpload("E://��Ŀ/����SDK/CtrlDev_sucker.lua");
+     //上传并加载开放协议文件
+     robot.OpenLuaUpload("E://项目/外设SDK/CtrlDev_sucker.lua");
      robot.Sleep(2000);
      robot.SetCtrlOpenLUAName(1, "CtrlDev_sucker.lua");
      robot.UnloadCtrlOpenLUA(1);
      robot.LoadCtrlOpenLUA(1);
      robot.Sleep(1000);
 
-     //�������̹㲥ģʽ�£����������������
+     //控制吸盘广播模式下，按照最大能力吸附
      ctrl[0] = 1;
      robot.SetSuckerCtrl(0, 1, ctrl);
 
-     //ѭ�����1�����̺�12�����̵�״̬
+     //循环监控1号吸盘和12号吸盘的状态
      for (int i = 0; i < 100; i++)
      {
          robot.GetSuckerState(1, &state, &pressVlaue, &error);
@@ -7813,11 +7815,11 @@ int TestServoJUDP(void)
          robot.Sleep(100);
      }
 
-     //�ȴ�1�������Ƿ�Ϊ�����������״̬���ȴ�ʱ��100ms
+     //等待1号吸盘是否为吸附到物体的状态，等待时间100ms
      int ret = robot.WaitSuckerState(1, 1, 100);
      printf("WaitSuckerState result is  %d\n", ret);
 
-     //����ģʽ�ر�1�ź�12������
+     //单播模式关闭1号和12号吸盘
      ctrl[0] = 3;
      robot.SetSuckerCtrl(1, 1, ctrl);
      robot.SetSuckerCtrl(12, 1, ctrl);
@@ -7831,9 +7833,9 @@ int TestServoJUDP(void)
      FRRobot robot;
      uint8_t type = 0, version = 0, connState = 0;
      uint8_t ctrl[8];
-     int ctrlAO[8];
+     double ctrlAO[8];
      static uint8_t DI[8];
-     static int AI[8];
+     static double AI[8];
 
      robot.LoggerInit();
      robot.SetLoggerLevel(1);
@@ -7843,29 +7845,29 @@ int TestServoJUDP(void)
          return;
      }
      robot.SetReConnectParam(true, 30000, 500);
-     //�ϴ������ؿ���Э���ļ�
-     robot.OpenLuaUpload("E://��Ŀ/����SDK/CtrlDev_field.lua");
+     //上传并加载开放协议文件
+     robot.OpenLuaUpload("E://项目/外设SDK/CtrlDev_field.lua");
      robot.Sleep(2000);
      robot.SetCtrlOpenLUAName(3, "CtrlDev_field.lua");
      robot.UnloadCtrlOpenLUA(3);
      robot.LoadCtrlOpenLUA(3);
      robot.Sleep(8000);
 
-     //��ȡ��վ�忨��Э�����͡������汾����PLC������״̬
+     //获取从站板卡的协议类型、软件版本、与PLC的连接状态
      robot.GetFieldBusConfig(&type, &version, &connState);
      printf("type is %d, version is %d,connState is %d\n", type, version, connState);
 
-     //д��DO0 = 1��DO1 = 0��DO2 = 1
+     //写入DO0 = 1、DO1 = 0、DO2 = 1
      ctrl[0] = 0;
      ctrl[1] = 1;
      ctrl[2] = 1;
      robot.FieldBusSlaveWriteDO(0, 3, ctrl);
 
-     //д��AO2 = 0x1000
+     //写入AO2 = 0x1000
      ctrlAO[0] = 0x1005;
      robot.FieldBusSlaveWriteAO(2, 1, ctrlAO);
 
-     //ѭ�����DI0~DI3 AI0~AI2
+     //循环监控DI0~DI3 AI0~AI2
      for (int i = 0; i < 100; i++)
      {
          robot.FieldBusSlaveReadDI(0, 4, DI);
@@ -7875,11 +7877,11 @@ int TestServoJUDP(void)
          robot.Sleep(10);
      }
 
-     //�ȴ�DI0�Ƿ�Ϊ1���ȴ�ʱ��100ms������ӡ���
+     //等待DI0是否为1，等待时间100ms，并打印结果
      int ret = robot.FieldBusSlaveWaitDI(0, 1, 100);
      printf("FieldBusSlaveWaitDI result is  %d\n", ret);
 
-     //�ȴ�AI0�Ƿ����400���ȴ�ʱ��100ms������ӡ���
+     //等待AI0是否大于400，等待时间100ms，并打印结果
      ret = robot.FieldBusSlaveWaitAI(0,0,400.00,100);
      printf("FieldBusSlaveWaitAI result is  %d\n", ret);
 
@@ -7906,8 +7908,8 @@ int TestServoJUDP(void)
 
      for (int i = 0; i < 5; i++)
      {
-         printf("------------------��  %d  �β���------------------\n", i+1);
-         //�������̹㲥ģʽ�£����������������
+         printf("------------------第  %d  次测试------------------\n", i+1);
+         //控制吸盘广播模式下，按照最大能力吸附
          ctrl[0] = 1;
          robot.SetSuckerCtrl(0, 1, ctrl);
          printf("sucker boardcast start\n");
@@ -7916,7 +7918,7 @@ int TestServoJUDP(void)
          robot.SetSuckerCtrl(0, 1, ctrl);
          printf("sucker boardcast stop\n");
          robot.Sleep(3000);
-         //����ģʽ���Կ������̣����趨ֵ����
+         //单播模式测试控制吸盘，按设定值吸附
          ctrl[0] = 2;
          robot.SetSuckerCtrl(1, 1, ctrl);
          robot.SetSuckerCtrl(12, 1, ctrl);
@@ -7948,11 +7950,11 @@ int TestServoJUDP(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     //�������̹㲥ģʽ�£����������������
+     //控制吸盘广播模式下，按照最大能力吸附
      ctrl[0] = 1;
      robot.SetSuckerCtrl(0, 1, ctrl);
 
-     //ѭ�����1�����̺�12�����̵�״̬
+     //循环监控1号吸盘和12号吸盘的状态
      for (int i = 0; i < 100; i++)
      {
          robot.GetSuckerState(1, &state, &pressVlaue, &error);
@@ -7962,7 +7964,7 @@ int TestServoJUDP(void)
          robot.Sleep(100);
      }
 
-     //����ģʽ�ر�1�ź�12������
+     //单播模式关闭1号和12号吸盘
      ctrl[0] = 3;
      robot.SetSuckerCtrl(0, 1, ctrl);
 
@@ -7986,11 +7988,11 @@ int TestServoJUDP(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     //�������̹㲥ģʽ�£����������������
+     //控制吸盘广播模式下，按照最大能力吸附
      ctrl[0] = 1;
      robot.SetSuckerCtrl(0, 1, ctrl);
 
-     //ѭ�����1�����̺�12�����̵�״̬
+     //循环监控1号吸盘和12号吸盘的状态
      for (int i = 0; i < 100; i++)
      {
          robot.GetSuckerState(1, &state, &pressVlaue, &error);
@@ -8000,10 +8002,10 @@ int TestServoJUDP(void)
          robot.Sleep(100);
      }
 
-     //�ȴ�1�������Ƿ�Ϊ�����������״̬���ȴ�ʱ��100ms
+     //等待1号吸盘是否为吸附到物体的状态，等待时间100ms
      int ret = robot.WaitSuckerState(1, 1, 100);
      printf("WaitSuckerState1 result is  %d\n", ret);
-     //�ȴ�12�������Ƿ�Ϊ�����������״̬���ȴ�ʱ��100ms
+     //等待12号吸盘是否为吸附到物体的状态，等待时间100ms
      ret = robot.WaitSuckerState(12, 1, 100);
      printf("WaitSuckerState12 result is  %d\n", ret);
      ctrl[0] = 3;
@@ -8031,7 +8033,7 @@ int TestServoJUDP(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     //��ȡ��վ�忨��Э�����͡������汾����PLC������״̬
+     //获取从站板卡的协议类型、软件版本、与PLC的连接状态
      robot.GetFieldBusConfig(&type, &version, &connState);
      printf("type is %d, version is %d,connState is %d\n", type, version, connState);
 
@@ -8044,7 +8046,7 @@ int TestServoJUDP(void)
      FRRobot robot;
      uint8_t type = 0, version = 0, connState = 0;
      uint8_t ctrl[8];
-     int ctrlAO[8];
+     double ctrlAO[8];
      static uint8_t DI[8];
      static int AI[8];
 
@@ -8057,14 +8059,14 @@ int TestServoJUDP(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     //д��DO0 = 1��DO1 = 1��DO2 = 0
+     //写入DO0 = 1、DO1 = 1、DO2 = 0
      ctrl[0] = 1;
      ctrl[1] = 0;
      ctrl[2] = 0;
      ctrl[3] = 1;
      robot.FieldBusSlaveWriteDO(0, 4, ctrl);
 
-     //д��AO2 = 0x1001
+     //写入AO2 = 0x1001
      ctrlAO[0] = 0x1002;
      robot.FieldBusSlaveWriteAO(2, 1, ctrlAO);
 
@@ -8077,9 +8079,9 @@ int TestServoJUDP(void)
      FRRobot robot;
      uint8_t type = 0, version = 0, connState = 0;
      uint8_t ctrl[8];
-     int ctrlAO[8];
+     double ctrlAO[8];
      static uint8_t DI[8];
-     static int AI[8];
+     static double AI[8];
 
      robot.LoggerInit();
      robot.SetLoggerLevel(1);
@@ -8091,7 +8093,7 @@ int TestServoJUDP(void)
      robot.SetReConnectParam(true, 30000, 500);
 
 
-     //ѭ�����DI0~DI3 AI0~AI2
+     //循环监控DI0~DI3 AI0~AI2
      for (int i = 0; i < 100; i++)
      {
          robot.FieldBusSlaveReadDI(0, 4, DI);
@@ -8101,11 +8103,11 @@ int TestServoJUDP(void)
          robot.Sleep(100);
      }
 
-     //�ȴ�DI0�Ƿ�Ϊ1���ȴ�ʱ��100ms������ӡ���
+     //等待DI0是否为1，等待时间100ms，并打印结果
      int ret = robot.FieldBusSlaveWaitDI(0, 1, 100);
      printf("FieldBusSlaveWaitDI result is  %d\n", ret);
 
-     //�ȴ�AI0�Ƿ����400���ȴ�ʱ��100ms������ӡ���
+     //等待AI0是否大于400，等待时间100ms，并打印结果
      ret = robot.FieldBusSlaveWaitAI(0, 0, 500.00, 100);
      printf("FieldBusSlaveWaitAI result is  %d\n", ret);
 
@@ -8129,8 +8131,8 @@ int TestServoJUDP(void)
          return;
      }
      robot.SetReConnectParam(true, 30000, 500);
-     //�ϴ������ؿ���Э���ļ�
-     robot.OpenLuaUpload("E://��Ŀ/����SDK/CtrlDev_sucker.lua");
+     //上传并加载开放协议文件
+     robot.OpenLuaUpload("E://项目/外设SDK/CtrlDev_sucker.lua");
      robot.Sleep(2000);
      robot.SetCtrlOpenLUAName(1, "CtrlDev_sucker.lua");
      robot.UnloadCtrlOpenLUA(1);
@@ -8161,11 +8163,11 @@ int TestServoJUDP(void)
      {
          rtn = robot.MoveJ(&j1, &desc_pos1, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
 
-         //�������̹㲥ģʽ�£����������������
+         //控制吸盘广播模式下，按照最大能力吸附
          ctrl[0] = 2;
          robot.SetSuckerCtrl(0, 1, ctrl);
 
-         //ѭ�����1�����̺�12�����̵�״̬
+         //循环监控1号吸盘和12号吸盘的状态
          for (int i = 0; i < 20; i++)
          {
              robot.GetSuckerState(1, &state, &pressVlaue, &error);
@@ -8174,23 +8176,23 @@ int TestServoJUDP(void)
              printf("sucker12 state is %d, pressVlaue is %d, error num is %d\n", state, pressVlaue, error);
              robot.Sleep(100);
          }
-         //�ȴ�1�������Ƿ�Ϊ�����������״̬���ȴ�ʱ��100ms
+         //等待1号吸盘是否为吸附到物体的状态，等待时间100ms
          int ret = robot.WaitSuckerState(1, 1, 100);
          printf("WaitSuckerState result is  %d\n", ret);
          rtn = robot.MoveJ(&j2, &desc_pos2, tool, user, vel, acc, ovl, &epos, blendT, flag, &offset_pos);
          if (ret == 0)
          {
-             printf("sucker1 ����������\n");
+             printf("sucker1 吸附到物体\n");
          }
          else
          {
-             printf("sucker1 δ����������\n");
+             printf("sucker1 未吸附到物体\n");
              continue;
          }
 
          
 
-         //����ģʽ�ر�1�ź�12������
+         //单播模式关闭1号和12号吸盘
          ctrl[0] = 3;
          robot.SetSuckerCtrl(1, 1, ctrl);
          robot.SetSuckerCtrl(12, 1, ctrl);
@@ -8258,17 +8260,17 @@ int TestServoJUDP(void)
          return;
      }
      robot.SetReConnectParam(true, 30000, 500);
-     //����IP��ַ�Ͷ˿ں�
+     //设置IP地址和端口号
      robot.LaserTrackingSensorConfig("192.168.58.20", 5020);
-     //���ò�������
+     //设置采样周期
      robot.LaserTrackingSensorSamplePeriod(20);
-     //��������
+     //加载驱动
      robot.LoadPosSensorDriver(101);
-     //�رռ�������
+     //关闭激光外设
      robot.LaserTrackingLaserOnOff(0,0);
 
      robot.Sleep(3000);
-     //�򿪼�������
+     //打开激光外设
      robot.LaserTrackingLaserOnOff(1, 0);
 
      robot.CloseRPC();
@@ -8485,7 +8487,7 @@ int TestServoJUDP(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     //�ϴ������ؿ���Э���ļ�
+     //上传并加载开放协议文件
      robot.OpenLuaUpload("E://openlua/CtrlDev_laser_ruiniu-0117.lua");
      robot.Sleep(2000);
      robot.SetCtrlOpenLUAName(0, "CtrlDev_laser_ruiniu-0117.lua");
@@ -8495,29 +8497,29 @@ int TestServoJUDP(void)
      int cnt = 1;
      while(cnt<31)
      { 
-         //�˶���ɨ������
+         //运动到扫描的起点
          JointPos startjointPos(56.205, -117.951, 141.872, -118.149, -94.217, -122.176);
          DescPose startdescPose(-97.552, -282.855, 26.675, 174.182, -1.338, -91.707);
          ExaxisPos exaxisPos(0, 0, 0, 0);
          DescPose offdese(0, 0, 0, 0, 0, 0);
          robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-         //��ʼ�켣��¼
+         //开始轨迹记录
          robot.LaserSensorRecord1(2, 10);
-         //�˶�����Ҫ��¼���յ�
+         //运动到需要记录的终点
          JointPos endjointPos(68.809, -87.100, 121.120, -127.233, -95.038, -109.555);
          DescPose enddescPose(-103.555, -464.234, 13.076, 174.179, -1.344, -91.709);
          robot.MoveL(&endjointPos, &enddescPose, 1, 0, 30, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-         //ֹͣ��¼
+         //停止记录
          robot.LaserSensorRecord1(0, 10);
-         //�˶�����¼�ĺ������
+         //运动到记录的焊缝起点
          robot.MoveToLaserRecordStart(1, 30);
-         //��ʼ�켣����
+         //开始轨迹复现
          robot.LaserSensorReplay(10, 100);
 
          robot.MoveLTR();
-         //ֹͣ�켣����
+         //停止轨迹复现
          robot.LaserSensorRecord1(0, 10);
-         printf("����ɨ��+�켣�����ȶ��Բ��Ե�%d��\n", cnt);
+         printf("激光扫描+轨迹复现稳定性测试第%d次\n", cnt);
          cnt++;
      }
 
@@ -8545,7 +8547,7 @@ int TestServoJUDP(void)
      }
      robot.SetReConnectParam(true, 30000, 500);
 
-     //�ϴ������ؿ���Э���ļ�
+     //上传并加载开放协议文件
      robot.OpenLuaUpload("E://openlua/CtrlDev_laser_ruiniu-0117.lua");
      robot.Sleep(2000);
      robot.SetCtrlOpenLUAName(0, "CtrlDev_laser_ruiniu-0117.lua");
@@ -8555,7 +8557,7 @@ int TestServoJUDP(void)
      int cnt = 1;
      while (cnt < 2)
      {
-         //�˶�����ҪѰλ����ʼ��
+         //运动到需要寻位的起始点
          JointPos startjointPos(58.337, -119.628, 146.037, -116.358, -92.224, -117.654);
          DescPose startdescPose(-53.375, -255.363, 0.919, 178.054, 1.077, -94.026);
          ExaxisPos exaxisPos(0, 0, 0, 0);
@@ -8563,20 +8565,20 @@ int TestServoJUDP(void)
          DescTran directionPoint;
          robot.MoveL(&startjointPos, &startdescPose, 1, 0, 100, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
 
-         //����-y����ʼѰλ
+         //沿着-y方向开始寻位
          int ret = robot.LaserTrackingSearchStart_xyz(3, 100, 300, 1000, 2);
          robot.LaserTrackingSearchStop();
-         //���Ѱλ�ɹ�
+         //如果寻位成功
          if (ret == 0)
          {
-             //�˶���Ѱλ��
+             //运动到寻位点
              robot.MoveToLaserSeamPos(1, 30, 0, 0, 0, offdese);
-             //��ʼ����Ѱλ����м������
+             //开始沿着寻位点进行激光跟踪
              robot.LaserTrackingTrackOnOff(1, 2);
              JointPos endjointPos(70.580, -90.918, 126.593, -125.154, -92.162, -105.403);
              DescPose enddescPose(-53.375, -419.020, 0.920, 178.054, 1.076, -94.026);
              robot.MoveL(&endjointPos, &enddescPose, 1, 0, 20, 100, 100, -1, &exaxisPos, 0, 0, &offdese, 1, 1);
-             //ֹͣ����
+             //停止跟踪
              robot.LaserTrackingTrackOnOff(0, 2);
 
          }
@@ -8615,12 +8617,12 @@ int TestServoJUDP(void)
      int cnt = 1;
      while (cnt < 2)
      {
-         //�˶�����ҪѰλ����ʼ��
+         //运动到需要寻位的起始点
          JointPos startjointPos(141.754, -30.259, 99.992, -159.280, -93.023, -70.984);
          DescPose startdescPose(525.606, -307.589, -349.700, 176.994, -0.557, -57.235);
          robot.ExtAxisSyncMoveJ(startjointPos, startdescPose, 1, 0, 100, 100, 100, startexaxisPos, -1, 0, offdese);
 
-         //����-y����ʼѰλ
+         //沿着-y方向开始寻位
          int ret = robot.LaserTrackingSearchStart_xyz(3, 100, 300, 1000, 3);
          robot.LaserTrackingSearchStop();
          int tool = 0;
@@ -8628,22 +8630,22 @@ int TestServoJUDP(void)
          robot.GetLaserSeamPos(0, offdese, seamjointPos, seamdescPose, tool, user, startexaxisPos);
          printf("%f, %f, %f,%f, %f, %f,%f, %f, %f,%f, %f, %f\n", seamjointPos.jPos[0], seamjointPos.jPos[1], seamjointPos.jPos[2], seamjointPos.jPos[3], seamjointPos.jPos[4], seamjointPos.jPos[5], seamdescPose.tran.x, seamdescPose.tran.y, seamdescPose.tran.z, seamdescPose.rpy.rx, seamdescPose.rpy.ry, seamdescPose.rpy.rz);
 
-         //���Ѱλ�ɹ�
+         //如果寻位成功
          if (ret == 0)
          {
-             //�����˺���չ��ͬ���˶���Ѱλ��
+             //机器人和扩展轴同步运动到寻位点
              robot.ExtAxisSyncMoveJ(seamjointPos, seamdescPose, 1, 0, 100, 100, 100, seamexaxisPos, -1, 0, offdese);
 
-             //��ʼ����Ѱλ����м�����ٲ�����չ��ͬ���˶�
+             //开始沿着寻位点进行激光跟踪并与扩展轴同步运动
              robot.LaserTrackingTrackOnOff(1, 3);
              JointPos endjointPos(159.079, -16.167, 66.438, -138.902, -90.581, -61.962);
              DescPose enddescPose(739.828, -177.369, -380.768, 178.843, 0.935, -48.961);
              robot.ExtAxisSyncMoveL(endjointPos, enddescPose, 1, 0, 20, 100, 100, -1, endexaxisPos, 0, offdese);;
-             //ֹͣ����
+             //停止跟踪
              robot.LaserTrackingTrackOnOff(0, 3);
          }
          cnt++;
-         printf("��չ���������ͬ�����м������  ��%d��\n", cnt);
+         printf("扩展轴与机器人同步进行激光跟踪  第%d次\n", cnt);
      }
      robot.CloseRPC();
  }
@@ -9204,7 +9206,7 @@ int ServoJTWithSafety(FRRobot* robot)
     robot->Sleep(500);
     float torques[] = { 0, 0, 0, 0, 0, 0 };
     robot->GetJointTorques(1, torques);
-    robot->ServoJTStart(); //   #servoJT��ʼ
+    robot->ServoJTStart(); //   #servoJT开始
     ROBOT_STATE_PKG pkg = {};
     robot->DragTeachSwitch(1);
     int checkFlag = 3;
@@ -9216,8 +9218,8 @@ int ServoJTWithSafety(FRRobot* robot)
     int error = 0;
     while (count > 0)
     {
-        torques[2] = torques[2];//  #ÿ��1������0.01NM���˶�100��
-        error = robot->ServoJT(torques, 0.008, checkFlag, jPowerLimit, jVelLimit);  //# �ؽڿռ��ŷ�ģʽ�˶�
+        torques[2] = torques[2];//  #每次1轴增加0.01NM，运动100次
+        error = robot->ServoJT(torques, 0.008, checkFlag, jPowerLimit, jVelLimit);  //# 关节空间伺服模式运动
         if (error != 0)
         {
             robot->ServoJTEnd();
@@ -9231,7 +9233,7 @@ int ServoJTWithSafety(FRRobot* robot)
     }
     robot->DragTeachSwitch(0);
 
-    error = robot->ServoJTEnd();  //#�ŷ��˶�����
+    error = robot->ServoJTEnd();  //#伺服运动结束
     return 0;
 }
 
@@ -9468,13 +9470,13 @@ int testAxleGenCom()
     ExaxisPos exaxisPos(0, 0, 0, 0);
     DescPose offdese(0, 0, 0, 0, 0, 0);
 
-    //����ĩ��͸������
+    //开启末端透传功能
     robot.SetAxleGenComEnable(1);
     robot.SetAxleLuaEnable(1);
 
     while (cnt <= 10000)
     {
-        //��ȡ�汾��
+        //读取版本号
         ret = robot.SndRcvAxleGenComCmdData(5, version, 10, rcvdata);
         printf(" hard version : %d,hard code:%d, soft version:%d %d, soft code:%d \n", rcvdata[4], rcvdata[5], rcvdata[6] ,rcvdata[7], rcvdata[8]);
         if (ret != 0)
@@ -9482,16 +9484,16 @@ int testAxleGenCom()
             break;
         }
         robot.Sleep(1000);
-        //��ȡ����ͷ��λ״̬
+        //读取艾灸头在位状态
         ret = robot.SndRcvAxleGenComCmdData(6, state, 6, rcvdata);
         printf(" state : %d \n", rcvdata[4]);
         robot.Sleep(1000);
-        //��������ͷ����
+        //开启艾灸头激光
         ret = robot.SndRcvAxleGenComCmdData(6, led_on, 6, rcvdata);
         printf("led on rcv data is: %d, %d, %d, %d, %d, %d  \n", rcvdata[0], rcvdata[1], rcvdata[2], rcvdata[3], rcvdata[4], rcvdata[5]);
         robot.MoveJ(&p1Joint, &p1Desc, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
         robot.Sleep(4000);
-        //�رհ���ͷ����
+        //关闭艾灸头激光
         ret = robot.SndRcvAxleGenComCmdData(6, led_off, 6, rcvdata);
         printf("led off rcv data is: %d, %d, %d, %d, %d, %d \n", rcvdata[0], rcvdata[1], rcvdata[2], rcvdata[3], rcvdata[4], rcvdata[5]);
         robot.MoveJ(&p2Joint, &p2Desc, 0, 0, 100, 100, 100, &exaxisPos, -1, 0, &offdese);
@@ -9633,64 +9635,64 @@ int TestConnect(int port) {
 
 
 
-    // 1. �������
+    // 1. 定义变量
     SOCKET client_fd = INVALID_SOCKET;
     WSADATA wsaData;
     struct sockaddr_in server_addr;
-    char recv_buffer[4096] = { 0 };  // ��С��buffer��ֻ����һ�������
+    char recv_buffer[4096] = { 0 };  // 很小的buffer，只接收一点点数据
 
-    // 2. ��������Ϣ����
+    // 2. 服务器信息配置
     const char* server_ip = "192.168.58.2";
     int server_port = port;
 
-    std::cout << "=== TCP �ͻ��˹ر���Ϊ���� ===" << std::endl;
-    std::cout << "Ŀ�������: " << server_ip << ":" << server_port << std::endl;
+    std::cout << "=== TCP 客户端关闭行为测试 ===" << std::endl;
+    std::cout << "目标服务器: " << server_ip << ":" << server_port << std::endl;
 
-    // 3. ��ʼ�� Winsock
+    // 3. 初始化 Winsock
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-    // 4. ���� Socket
+    // 4. 创建 Socket
     client_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    // 5. ���÷�������ַ
+    // 5. 设置服务器地址
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(server_port);
     inet_pton(AF_INET, server_ip, &server_addr.sin_addr);
 
-    // 6. ���ӷ�����
-    std::cout << "���ӷ�����..." << std::endl;
+    // 6. 连接服务器
+    std::cout << "连接服务器..." << std::endl;
     if (connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
-        std::cerr << "����ʧ�ܣ�������: " << WSAGetLastError() << std::endl;
+        std::cerr << "连接失败，错误码: " << WSAGetLastError() << std::endl;
         closesocket(client_fd);
         WSACleanup();
         return -1;
     }
-    std::cout << "���ӳɹ���" << std::endl;
+    std::cout << "连接成功！" << std::endl;
 
     for (int i = 0; i < 30; i++)
     {
         int bytes = recv(client_fd, recv_buffer, sizeof(recv_buffer) - 1, 0);
         if (bytes > 0) {
-            std::cout << "�յ� " << bytes << " �ֽ�����" << std::endl;
+            std::cout << "收到 " << bytes << " 字节数据" << std::endl;
         }
     }
 
 
 
 
-    // 8. ���Բ�ͬ�Ĺرշ�ʽ
-    std::cout << "\n=== ���Թر���Ϊ ===" << std::endl;
+    // 8. 测试不同的关闭方式
+    std::cout << "\n=== 测试关闭行为 ===" << std::endl;
 
     closesocket(client_fd);
-    std::cout << "�ѹر� socket" << std::endl;
-    std::cout << "���� Wireshark �й۲��Ƿ��� FIN ��" << std::endl;
+    std::cout << "已关闭 socket" << std::endl;
+    std::cout << "请在 Wireshark 中观察是否有 FIN 包" << std::endl;
 
-    // �ȴ��۲�
+    // 等待观察
     Sleep(1000);
 
-    // 9. ����
+    // 9. 清理
     WSACleanup();
-    std::cout << "\n���Խ���" << std::endl;
+    std::cout << "\n测试结束" << std::endl;
 #endif // 
     return 0;
 }
@@ -9849,45 +9851,22 @@ int TestOriginPointWeave()
     robot.SetReConnectParam(true, 30000, 500);
 
     JointPos j(39.886, -98.580, -124.032, -47.393, 90.000, 40.842);
-    ExaxisPos epos1(0, 0, 0, 0);
+    ExaxisPos epos(0, 0, 0, 0);
     DescPose offset_pos(0, 0, 0, 0, 0, 0);
-    ExaxisPos epos2(5, 0.000, 0.000, 0.000);
-    DescPose refPoint(400.021, 300.022, 299.996, 179.997, -0.003, -90.956);
 
-    robot.LaserTrackingSensorConfig("192.168.58.20", 5020);
-    robot.LaserTrackingSensorSamplePeriod(20);
-    robot.LoadPosSensorDriver(101);
-    robot.ExtDevLoadUDPDriver();
-    rtn = robot.SetExAxisCmdDoneTime(5000.0);
-    printf("SetExAxisCmdDoneTime rtn is %d\n" , rtn);
+    DescPose refPoint = { 400.021,300.022,299.996,179.997,-0.003,-90.956 };
+    robot.MoveJ(&j, 1, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    
+    robot.OriginPointWeaveStart(0, 0, refPoint, 3);
+    robot.MoveStationary();
+    robot.OriginPointWeaveEnd();
 
-    rtn = robot.ExtAxisServoOn(1, 1);
-    printf("ExtAxisServoOn axis id 1 rtn is %d\n" , rtn);
-    rtn = robot.ExtAxisServoOn(2, 1);
-    printf("ExtAxisServoOn axis id 2 rtn is %d\n" , rtn);
     robot.Sleep(2000);
 
-    robot.ExtAxisSetHoming(1, 0, 10, 2);
-    rtn = robot.LaserTrackingLaserOnOff(1, 0);
-    printf("LaserTrackingLaserOnOff id 2 rtn is %d\n", rtn);
-
-    robot.LaserTrackingTrackOnOff(1, 4);
-    robot.Sleep(200);
-
-    robot.OriginPointWeaveStart(0, 0, refPoint, 10);
-    robot.MoveStationary();  
+    robot.MoveJ(&j, 1, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    robot.OriginPointWeaveStart(0, 1, refPoint, 3);
+    robot.MoveStationary();
     robot.OriginPointWeaveEnd();
-    robot.LaserTrackingTrackOnOff(0, 4);
-
-    robot.Sleep(2000);       
-
-    robot.ExtAxisMove(epos1, 100, -1);
-    robot.LaserTrackingTrackOnOff(1, 4);
-
-    robot.OriginPointWeaveStart(0, 0, refPoint, 20);
-    robot.ExtAxisMove(epos2, 100, -1);
-    robot.OriginPointWeaveEnd();
-    robot.LaserTrackingTrackOnOff(0, 4);
 
     robot.CloseRPC();
 
@@ -9972,28 +9951,796 @@ int TestCtrlOpenLuaOperate()
     return 0;
 }
 
-int main() {
-
+int PrintRobotPosVelTorque() 
+{
     ROBOT_STATE_PKG pkg = {};
     FRRobot robot;
-
+    int rtn = 0;
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
-    int rtn = robot.RPC("192.168.58.2");
+    std::vector<RobotState> states = { RobotState::JointCurPos, RobotState::TargetJointPos,
+                                        RobotState::ToolCurPos, RobotState::TargetTCPPos,
+                                        RobotState::FlangeCurPos, RobotState::ActualTCPForce,
+                                        RobotState::ActualJointVel, RobotState::TargetJointVel,
+                                        RobotState::ActualJointAcc, RobotState::TargetJointAcc,
+                                        RobotState::TargetTCPCmpSpeed, RobotState::ActualTCPCmpSpeed,
+                                        RobotState::TargetTCPSpeed, RobotState::ActualTCPSpeed,
+                                        RobotState::ActualJointTorque, RobotState::JointDriverTorque, RobotState::TargetJointTorque,
+                                        RobotState::TargetJointCurrent, RobotState::ActualJointCurrent };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 8);
+    rtn = robot.RPC("192.168.58.2");
     if (rtn != 0)
     {
+        printf("robot RPC failed\n");
         return 0;
     }
     robot.SetReConnectParam(true, 30000, 500);
 
-    rtn = robot.AuxServosetStatusID(1);
-    printf("AuxServosetStatusID rtn is %d\n", rtn);
+    std::vector<RobotState> getConfigState = {};
+    int getPeriod = 0;
+    rtn = robot.GetRobotRealtimeStateConfig(getConfigState, getPeriod);
+    printf("GetRobotRealtimeStateConfig rtn is %d; period is %d\n", rtn, getPeriod);
+    for (int k = 0; k < getConfigState.size(); k++)
+    {
+        printf("getConfigState include %d\n", getConfigState[k]);
+    }
+
+    while (true)
+    {
+        robot.GetRobotRealTimeState(&pkg);
+        printf("joint actual pos is %f %f %f %f %f %f\n", pkg.jt_cur_pos[0], pkg.jt_cur_pos[1], pkg.jt_cur_pos[2], pkg.jt_cur_pos[3], pkg.jt_cur_pos[4], pkg.jt_cur_pos[5]);
+        printf("joint target pos is %f %f %f %f %f %f\n", pkg.targetJointPos[0], pkg.targetJointPos[1], pkg.targetJointPos[2], pkg.targetJointPos[3], pkg.targetJointPos[4], pkg.targetJointPos[5]);
+        printf("tool actual pos is %f %f %f %f %f %f\n", pkg.tl_cur_pos[0], pkg.tl_cur_pos[1], pkg.tl_cur_pos[2], pkg.tl_cur_pos[3], pkg.tl_cur_pos[4], pkg.tl_cur_pos[5]);
+        printf("tool target pos is %f %f %f %f %f %f\n", pkg.targetTCPPos[0], pkg.targetTCPPos[1], pkg.targetTCPPos[2], pkg.targetTCPPos[3], pkg.targetTCPPos[4], pkg.targetTCPPos[5]);
+
+        printf("joint actual velocity is %f %f %f %f %f %f\n", pkg.actual_qd[0], pkg.actual_qd[1], pkg.actual_qd[2], pkg.actual_qd[3], pkg.actual_qd[4], pkg.actual_qd[5]);
+        printf("joint target velocity is %f %f %f %f %f %f\n", pkg.targetJointVel[0], pkg.targetJointVel[1], pkg.targetJointVel[2], pkg.targetJointVel[3], pkg.targetJointVel[4], pkg.targetJointVel[5]);
+        printf("joint actual acc is %f %f %f %f %f %f\n", pkg.actual_qdd[0], pkg.actual_qdd[1], pkg.actual_qdd[2], pkg.actual_qdd[3], pkg.actual_qdd[4], pkg.actual_qdd[5]);
+        printf("joint target acc is %f %f %f %f %f %f\n", pkg.targetJointAcc[0], pkg.targetJointAcc[1], pkg.targetJointAcc[2], pkg.targetJointAcc[3], pkg.targetJointAcc[4], pkg.targetJointAcc[5]);
+        printf("tcp actual cmp speed is %f %f\n", pkg.actual_TCP_CmpSpeed[0], pkg.actual_TCP_CmpSpeed[1]);
+        printf("tcp target cmp speed is %f %f\n", pkg.target_TCP_CmpSpeed[0], pkg.target_TCP_CmpSpeed[1]);
+        printf("tcp actual velocity is %f %f %f %f %f %f\n", pkg.actual_TCP_Speed[0], pkg.actual_TCP_Speed[1], pkg.actual_TCP_Speed[2], pkg.actual_TCP_Speed[3], pkg.actual_TCP_Speed[4], pkg.actual_TCP_Speed[5]);
+        printf("tcp target velocity is %f %f %f %f %f %f\n", pkg.target_TCP_Speed[0], pkg.target_TCP_Speed[1], pkg.target_TCP_Speed[2], pkg.target_TCP_Speed[3], pkg.target_TCP_Speed[4], pkg.target_TCP_Speed[5]);
+        printf("joint actual torque is %f %f %f %f %f %f\n", pkg.jt_cur_tor[0], pkg.jt_cur_tor[1], pkg.jt_cur_tor[2], pkg.jt_cur_tor[3], pkg.jt_cur_tor[4], pkg.jt_cur_tor[5]);
+        printf("joint driver torque is %f %f %f %f %f %f\n", pkg.jointDriverTorque[0], pkg.jointDriverTorque[1], pkg.jointDriverTorque[2], pkg.jointDriverTorque[3], pkg.jointDriverTorque[4], pkg.jointDriverTorque[5]);
+        printf("joint target torque is %f %f %f %f %f %f\n", pkg.jt_tgt_tor[0], pkg.jt_tgt_tor[1], pkg.jt_tgt_tor[2], pkg.jt_tgt_tor[3], pkg.jt_tgt_tor[4], pkg.jt_tgt_tor[5]);
+        printf("joint actual current is %f %f %f %f %f %f\n", pkg.actualJointCurrent[0], pkg.actualJointCurrent[1], pkg.actualJointCurrent[2], pkg.actualJointCurrent[3], pkg.actualJointCurrent[4], pkg.actualJointCurrent[5]);
+        printf("joint target current is %f %f %f %f %f %f\n", pkg.targetJointCurrent[0], pkg.targetJointCurrent[1], pkg.targetJointCurrent[2], pkg.targetJointCurrent[3], pkg.targetJointCurrent[4], pkg.targetJointCurrent[5]);
+        printf("flange actual pos is %f %f %f %f %f %f\n", pkg.flange_cur_pos[0], pkg.flange_cur_pos[1], pkg.flange_cur_pos[2], pkg.flange_cur_pos[3], pkg.flange_cur_pos[4], pkg.flange_cur_pos[5]);
+        printf("tcp actual force is %f %f %f %f %f %f\n\n", pkg.actualTCPForce[0], pkg.actualTCPForce[1], pkg.actualTCPForce[2], pkg.actualTCPForce[3], pkg.actualTCPForce[4], pkg.actualTCPForce[5]);
+
+        robot.Sleep(300);
+    }
+
+    robot.Sleep(1000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000);
+    return 0;
+}
+
+int PrintfRobotTime() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    std::vector<RobotState> states = { RobotState::SafetyStop0State, RobotState::SafetyStop1State,
+                                        RobotState::JointDriverTemperature, RobotState::RobotTime,
+                                        RobotState::WideVoltageCtrlBoxTemp, RobotState::WideVoltageCtrlBoxFanCurrent,
+                                        RobotState::SafetyBoxSingal, RobotState::BtnBoxStopSignal };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 8);
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed\n");
+        return 0;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    std::vector<RobotState> getConfigState = {};
+    int getPeriod = 0;
+    rtn = robot.GetRobotRealtimeStateConfig(getConfigState, getPeriod);
+    printf("GetRobotRealtimeStateConfig rtn is %d; period is %d\n", rtn, getPeriod);
+    for (int k = 0; k < getConfigState.size(); k++)
+    {
+        printf("getConfigState include %d\n", getConfigState[k]);
+    }
+
+    while (true)
+    {
+        robot.GetRobotRealTimeState(&pkg);
+
+        printf("robot joint temperature %f %f %f %f %f %f\n", pkg.jointDriverTemperature[0], pkg.jointDriverTemperature[1], pkg.jointDriverTemperature[2], pkg.jointDriverTemperature[3], pkg.jointDriverTemperature[4], pkg.jointDriverTemperature[5]);
+        printf("robot time is %d-%d-%d %d:%d:%d.%d\n", pkg.robotTime.year, pkg.robotTime.mouth, pkg.robotTime.day, pkg.robotTime.hour, pkg.robotTime.minute, pkg.robotTime.second, pkg.robotTime.millisecond);
+        printf("wide voltage box temp %f, fan current %d\n", pkg.wideVoltageCtrlBoxTemp, pkg.wideVoltageCtrlBoxFanCurrent);
+        printf("robot safety box signal %d %d %d %d %d %d, safety box stop signal %d\n\n",
+            pkg.safetyBoxSingal[0], pkg.safetyBoxSingal[1], pkg.safetyBoxSingal[2], pkg.safetyBoxSingal[3], pkg.safetyBoxSingal[4], pkg.safetyBoxSingal[5], pkg.btnBoxStopSignal);
+        //printf("robot safety stop signal %d  %d \n", pkg.safety_stop0_state, pkg.safety_stop1_state);
+        //printf("robot mode %d; robot enable %d\n", pkg.robot_mode, pkg.rbtEnableState);
+        //printf("robot collision level %d %d %d %d %d %d\n", pkg.collisionLevel[0], pkg.collisionLevel[1], pkg.collisionLevel[2], pkg.collisionLevel[3], pkg.collisionLevel[4], pkg.collisionLevel[5]);
+        //printf("robot speed scale manual %f; auto %f\n",pkg.speedScaleManual, pkg.speedScaleAuto);
+        robot.Sleep(300);
+    }
+
+    robot.Sleep(1000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000);
+    return 0;
+}
+
+int PrintRobotLoadAndCoord() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    std::vector<RobotState> states = { RobotState::ProgramState,RobotState::RobotState,
+                                        RobotState::RobotMode, RobotState::RbtEnableState,
+                                        RobotState::Tool, RobotState::User,
+                                        RobotState::ToolCoord, RobotState::WobjCoord,
+                                        RobotState::ExtoolCoord, RobotState::ExAxisCoord,
+                                        RobotState::Load, RobotState::LoadCog,
+                                        RobotState::SpeedScaleManual, RobotState::SpeedScaleAuto,
+                                        RobotState::CollisionLevel };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 8);
+    //printf("SetRobotRealtimeStateConfig rtn is %d\n", rtn);
+    //rtn = robot.AddRobotRealtimeState(RobotState::SpeedScaleManual);
+    //printf("AddRobotRealtimeState rtn is %d\n", rtn);
+    //rtn = robot.AddRobotRealtimeState(RobotState::SpeedScaleAuto);
+    //printf("AddRobotRealtimeState rtn is %d\n", rtn);
+    //rtn = robot.DeleteRobotRealtimeState(RobotState::JointCurPos);
+    //rtn = robot.DeleteRobotRealtimeState(RobotState::ToolCurPos);
+    //printf("DeleteRobotRealtimeState rtn is %d\n", rtn);
+    //rtn = robot.SetRobotRealtimeStatePeriod(80);
+    //printf("SetRobotRealtimeStatePeriod rtn is %d\n", rtn);
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed\n");
+        return 0;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    std::vector<RobotState> getConfigState = {};
+    int getPeriod = 0;
+    rtn = robot.GetRobotRealtimeStateConfig(getConfigState, getPeriod);
+    printf("GetRobotRealtimeStateConfig rtn is %d; period is %d\n", rtn, getPeriod);
+    for (int k = 0; k < getConfigState.size(); k++)
+    {
+        printf("getConfigState include %d\n", getConfigState[k]);
+    }
+
+    while (true)
+    {
+        robot.GetRobotRealTimeState(&pkg);
+
+        printf("robot program state %d, robot state %d\n", pkg.program_state, pkg.robot_state);
+        printf("robot mode %d; robot enable %d\n", pkg.robot_mode, pkg.rbtEnableState);
+        printf("robot tool id %d, user id %d\n", pkg.tool, pkg.user);
+        printf("robot tool coord %f %f %f %f %f %f\n", pkg.toolCoord[0], pkg.toolCoord[1], pkg.toolCoord[2], pkg.toolCoord[3], pkg.toolCoord[4], pkg.toolCoord[5]);
+        printf("robot wobj coord %f %f %f %f %f %f\n", pkg.wobjCoord[0], pkg.wobjCoord[1], pkg.wobjCoord[2], pkg.wobjCoord[3], pkg.wobjCoord[4], pkg.wobjCoord[5]);
+        printf("robot extool coord %f %f %f %f %f %f\n", pkg.extoolCoord[0], pkg.extoolCoord[1], pkg.extoolCoord[2], pkg.extoolCoord[3], pkg.extoolCoord[4], pkg.extoolCoord[5]);
+        printf("robot axis coord %f %f %f %f %f %f\n", pkg.exAxisCoord[0], pkg.exAxisCoord[1], pkg.exAxisCoord[2], pkg.exAxisCoord[3], pkg.exAxisCoord[4], pkg.exAxisCoord[5]);
+        printf("robot load %f, load cog %f %f %f \n", pkg.load, pkg.loadCog[0], pkg.loadCog[1], pkg.loadCog[2]);
+        printf("robot speed scale manual %f; auto %f\n", pkg.speedScaleManual, pkg.speedScaleAuto);
+        printf("robot collision level %d %d %d %d %d %d\n\n", pkg.collisionLevel[0], pkg.collisionLevel[1], pkg.collisionLevel[2], pkg.collisionLevel[3], pkg.collisionLevel[4], pkg.collisionLevel[5]);
+
+        robot.Sleep(300);
+    }
+
+    robot.Sleep(1000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000);
+    return 0;
+}
+
+int TestCNDEParameterErr() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    std::vector<RobotState> states = { RobotState::JointCurPos,   RobotState::ToolCurPos };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 2000);
+    printf("SetRobotRealtimeStateConfig period out of range 2000 rtn is %d\n", rtn);
+
+    rtn = robot.SetRobotRealtimeStateConfig(states, 7);
+    printf("SetRobotRealtimeStateConfig period out of range 7 rtn is %d\n", rtn);
+
+    states.clear();
+    rtn = robot.SetRobotRealtimeStateConfig(states, 8);
+    printf("SetRobotRealtimeStateConfig zero state rtn is %d\n", rtn);
+
+    rtn = robot.AddRobotRealtimeState(RobotState::JointCurPos);
+    rtn = robot.AddRobotRealtimeState(RobotState::JointCurPos);
+    printf("AddRobotRealtimeState add a existed state rtn is %d\n", rtn);
+
+    rtn = robot.DeleteRobotRealtimeState(RobotState::CtrlBoxError);
+    printf("DeleteRobotRealtimeState delete a not exist state rtn is %d\n", rtn);
+
+    rtn = robot.SetRobotRealtimeStatePeriod(7);
+    printf("SetRobotRealtimeStatePeriod out of range 7 rtn is %d\n", rtn);
+
+    rtn = robot.SetRobotRealtimeStatePeriod(1001);
+    printf("SetRobotRealtimeStatePeriod out of range 1001 rtn is %d\n", rtn);
+
+    return 0;
+}
+
+int MoveRectangleMove()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed\n");
+        return 0;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    int tool = 0;
+    int user = 0;
+    float vel = 100.0;
+    float acc = 100.0;
+    float ovl = 100.0;
+    float blendR = 0.0;   // 运动到位（阻塞），但我们将手动等待 MotionDone
+    ExaxisPos epos(0.0, 0.0, 0.0, 0.0);
+    int search = 0;
+    int offset_flag = 0;
+    DescPose offset_pos(0, 0, 0, 0, 0, 0);
+    float oacc = 100.0f;
+
+    uint8_t flag = 0;
+
+
+    double step = 100.0;  // 边长 100mm
+    int cycles = 1;      // 循环次数
+    int cycle = 1;
+    uint8_t motionDone = 0;
+    while (1)
+    {
+        
+        printf("\n========== 第 %d 次正方形运动 ==========\n", cycle);
+        robot.ResetAllError();
+        // 获取当前 TCP 位姿作为起点
+        ROBOT_STATE_PKG pkg = {};
+        rtn = robot.GetRobotRealTimeState(&pkg);
+        double startX = pkg.tl_cur_pos[0];
+        double startY = pkg.tl_cur_pos[1];
+        double startZ = pkg.tl_cur_pos[2];
+        double startRX = pkg.tl_cur_pos[3];
+        double startRY = pkg.tl_cur_pos[4];
+        double startRZ = pkg.tl_cur_pos[5];
+        printf("robot desc pos is %f %f %f %f %f %f \n", startX, startY, startZ, startRX, startRY, startRZ);
+
+        // 定义四个目标点（相对起点）
+        DescPose target1(startX + step, startY, startZ, startRX, startRY, startRZ);
+        DescPose target2(startX + step, startY + step, startZ, startRX, startRY, startRZ);
+        DescPose target3(startX, startY + step, startZ, startRX, startRY, startRZ);
+        DescPose target4(startX, startY, startZ, startRX, startRY, startRZ);
+
+        JointPos jpos = {};
+
+        JointPos jposRef1(pkg.jt_cur_pos[0], pkg.jt_cur_pos[1], pkg.jt_cur_pos[2], pkg.jt_cur_pos[3], pkg.jt_cur_pos[4], pkg.jt_cur_pos[5]);
+        robot.GetInverseKinRef(0, &target1, &jposRef1, &jpos);
+        rtn = robot.MoveL(&jpos, &target1, tool, user, vel, acc, ovl, blendR, 0, &epos, 0, 0, &offset_pos, 100.0, 0, 0);
+        printf("movel errcode:%d\n", rtn);
+
+        robot.Sleep(500);
+        motionDone = 0;
+        while (motionDone == 0)
+        {
+            robot.GetRobotRealTimeState(&pkg);
+            motionDone = pkg.motion_done;
+            robot.Sleep(100);
+        }
+        printf("movel 1 motion done\n");
+        robot.Sleep(500);
+
+        robot.GetRobotRealTimeState(&pkg);
+        JointPos jposRef2(pkg.jt_cur_pos[0], pkg.jt_cur_pos[1], pkg.jt_cur_pos[2], pkg.jt_cur_pos[3], pkg.jt_cur_pos[4], pkg.jt_cur_pos[5]);
+        robot.GetInverseKinRef(0, &target2, &jposRef2, &jpos);
+        rtn = robot.MoveL(&jpos, &target2, tool, user, vel, acc, ovl, blendR, 0, &epos, 0, 0, &offset_pos, 100.0, 0, 0);
+        printf("movel errcode:%d\n", rtn);
+
+        robot.Sleep(500);
+        motionDone = 0;
+        while (motionDone == 0)
+        {
+            robot.GetRobotRealTimeState(&pkg);
+            motionDone = pkg.motion_done;
+            robot.Sleep(100);
+        }
+        printf("movel 2 motion done\n");
+        robot.Sleep(500);
+        robot.GetRobotRealTimeState(&pkg);
+        JointPos jposRef3(pkg.jt_cur_pos[0], pkg.jt_cur_pos[1], pkg.jt_cur_pos[2], pkg.jt_cur_pos[3], pkg.jt_cur_pos[4], pkg.jt_cur_pos[5]);
+        robot.GetInverseKinRef(0, &target3, &jposRef3, &jpos);
+        rtn = robot.MoveL(&jpos, &target3, tool, user, vel, acc, ovl, blendR, 0, &epos, 0, 0, &offset_pos, 100.0, 0, 0);
+        printf("movel errcode:%d\n", rtn);
+
+        robot.Sleep(500);
+        motionDone = 0;
+        while (motionDone == 0)
+        {
+            robot.GetRobotRealTimeState(&pkg);
+            motionDone = pkg.motion_done;
+            robot.Sleep(100);
+        }
+        printf("movel 3 motion done\n");
+        robot.Sleep(500);
+        robot.GetRobotRealTimeState(&pkg);
+        JointPos jposRef4(pkg.jt_cur_pos[0], pkg.jt_cur_pos[1], pkg.jt_cur_pos[2], pkg.jt_cur_pos[3], pkg.jt_cur_pos[4], pkg.jt_cur_pos[5]);
+        robot.GetInverseKinRef(0, &target4, &jposRef4, &jpos);
+        rtn = robot.MoveL(&jpos, &target4, tool, user, vel, acc, ovl, blendR, 0, &epos, 0, 0, &offset_pos, 100.0, 0, 0);
+        printf("movel errcode:%d\n", rtn);
+
+        robot.Sleep(500);
+        motionDone = 0;
+        while (motionDone == 0)
+        {
+            robot.GetRobotRealTimeState(&pkg);
+            motionDone = pkg.motion_done;
+            robot.Sleep(100);
+        }
+        printf("movel 4 motion done\n");
+        robot.Sleep(500);
+        
+        printf("第 %d 次正方形运动完成\n", cycle);
+        cycle++;
+    }
+
+    printf("所有运动完成...\n");
+
+    robot.Sleep(10000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000);
+    return 0;
+}
+
+int PrintAxisStatus() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+
+    std::vector<RobotState> states = { RobotState::JointCurPos, RobotState::ToolCurPos, RobotState::RobotTime, RobotState::ExtAxisStatus };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 20);
+
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed %d\n", rtn);
+        return 0;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    while (true)
+    {
+        robot.GetRobotRealTimeState(&pkg);
+
+        //printf("joint actual pos is %f %f %f %f %f %f\n", pkg.jt_cur_pos[0], pkg.jt_cur_pos[1], pkg.jt_cur_pos[2], pkg.jt_cur_pos[3], pkg.jt_cur_pos[4], pkg.jt_cur_pos[5]);
+        //printf("tool actual pos is %f %f %f %f %f %f\n", pkg.tl_cur_pos[0], pkg.tl_cur_pos[1], pkg.tl_cur_pos[2], pkg.tl_cur_pos[3], pkg.tl_cur_pos[4], pkg.tl_cur_pos[5]);
+        //printf("robot time is %d-%d-%d %d:%d:%d.%d\n", pkg.robotTime.year, pkg.robotTime.mouth, pkg.robotTime.day, pkg.robotTime.hour, pkg.robotTime.minute, pkg.robotTime.second, pkg.robotTime.millisecond);
+        printf("extaxis udp states pos %f; vel %f; errorCode %d; ready %d; inPos %d; alarm %d; flerr %d; nlimit %d; pLimit %d; homingStatus %d\n",
+            pkg.extAxisStatus[0].pos, pkg.extAxisStatus[0].vel, pkg.extAxisStatus[0].errorCode, pkg.extAxisStatus[0].ready,
+            pkg.extAxisStatus[0].inPos, pkg.extAxisStatus[0].alarm, pkg.extAxisStatus[0].flerr, pkg.extAxisStatus[0].nlimit,
+            pkg.extAxisStatus[0].pLimit, pkg.extAxisStatus[0].homingStatus);
+
+        /*        printf("robot load %f, load cog %f %f %f \n\n", pkg.load, pkg.loadCog[0], pkg.loadCog[1], pkg.loadCog[2]);
+
+                printf("joint target pos is %f %f %f %f %f %f\n\n", pkg.targetJointPos[0], pkg.targetJointPos[1], pkg.targetJointPos[2], pkg.targetJointPos[3], pkg.targetJointPos[4], pkg.targetJointPos[5]);
+             */
+        robot.Sleep(200);
+    }
+
+    robot.Sleep(1000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000);
+    return 0;
+}
+
+int PrintAIAOState() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+
+    std::vector<RobotState> states = { RobotState::ClDgtOutputH,
+                                        RobotState::ClDgtOutputL,
+                                        RobotState::TlDgtOutputL,
+                                        RobotState::ClDgtInputH,
+                                        RobotState::ClDgtInputL,
+                                        RobotState::TlDgtInputL,
+                                        RobotState::ClAnalogInput,
+                                        RobotState::TlAnalogInput,
+                                        RobotState::ClAnalogOutput,
+                                        RobotState::TlAnalogOutput };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 20);
+
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed %d\n", rtn);
+        return 0;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+
+    while (true)
+    {
+        robot.GetRobotRealTimeState(&pkg);
+
+        printf("robot DI %d; robot CI %d; robot ToolDI %d; robot DO %d; robot CO %d; robot ToolDO %d\n",
+            pkg.cl_dgt_input_l,
+            pkg.cl_dgt_input_h,
+            pkg.tl_dgt_input_l,
+            pkg.cl_dgt_output_l,
+            pkg.cl_dgt_output_h,
+            pkg.tl_dgt_output_l);
+
+        printf("robot AI0 %d; robot AI1 %d; robot AO0 %d; robot AO1 %d; robot ToolAI %d; robot ToolAO %d\n\n",
+            pkg.cl_analog_input[0],
+            pkg.cl_analog_input[1],
+            pkg.cl_analog_output[0],
+            pkg.cl_analog_output[1],
+            pkg.tl_anglog_input,
+            pkg.tl_analog_output);
+
+        robot.Sleep(200);
+    }
+
+    robot.Sleep(1000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000);
+    return 0;
+}
+
+
+
+int PrintGripperFTSmarttool() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+
+    std::vector<RobotState> states = { RobotState::FtSensorRawData,       // 力传感器原始数据
+                                        RobotState::FtSensorData,          // 力传感器数据
+                                        RobotState::FtSensorActive,        // 力传感器激活状态
+                                        RobotState::GripperMotiondone,     // 夹爪运动完成
+                                        RobotState::GripperFaultId,        // 夹爪故障ID
+                                        RobotState::GripperFault,          // 夹爪故障
+                                        RobotState::GripperActive,         // 夹爪激活
+                                        RobotState::GripperPosition,       // 夹爪位置
+                                        RobotState::GripperSpeed,          // 夹爪速度
+                                        RobotState::GripperCurrent,        // 夹爪电流
+                                        RobotState::GripperTemp,           // 夹爪温度
+                                        RobotState::GripperVoltage,        // 夹爪电压
+                                        RobotState::GripperRotNum,         // 旋转夹爪圈数
+                                        RobotState::GripperRotSpeed,       // 旋转夹爪速度
+                                        RobotState::GripperRotTorque,      // 旋转夹爪力矩
+                                        RobotState::SmartToolState,        // 智能工具状态
+                                        RobotState::ModbusMasterConnect,   // Modbus主站连接
+                                        RobotState::ModbusSlaveConnect,    // Modbus从站连接
+                                        RobotState::ForceSensorErrState    // 力传感器错误状态 
+                                         };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 20);
+
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed %d\n", rtn);
+        return 0;
+    }
+    
+    while (true)
+    {
+        robot.GetRobotRealTimeState(&pkg);
+        printf("  Force Sensor Active: %s\n", pkg.ft_sensor_active ? "true" : "false");
+        printf("  Force Sensor Data: %f %f %f %f %f %f\n", pkg.ft_sensor_data[0], pkg.ft_sensor_data[1], pkg.ft_sensor_data[2], pkg.ft_sensor_data[3], pkg.ft_sensor_data[4], pkg.ft_sensor_data[5]);
+        printf("  Force Sensor raw Data: %f %f %f %f %f %f\n", pkg.ft_sensor_raw_data[0], pkg.ft_sensor_raw_data[1], pkg.ft_sensor_raw_data[2], pkg.ft_sensor_raw_data[3], pkg.ft_sensor_raw_data[4], pkg.ft_sensor_raw_data[5]);
+
+        printf("  Gripper Active: %s, Motion Done: %s\n", pkg.gripper_active ? "true" : "false", pkg.gripper_motiondone ? "true" : "false");
+        printf("  Gripper Position: %d, Speed: %d, Current: %d\n", pkg.gripper_position, pkg.gripper_speed, pkg.gripper_current);
+        printf("  Gripper Temp: %d, Voltage: %d\n", pkg.gripper_temp, pkg.gripper_voltage);
+        printf("  Rotating Gripper Rotations: %f, Speed: %d, Torque: %d\n", pkg.gripperRotNum, pkg.gripperRotSpeed, pkg.gripperRotTorque);
+        printf("  Gripper Fault: %s, Fault ID: %d\n", pkg.gripper_fault ? "true" : "false", pkg.gripper_fault_id);
+        unsigned int num = pkg.smartToolState;
+        std::bitset<32> bits(num);
+        printf("  Smart Tool State: %s\n", bits.to_string().c_str());
+
+        printf("\n");
+
+        robot.Sleep(200);
+    }
    
     robot.Sleep(1000);
 
     robot.CloseRPC();
 
     robot.Sleep(1000);
+    return 0;
+}
+
+int PrintAuxServoState() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+
+    std::vector<RobotState> states = { RobotState::AuxState };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 20);
+
+    rtn = robot.RPC("192.168.58.3");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed %d\n", rtn);
+        return 0;
+    }
+
+    while (true)
+    {
+
+        robot.GetRobotRealTimeState(&pkg);
+        printf("servoId (Servo ID): %d\n", pkg.aux_state.servoId);
+        printf("servoErrCode (Servo error code): %d\n", pkg.aux_state.servoErrCode);
+        printf("servoState (Servo state): %d\n", pkg.aux_state.servoState);
+        printf("servoPos (Servo position): %f\n", pkg.aux_state.servoPos);
+        printf("servoVel (Servo velocity): %f\n", pkg.aux_state.servoVel);
+        printf("servoTorque (Servo torque): %f\n", pkg.aux_state.servoTorque);
+
+
+        robot.Sleep(200);
+    }
+
+    robot.Sleep(1000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000);
+    return 0;
+}
+
+int PrintMainCodeSubCode() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 5000);
+
+    std::vector<RobotState> states = { RobotState::EmergencyStop,
+                                        RobotState::MainCode,
+                                        RobotState::SubCode,
+                                        RobotState::CollisionState,
+                                        RobotState::DragAlarm,
+                                        RobotState::AlarmCheckEmergStopBtn,
+                                        RobotState::CtrlOpenLuaErrCode,
+                                        RobotState::CmdPointError,
+                                        RobotState::OutSoftLimitError };
+    rtn = robot.SetRobotRealtimeStateConfig(states, 20);
+
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed %d\n", rtn);
+        return 0;
+    }
+
+    while (true)
+    {
+        robot.GetRobotRealTimeState(&pkg);
+
+        printf("RobotState::EmergencyStop: %u\n", pkg.EmergencyStop);
+        printf("RobotState::MainCode: %d\n", pkg.main_code);
+        printf("RobotState::SubCode: %d\n", pkg.sub_code);
+        printf("RobotState::CollisionState: %u\n", pkg.collisionState);
+        printf("RobotState::DragAlarm: %u\n", pkg.dragAlarm);
+        printf("RobotState::AlarmCheckEmergStopBtn: %u\n", pkg.alarmCheckEmergStopBtn);
+        printf("RobotState::CmdPointError: %u\n", pkg.cmdPointError);
+        printf("RobotState::OutSoftLimitError: %u\n\n", pkg.outSoftLimitError);
+
+        robot.Sleep(200);
+    }
+
+    robot.Sleep(1000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000);
+    return 0;
+}
+
+int TestSetTrajectoryJSpeed() {
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+    
+    rtn = robot.TrajectoryJUpLoad("D://zUP/trajHelix_aima_1.txt");
+    printf("Upload TrajectoryJ A %d\n", rtn);
+    char traj_file_name[90] = "/fruser/traj/trajHelix_aima_1.txt";
+    rtn = robot.LoadTrajectoryJ(traj_file_name, 100, 1);
+    printf("LoadTrajectoryJ %s, rtn is: %d\n", traj_file_name, rtn);
+    DescPose traj_start_pose;
+    memset(&traj_start_pose, 0, sizeof(DescPose));
+    rtn = robot.GetTrajectoryStartPose(traj_file_name, &traj_start_pose);
+    printf("GetTrajectoryStartPose is: %d\n", rtn);
+    printf("desc_pos:%f,%f,%f,%f,%f,%f\n", traj_start_pose.tran.x, traj_start_pose.tran.y, traj_start_pose.tran.z, traj_start_pose.rpy.rx, traj_start_pose.rpy.ry, traj_start_pose.rpy.rz);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    robot.SetSpeed(50);
+    robot.MoveCart(&traj_start_pose, 0, 0, 100, 100, 100, -1, -1);
+    int traj_num = 0;
+    rtn = robot.GetTrajectoryPointNum(&traj_num);
+    printf("GetTrajectoryStartPose rtn is: %d, traj num is: %d\n", rtn, traj_num);
+
+    rtn = robot.MoveTrajectoryJ();
+    printf("MoveTrajectoryJ rtn is: %d\n", rtn);
+
+    robot.Sleep(1000);
+
+    robot.GetRobotRealTimeState(&pkg);
+    int trajspeedMode = 1;
+    while (pkg.motion_done == 0)
+    {
+        robot.GetRobotRealTimeState(&pkg);
+
+        rtn = robot.SetTrajectoryJSpeed(10.0, trajspeedMode);
+        printf("SetTrajectoryJSpeed is: %d\n", rtn);
+
+        robot.Sleep(1000);
+
+        rtn = robot.SetTrajectoryJSpeed(80.0, trajspeedMode);
+        printf("SetTrajectoryJSpeed is: %d\n", rtn);
+
+        robot.Sleep(1000);
+    }
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000000);
+    return 0;
+}
+
+int TsetFieldBusAO() {
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+
+    uint8_t type = 0, version = 0, connState = 0;
+    uint8_t ctrl[8] = { 0 };
+    double ctrlAO[8] = { 0 };
+    uint8_t DI[8] = { 0 };
+    double AI[8] = { 0 };
+
+    robot.Sleep(3000);
+
+    robot.GetFieldBusConfig(&type, &version, &connState);
+    printf("type is %d, version is %d, connState is %d\n", type, version, connState);
+
+    ctrl[0] = 1;
+    ctrl[1] = 0;
+    ctrl[2] = 1;
+    robot.FieldBusSlaveWriteDO(0, 3, ctrl);
+
+    ctrlAO[0] = 0x1000;
+    robot.FieldBusSlaveWriteAO(2, 1, ctrlAO);
+
+    for (int i = 0; i < 100; i++)
+    {
+        robot.FieldBusSlaveReadDI(0, 4, DI);
+        printf("DI0 is %d, DI1 is %d, DI2 is %d, DI3 is %d\n", DI[0], DI[1], DI[2], DI[3]);
+        robot.FieldBusSlaveReadAI(0, 3, AI);
+        printf("AI0 is %f, AI1 is %f, AI2 is %f\n", AI[0], AI[1], AI[2]);
+        robot.Sleep(10);
+    }
+
+    // Wait for DI0 to become 1, timeout 100ms
+    rtn = robot.FieldBusSlaveWaitDI(0, 1, 100);
+    printf("FieldBusSlaveWaitDI result is %d\n", rtn);
+
+    // Wait for AI0 to be greater than 400, timeout 100ms
+    rtn = robot.FieldBusSlaveWaitAI(0, 0, 400.00f, 100);
+    printf("FieldBusSlaveWaitAI result is %d\n", rtn);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000000);
+    return 0;
+}
+
+int main() {
+
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed %d\n", rtn);
+        return 0;
+    }
+
+    while (true)
+    {
+        float speed = 0.0f;
+        int mode = 0;
+
+        std::cout << "请输入速度 (float): ";
+        while (!(std::cin >> speed))
+        {
+            std::cin.clear(); // 清除错误标志
+            std::cin.ignore((std::numeric_limits<std::streamsize>::max)(), '\n'); // 忽略错误输入
+            std::cout << "输入无效，请输入一个浮点数: ";
+        }
+
+        std::cout << "请输入模式 (int, 默认为0): ";
+        if (!(std::cin >> mode))
+        {
+            // 如果输入不是整数，使用默认值0
+            std::cin.clear();
+            std::cin.ignore((std::numeric_limits<std::streamsize>::max)(), '\n');
+            std::cout << "输入无效，将使用默认模式0" << std::endl;
+            mode = 0;
+        }
+
+        rtn = robot.SetTrajectoryJSpeed(speed, mode);
+        printf("SetTrajectoryJSpeed rtn is  %d\n", rtn);
+
+    }
+
+
+    robot.Sleep(1000);
+
+    robot.CloseRPC();
+
+    robot.Sleep(1000000);
     return 0;
 }
 
