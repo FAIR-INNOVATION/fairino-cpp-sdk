@@ -85,6 +85,7 @@ int FRTcpClient::Connect()
     }
 #endif
     
+    connFlag = true;
     return 0;
 }
 
@@ -221,10 +222,13 @@ int FRTcpClient::Recv(char* recvBuf, int recvSize)
 
 int FRTcpClient::RecvFrame(char* recvBuf, int recvSize)
 {
-
         int tmpRecvSize = Recv(recvBuf, recvSize);
         if (tmpRecvSize <= 0)
         {
+            if (!connFlag)
+            {
+                return 0;
+            }
 #ifdef WIN32
             if (WSAGetLastError() == WSAETIMEDOUT) 
             {
@@ -389,6 +393,10 @@ int FRTcpClient::RecvCNDEPkg(char* recvBuf)
         //printf("   %s\n", tmpRecvBuf);
         if (tmpRecvSize <= 0)
         {
+            if (!connFlag)
+            {
+                return 0;
+            }
 #ifdef WIN32
             if (WSAGetLastError() == WSAETIMEDOUT)
             {
@@ -470,6 +478,7 @@ int FRTcpClient::RecvCNDEPkg(char* recvBuf)
 
 int FRTcpClient::Close() 
 {
+    connFlag = false;
 #ifdef WIN32
 	closesocket(fd);
 	WSACleanup();

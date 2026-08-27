@@ -78,7 +78,7 @@ private:
 
     std::string robotIP = "";
     int robotPort = 0;
-    socket_fd fd;
+    socket_fd fd = 0;
 
     int reConnTime = 30000;        //30000 ms
     bool reconnEnable = true;  //重连使能
@@ -86,5 +86,7 @@ private:
     int timeOut = 50000;  // 默认1s
 
     bool reconnFlag = false;
+
+    bool connFlag = true;
 };
 

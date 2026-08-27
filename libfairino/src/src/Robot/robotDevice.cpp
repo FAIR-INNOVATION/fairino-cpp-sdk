@@ -933,7 +933,7 @@ errno_t FRRobot::GetDexterousHandsFunc(int id, int func[32])
 * @param [in] trackDis 跟踪距离
 * @return 错误码
 */
-int FRRobot::SetStationaryTrackPara(int trackMode, double trackTime, int trackDis)
+errno_t FRRobot::SetStationaryTrackPara(int trackMode, double trackTime, int trackDis)
 {
     if (IsSockError())
     {
@@ -949,6 +949,45 @@ int FRRobot::SetStationaryTrackPara(int trackMode, double trackTime, int trackDi
     param[2] = trackDis;
 
     if (c.execute("SetStationaryTrackPara", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+
+/**
+ * @brief 等待夹爪运动状态
+ * @param [in] status 0-运动未完成，1-运动完成未检测到物体 2-运动完成检测到物体
+ * @param [in] timeout 超时时间（ms）-1永久等待
+ * @param [in] strategy 0-停止报错，1-继续运行
+ * @param [in] type 0-平行夹爪，1-旋转夹爪
+ * @return 错误码
+ */
+errno_t FRRobot::GripperWaitMotionDone(int status, int timeout, int strategy, int type)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = status;
+    param[1] = timeout;
+    param[2] = strategy;
+    param[3] = type;
+
+    if (c.execute("GripperWaitMotionDone", param, result))
     {
         errcode = int(result);
     }

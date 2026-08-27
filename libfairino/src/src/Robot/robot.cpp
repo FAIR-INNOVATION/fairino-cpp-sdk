@@ -46,11 +46,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "3"
-    #define SDK_VERSION_RELEASE "8"
+    #define SDK_VERSION_RELEASE "9"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.3.8.0-robot v3.9.8"
+#define SDK_RELEASE "SDK V2.3.9.0-robot v3.9.9"
 
 #define ROBOT_CNDE_TCP_PORT 20005
 #define ROBOT_CMD_PORT 8080
@@ -110,13 +110,6 @@ FRRobot::FRRobot(void)
 void FRRobot::RobotInstCmdSendRoutineThread()
 {
     int sendbyte = 0;
-    int rtn = cmdClient->Connect();
-    if (rtn != 0)
-    {
-        logger_error("RobotInstCmdSendRoutineThread connect fail");
-        g_sock_com_err = ERR_SOCKET_COM_FAILED;
-        return;
-    }
 
     while (!robot_instcmd_send_exit)
     {
@@ -265,13 +258,22 @@ errno_t FRRobot::RPC(const char *ip)
     memset(robot_ip, 0, 64);
     strncpy(robot_ip, ip, strlen(ip));
 
-    cmdClient->SetIpConfig(robot_ip);
-
     int rtn = cndeClient->Connect(robot_ip, ROBOT_CNDE_TCP_PORT);
     if (rtn != 0)
     {
+        CloseRPC();
         return rtn;
     }
+
+    cmdClient->SetIpConfig(robot_ip);
+    rtn = cmdClient->Connect();
+    if (rtn != 0)
+    {
+        CloseRPC();
+        return rtn;
+    }
+    thread cmdrecvThread(&FRRobot::RobotInstCmdRecvRoutineThread, this);
+    cmdrecvThread.detach();
 
     thread cmdsendThread(&FRRobot::RobotInstCmdSendRoutineThread, this);
     cmdsendThread.detach();
@@ -279,12 +281,10 @@ errno_t FRRobot::RPC(const char *ip)
     Sleep(2000);
     if (IsSockError())
     {
+        CloseRPC();
         logger_info("RPC Fail.");
         return g_sock_com_err;
     }
-
-    thread cmdrecvThread(&FRRobot::RobotInstCmdRecvRoutineThread, this);
-    cmdrecvThread.detach();
 
     thread taskRoutineThread(&FRRobot::RobotTaskRoutineThread, this);
     taskRoutineThread.detach();
@@ -317,6 +317,11 @@ errno_t FRRobot::CloseRPC()
     if (udpCmdClient != nullptr)
     {
         udpCmdClient->Close();
+    }
+
+    if (cndeClient != nullptr)
+    {
+        cndeClient->Close();
     }
     
     g_sock_com_err = ERR_SOCKET_COM_FAILED;
@@ -1510,155 +1515,7 @@ errno_t FRRobot::ServoMoveEnd(int comType)
     return errcode;
 }
 
-/**
- *@brief 关节空间伺服模式运动
- *@param [in] joint_pos 目标关节位置,单位deg
- *@param [in] axisPos 外部轴位置,单位mm
- *@param [in] acc 加速度百分比，范围[0~100],暂不开放，默认为0
- *@param [in] vel 速度百分比，范围[0~100]，暂不开放，默认为0
- *@param [in] cmdT 指令下发周期，单位s，建议范围[0.001~0.0016]
- *@param [in] filterT 滤波时间，单位s，暂不开放，默认为0
- *@param [in] gain 目标位置的比例放大器，暂不开放，默认为0
- *@param [in] id servoJ指令ID,默认为0
- *@param [in] comType 指令下发类型；0-xmlrpc；1-UDP(对应机器人20007端口)
- *@return  错误码
- */
-errno_t FRRobot::ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id, int comType)
-{
-    if (IsSockError())
-    {
-        return g_sock_com_err;
-    }
 
-    if (GetSafetyCode() != 0)
-    {
-        return GetSafetyCode();
-    }
-
-    int errcode = 0;
-    if (comType == 0)
-    {
-        XmlRpcClient c(serverUrl, 20003);
-        XmlRpcValue param, result;
-
-        param[0][0] = joint_pos->jPos[0];
-        param[0][1] = joint_pos->jPos[1];
-        param[0][2] = joint_pos->jPos[2];
-        param[0][3] = joint_pos->jPos[3];
-        param[0][4] = joint_pos->jPos[4];
-        param[0][5] = joint_pos->jPos[5];
-        param[1][0] = axisPos->ePos[0];
-        param[1][1] = axisPos->ePos[1];
-        param[1][2] = axisPos->ePos[2];
-        param[1][3] = axisPos->ePos[3];
-        param[2] = acc;
-        param[3] = vel;
-        param[4] = cmdT;
-        param[5] = filterT;
-        param[6] = gain;
-        param[7] = id;
-
-        if (c.execute("ServoJ", param, result))
-        {
-            errcode = int(result);
-        }
-        else
-        {
-            c.close();
-            return ERR_XMLRPC_CMD_FAILED;
-        }
-
-        c.close();
-    }
-    else if (comType == 1)
-    {
-        char jointStr[128] = { 0 };
-        snprintf(jointStr, 128, "{%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}", joint_pos->jPos[0], joint_pos->jPos[1], joint_pos->jPos[2], joint_pos->jPos[3], joint_pos->jPos[4], joint_pos->jPos[5]);
-        char axisStr[128] = { 0 };
-        snprintf(axisStr, 128, "{%.3f,%.3f,%.3f,%.3f}", axisPos->ePos[0], axisPos->ePos[1], axisPos->ePos[2], axisPos->ePos[3]);
-       
-        string cmdStr = string("ServoJ(") + jointStr + "," + axisStr  + "," + to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
-        FRAME frame(cmdFrameCnt, 376, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
-        if (rtn != 0)
-        {
-            return ERR_SOCKET_SEND_FAILED;
-        }
-        cmdFrameCnt++;
-    }
-    else
-    {
-        return ERR_PARAM_VALUE;
-    }
-
-    return errcode;
-}
-
-/**
- *@brief 笛卡尔空间伺服模式运动
- *@param [in] mode 0-绝对运动(基坐标系)，1-增量运动(基坐标系)，2-增量运动(工具坐标系)
- *@param [in] desc_pos 目标笛卡尔位姿或位姿增量
- *@param [in] exaxis 扩展轴位置
- *@param [in] pos_gain 位姿增量比例系数，仅在增量运动下生效，范围[0~1]
- *@param [in] acc 加速度百分比，范围[0~100],暂不开放，默认为0
- *@param [in] vel 速度百分比，范围[0~100]，暂不开放，默认为0
- *@param [in] cmdT 指令下发周期，单位s，建议范围[0.001~0.016]
- *@param [in] filterT 滤波时间，单位s，暂不开放，默认为0
- *@param [in] gain 目标位置的比例放大器，暂不开放，默认为0
- *@return 错误码
- */
-errno_t FRRobot::ServoCart(int mode, DescPose *desc_pose, ExaxisPos exaxis, float pos_gain[6], float acc, float vel, float cmdT, float filterT, float gain)
-{
-    if (IsSockError())
-    {
-        return g_sock_com_err;
-    }
-    if (GetSafetyCode() != 0)
-    {
-        return GetSafetyCode();
-    }
-
-    int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
-
-    param[0] = mode;
-    param[1][0] = desc_pose->tran.x;
-    param[1][1] = desc_pose->tran.y;
-    param[1][2] = desc_pose->tran.z;
-    param[1][3] = desc_pose->rpy.rx;
-    param[1][4] = desc_pose->rpy.ry;
-    param[1][5] = desc_pose->rpy.rz;
-    param[2][0] = pos_gain[0];
-    param[2][1] = pos_gain[1];
-    param[2][2] = pos_gain[2];
-    param[2][3] = pos_gain[3];
-    param[2][4] = pos_gain[4];
-    param[2][5] = pos_gain[5];
-    param[3][0] = exaxis.ePos[0];
-    param[3][1] = exaxis.ePos[1];
-    param[3][2] = exaxis.ePos[2];
-    param[3][3] = exaxis.ePos[3];
-    param[4] = acc;
-    param[5] = vel;
-    param[6] = cmdT;
-    param[7] = filterT;
-    param[8] = gain;
-
-    if (c.execute("ServoCart", param, result))
-    {
-        errcode = int(result);
-    }
-    else
-    {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
-    }
-
-    c.close();
-
-    return errcode;
-}
 
 /**
  *@brief  笛卡尔空间点到点运动
@@ -4612,9 +4469,10 @@ errno_t FRRobot::GetInverseKinRef(int type, DescPose *desc_pos, JointPos *joint_
  * @param [in] tool 工具号
  * @param [in] workPiece 工件号
  * @param [out] joint_pos 关节位置
+ * @param [in] config -1：自动求解，0-7对应八组解
  * @return 错误码
  */
-errno_t FRRobot::GetInverseKinExaxis(int type, DescPose desc_pos, ExaxisPos exaxis, int tool, int workPiece, JointPos& joint_pos)
+errno_t FRRobot::GetInverseKinExaxis(int type, DescPose desc_pos, ExaxisPos exaxis, int tool, int workPiece, JointPos& joint_pos, int config)
 {
     if (IsSockError())
     {
@@ -4637,6 +4495,7 @@ errno_t FRRobot::GetInverseKinExaxis(int type, DescPose desc_pos, ExaxisPos exax
     param[2][3] = exaxis.ePos[3];
     param[3] = tool;
     param[4] = workPiece;
+    param[5] = config;
 
     if (c.execute("GetInverseKinExaxis", param, result))
     {
@@ -6435,10 +6294,10 @@ errno_t FRRobot::MoveGripper(int index, int pos, int vel, int force, int max_tim
 }
 
 /**
- * @brief  获取夹爪运动状态
- * @param  [out] fault  0-无错误，1-有错误
- * @param  [out] staus  0-运动未完成，1-运动完成
- * @return  错误码
+ * @brief 获取夹爪运动状态（仅末端开放协议定义，已适配设备获取的运动状态为透传值）
+ * @param [out] fault 0-无错误，其他-有错误
+ * @param [out] status 0-运动未完成，1-运动完成未检测到物体 2-运动完成检测到物体
+ * @return 错误码
  */
 errno_t FRRobot::GetGripperMotionDone(uint16_t *fault, uint8_t *status)
 {
@@ -7417,15 +7276,16 @@ errno_t FRRobot::FT_Control(uint8_t flag, int sensor_id, uint8_t select[6], Forc
 
 
 /**
- * @brief  螺旋线探索
- * @param  [in] rcs 参考坐标系，0-工具坐标系，1-基坐标系
- * @param  [in] dr 每圈半径进给量
- * @param  [in] ft 力/扭矩阈值，fx,fy,fz,tx,ty,tz，范围[0~100]
- * @param  [in] max_t_ms 最大探索时间，单位ms
- * @param  [in] max_vel 最大线速度，单位mm/s
+ * @brief 螺旋线探索
+ * @param [in] rcs 参考坐标系，0-工具坐标系，1-基坐标系
+ * @param [in] dr 每圈半径进给量
+ * @param [in] ft 力/扭矩阈值，fx,fy,fz,tx,ty,tz，范围[0~100]
+ * @param [in] max_t_ms 最大探索时间，单位ms
+ * @param [in] max_vel 最大线速度，单位mm/s
+ * @param [in] strategy 未检测到力/力矩的处理策略，0-报错；1-警告，继续运动
  * @return  错误码
  */
-errno_t FRRobot::FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, float max_vel)
+errno_t FRRobot::FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, float max_vel, int strategy)
 {
     if (IsSockError())
     {
@@ -7444,6 +7304,7 @@ errno_t FRRobot::FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, fl
     param[2] = ft;
     param[3] = max_t_ms;
     param[4] = max_vel;
+    param[5] = strategy;
 
     if (c.execute("FT_SpiralSearch", param, result))
     {
@@ -7509,16 +7370,17 @@ errno_t FRRobot::FT_RotInsertion(int rcs, float angVelRot, float ft, float max_a
 }
 
 /**
- * @brief  直线插入
- * @param  [in] rcs 参考坐标系，0-工具坐标系，1-基坐标系
- * @param  [in] ft  力/扭矩阈值，fx,fy,fz,tx,ty,tz，范围[0~100]
- * @param  [in] lin_v 直线速度，单位mm/s
- * @param  [in] lin_a 直线加速度，单位mm/s^2，暂不使用
- * @param  [in] max_dis 最大插入距离，单位mm
- * @param  [in] linorn  插入方向，0-负方向，1-正方向
+ * @brief 直线插入
+ * @param [in] rcs 参考坐标系，0-工具坐标系，1-基坐标系
+ * @param [in] ft  力/扭矩阈值，fx,fy,fz,tx,ty,tz，范围[0~100]
+ * @param [in] lin_v 直线速度，单位mm/s
+ * @param [in] lin_a 直线加速度，单位mm/s^2，暂不使用
+ * @param [in] max_dis 最大插入距离，单位mm
+ * @param [in] linorn  插入方向，0-负方向，1-正方向
+ * @param [in] strategy 未检测到力/力矩的处理策略，0-报错；1-警告，继续运动
  * @return  错误码
  */
-errno_t FRRobot::FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, float max_dis, uint8_t linorn)
+errno_t FRRobot::FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, float max_dis, uint8_t linorn, int strategy)
 {
     if (IsSockError())
     {
@@ -7538,6 +7400,7 @@ errno_t FRRobot::FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, fl
     param[3] = lin_a;
     param[4] = max_dis;
     param[5] = linorn;
+    param[6] = strategy;
 
     if (c.execute("FT_LinInsertion", param, result))
     {
@@ -7554,17 +7417,18 @@ errno_t FRRobot::FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, fl
 }
 
 /**
- * @brief  表面定位
- * @param  [in] rcs 参考坐标系，0-工具坐标系，1-基坐标系
- * @param  [in] dir  移动方向，1-正方向，2-负方向
- * @param  [in] axis 移动轴，1-x轴，2-y轴，3-z轴
- * @param  [in] lin_v 探索直线速度，单位mm/s
- * @param  [in] lin_a 探索直线加速度，单位mm/s^2，暂不使用，默认为0
- * @param  [in] max_dis 最大探索距离，单位mm
- * @param  [in] ft  动作终止力/扭矩阈值，fx,fy,fz,tx,ty,tz
+ * @brief 表面定位
+ * @param [in] rcs 参考坐标系，0-工具坐标系，1-基坐标系
+ * @param [in] dir  移动方向，1-正方向，2-负方向
+ * @param [in] axis 移动轴，1-x轴，2-y轴，3-z轴
+ * @param [in] lin_v 探索直线速度，单位mm/s
+ * @param [in] lin_a 探索直线加速度，单位mm/s^2，暂不使用，默认为0
+ * @param [in] max_dis 最大探索距离，单位mm
+ * @param [in] ft  动作终止力/扭矩阈值，fx,fy,fz,tx,ty,tz
+ * @param [in] strategy 未检测到力/力矩的处理策略，0-报错；1-警告，继续运动
  * @return  错误码
  */
-errno_t FRRobot::FT_FindSurface(int rcs, uint8_t dir, uint8_t axis, float lin_v, float lin_a, float max_dis, float ft)
+errno_t FRRobot::FT_FindSurface(int rcs, uint8_t dir, uint8_t axis, float lin_v, float lin_a, float max_dis, float ft, int strategy)
 {
     if (IsSockError())
     {
@@ -7585,6 +7449,7 @@ errno_t FRRobot::FT_FindSurface(int rcs, uint8_t dir, uint8_t axis, float lin_v,
     param[4] = lin_a;
     param[5] = max_dis;
     param[6] = ft;
+    param[7] = strategy;
 
     if (c.execute("FT_FindSurface", param, result))
     {
@@ -23425,6 +23290,84 @@ errno_t FRRobot::SetUserLEDColor(bool r, bool g, bool b)
 
     c.close();
     return errcode;
+}
+
+/**
+ * @brief 切换手动高速模式
+ * @param [in] state 0-退出手动高速；1-进入手动高速
+ * @return 错误码
+ */
+errno_t FRRobot::HiSpeedManualSwitch(int state)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = state;
+
+    if (c.execute("HiSpeedManualSwitch", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 获取当前上位机系统时间并发送给机器人，同步系统时间（由于QNX系统限制，同步精度为分钟级）
+* @return 错误码
+*/
+errno_t FRRobot::SetRobotTime()
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::tm tm_buf{};
+
+#if defined(_WIN32) || defined(_WIN64)
+    localtime_s(&tm_buf, &t);
+#else
+    localtime_r(&t, &tm_buf);
+#endif
+
+    // 格式化日期 YYYY‑MM‑DD
+    char date_buf[32] = { 0 };
+    std::strftime(date_buf, sizeof(date_buf), "%d %m %Y", &tm_buf);
+    string dateStr = date_buf;
+
+    // 格式化时间 HH:MM:SS
+    char time_buf[32] = { 0 };
+    std::strftime(time_buf, sizeof(time_buf), "%H%M", &tm_buf);
+    string timeStr = time_buf;
+
+
+    string cmdStr = string("SetQNXSystemTime(") + "\"" + dateStr + "\"" + "," + "\"" + timeStr + "\"" + ")";
+    FRAME frame(cmdFrameCnt, 343, cmdStr);
+    string sendFrame = PackFrame(frame);
+
+    memset(g_sendbuf, 0, BUFFER_SIZE * sizeof(char));
+    strcpy(g_sendbuf, sendFrame.c_str());
+
+    is_sendcmd = true;
+
+    logger_info("%s", cmdStr);
+
+    return 0;
 }
 
 

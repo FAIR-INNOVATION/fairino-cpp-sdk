@@ -379,8 +379,24 @@ public:
 	errno_t ServoJ(JointPos *joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int id = 0, int comType = 0);
 
 	/**
+	 * @brief Joint space servo mode motion(Support multiple input points at once)
+	 * @param [in] joint_pos Target joint position, unit: deg
+	 * @param [in] axisPos External axis position, unit: mm
+	 * @param [in] acc Acceleration percentage, range [0~100], temporarily not available, default is 0
+	 * @param [in] vel Velocity percentage, range [0~100], temporarily not available, default is 0
+	 * @param [in] cmdT Command transmission period, unit: s, recommended range [0.001~0.0016]
+	 * @param [in] filterT Filter time, unit: s, temporarily not available, default is 0
+	 * @param [in] gain Proportional amplifier for target position, temporarily not available, default is 0
+	 * @param [out] ServoJCmdCount ServoJ Command Position Count [0-10000]
+	 * @param [in] id ServoJ command ID, default is 0
+	 * @param [in] comType Command transmission type; 0-xmlrpc; 1-UDP (corresponds to robot port 20007)
+	 * @return  Error code
+	 */
+	errno_t ServoJ(std::vector<JointPos> joint_pos, ExaxisPos* axisPos, float acc, float vel, float cmdT, float filterT, float gain, int& servoJCmdCount, int id = 0, int comType = 0);
+
+	/**
     *@brief Cartesian space servo mode motion
-    *@param [in] mode  0- absolute motion (base coordinates), 1- incremental motion (base coordinates), 2- incremental motion (tool coordinates)
+    *@param [in] mode  0-absolute motion (base coordinates), 1-incremental motion (base coordinates), 2-incremental motion (tool coordinates)
     *@param [in] desc_pos  Target Cartesian pose or pose increment
 	*@param [in] exaxis Extended axis position
     *@param [in] pos_gain  Proportional coefficient of pose increment, effective only for incremental motion, range [0~1]
@@ -681,6 +697,7 @@ public:
 	 * 22-Level 1 reduction mode; 23-Level 2 reduction mode; 24-Level 3 reduction mode (stop); 25-Resume welding; 26-Terminate welding;
 	 * 27-Auxiliary dragging enable; 28-Auxiliary dragging disable; 29-Auxiliary dragging enable/disable; 30-Clear all errors;
 	 * 31-Manual/Automatic switching (high/low level); 32-Enable; 33-Disable; 34-Enable/Disable (rising/falling edge); 35-Fixed point tracking start/end
+	 * 36-Enter safe speed movement;37-Current Loop Drag Lock;38-Force sensor assisted locking;
 	 * @return Error code
 	 */
 	errno_t SetDIConfig(int config[8]);
@@ -695,40 +712,48 @@ public:
 	 * 22-Level 1 reduction mode; 23-Level 2 reduction mode; 24-Level 3 reduction mode (stop); 25-Resume welding; 26-Terminate welding;
 	 * 27-Auxiliary dragging enable; 28-Auxiliary dragging disable; 29-Auxiliary dragging enable/disable; 30-Clear all errors;
 	 * 31-Manual/Automatic switching (high/low level); 32-Enable; 33-Disable; 34-Enable/Disable (rising/falling edge); 35-Fixed point tracking start/end
+	 * 36-Enter safe speed movement;37-Current Loop Drag Lock;38-Force sensor assisted locking;
+	 * 201‑External E‑stop input signal 1(2Ch); 202‑External E‑stop input signal 2(2Ch); 203‑Level‑1 reduction mode(2Ch); 204‑Level‑2 reduction mode(2Ch); 205‑Level‑3 reduction mode(2Ch);
+	 * 206‑Normal stop(2Ch); 207‑Safety wall 1(2Ch); 208‑Safety wall 2(2Ch); 209‑Safety wall 3(2Ch); 210‑Safety wall 4(2Ch); 211‑Safety wall 5(2Ch); 212‑Safety wall 6(2Ch); 213‑Safety wall 7(2Ch);
+	 * 214‑Safety wall 8(2Ch); 215‑Safety stop reset(2Ch);
 	 * @return Error code
 	 */
 	errno_t GetDIConfig(int config[8]);
 
 	/**
-	 * @brief Set configurable CO port functions
+	 * @brief Set configurable CO port functions of the control box
 	 * @param [out] config CO0-CO7 function codes;
-	 * 0-None; 1-Robot error; 2-Robot in motion; 3-Spraying start/stop; 4-Spraying gun cleaning; 5-Gas supply signal; 6-Arc ignition signal; 7-Jog wire feeding;
-	 * 8-Reverse wire feeding; 9-JOB input 1; 10-JOB input 2; 11-JOB input 3; 12-Conveyor start/stop control; 13-Robot paused; 14-Reached operation origin;
-	 * 15-Reached interference zone; 16-Wire search start/stop control; 17-Robot start completed; 18-Program start/stop; 19-Automatic/Manual mode; 20-Emergency stop output signal 1 - Safety;
-	 * 21-Emergency stop output signal 2 - Safety; 22-LUA script program running/stopped; 23-Safety status output - Safety; 24-Protective stop status output - Safety;
-	 * 25-Robot in motion - Safety; 26-Robot reduction mode - Safety; 27-Robot non-reduction mode - Safety; 28-Robot not stopped; 29-Robot error - Command point error;
-	 * 30-Robot error - Driver error; 31-Robot error - Soft limit exceeded; 32-Robot error - Collision error; 33-Robot error - Active slave count error;
-	 * 34-Robot error - Slave error; 35-Robot error - IO error; 36-Robot error - Gripper error; 37-Robot error - File error; 38-Robot error - Singular pose error;
-	 * 39-Robot error - Driver communication error; 40-Robot error - Parameter error; 41-Robot error - External axis soft limit exceeded; 42-Robot warning - Warning;
-	 * 43-Robot warning - Safety door warning; 44-Robot warning - Motion warning; 45-Robot warning - Interference zone warning; 46-Robot warning - Safety wall warning;
-	 * 47-Enable status; 48-Automatic lifting during disconnection; 49-Cuboid 1 interference warning; 50-Cuboid 2 interference warning; 51-Cuboid 3 interference warning; 52-Cuboid 4 interference warning;
+	 * 0-None; 1-report errors; 2-motion; 3-Spraying start and stop; 4-Spray gun cleaning; 5-Aspiration; 6-Arcing; 7-Forward wire feeding;
+	 * 8-Reverse wire feeding; 9-JOB input port 1; 10-JOB input port 2; 11-JOB input port 3; 12-Start and stop conveyor belt; 13-suspend; 14-Reach the job origin;
+	 * 15-Entering the interference zone; 16-Start stop control of welding wire positioning; 17-Robot startup completed; 18-Program start stop; 19-Automatic manual mode; 20-Emergency stop output signal1;
+	 * 21-Emergency stop output signal2; 22-LUA script program stop or running; 23-Safety status output; 24-Protective stop status output;
+	 * 25-Robot in motion; 26-Robot reduce mode; 27-Robot non-reduced mode; 28-Reserved; 29-Command point error;
+	 * 30-Driver error; 31-Soft limit exceeded error; 32-Collision error; 33-Wrong number of active slave;
+	 * 34-Slave error; 35-IO error; 36-Gripper error; 37-File error; 38-Strange pose error;
+	 * 39-Driver communication error; 40-Parameter error; 41-External axis exceeded software limit error; 42-Planning and timeout warning;
+	 * 43-Safety door warning; 44-Exercise warning; 45-Interference zone warning; 46-Security wall warning;
+	 * 47-Robot Enable; 48-Auto-lifting in disconnection; 49-Cube Interference Zone Trigger 1; 50-Cube Interference Zone Trigger 2; 51-Cube Interference Zone Trigger 3; 52-Cube Interference Zone Trigger 4;
+	 * 53-Gripper workpiece drop error;
 	 * @return Error code
 	 */
 	errno_t SetDOConfig(int config[8]);
 
 	/**
-	 * @brief Get configurable CO port functions
+	 * @brief Get configurable CO port functions of the control box
 	 * @param [out] config CO0-CO7 function codes;
-	 * 0-None; 1-Robot error; 2-Robot in motion; 3-Spraying start/stop; 4-Spraying gun cleaning; 5-Gas supply signal; 6-Arc ignition signal; 7-Jog wire feeding;
-	 * 8-Reverse wire feeding; 9-JOB input 1; 10-JOB input 2; 11-JOB input 3; 12-Conveyor start/stop control; 13-Robot paused; 14-Reached operation origin;
-	 * 15-Reached interference zone; 16-Wire search start/stop control; 17-Robot start completed; 18-Program start/stop; 19-Automatic/Manual mode; 20-Emergency stop output signal 1 - Safety;
-	 * 21-Emergency stop output signal 2 - Safety; 22-LUA script program running/stopped; 23-Safety status output - Safety; 24-Protective stop status output - Safety;
-	 * 25-Robot in motion - Safety; 26-Robot reduction mode - Safety; 27-Robot non-reduction mode - Safety; 28-Robot not stopped; 29-Robot error - Command point error;
-	 * 30-Robot error - Driver error; 31-Robot error - Soft limit exceeded; 32-Robot error - Collision error; 33-Robot error - Active slave count error;
-	 * 34-Robot error - Slave error; 35-Robot error - IO error; 36-Robot error - Gripper error; 37-Robot error - File error; 38-Robot error - Singular pose error;
-	 * 39-Robot error - Driver communication error; 40-Robot error - Parameter error; 41-Robot error - External axis soft limit exceeded; 42-Robot warning - Warning;
-	 * 43-Robot warning - Safety door warning; 44-Robot warning - Motion warning; 45-Robot warning - Interference zone warning; 46-Robot warning - Safety wall warning;
-	 * 47-Enable status; 48-Automatic lifting during disconnection; 49-Cuboid 1 interference warning; 50-Cuboid 2 interference warning; 51-Cuboid 3 interference warning; 52-Cuboid 4 interference warning;
+	 * 0-None; 1-report errors; 2-motion; 3-Spraying start and stop; 4-Spray gun cleaning; 5-Aspiration; 6-Arcing; 7-Forward wire feeding;
+	 * 8-Reverse wire feeding; 9-JOB input port 1; 10-JOB input port 2; 11-JOB input port 3; 12-Start and stop conveyor belt; 13-suspend; 14-Reach the job origin;
+	 * 15-Entering the interference zone; 16-Start stop control of welding wire positioning; 17-Robot startup completed; 18-Program start stop; 19-Automatic manual mode; 20-Emergency stop output signal1;
+	 * 21-Emergency stop output signal2; 22-LUA script program stop or running; 23-Safety status output; 24-Protective stop status output;
+	 * 25-Robot in motion; 26-Robot reduce mode; 27-Robot non-reduced mode; 28-Reserved; 29-Command point error;
+	 * 30-Driver error; 31-Soft limit exceeded error; 32-Collision error; 33-Wrong number of active slave;
+	 * 34-Slave error; 35-IO error; 36-Gripper error; 37-File error; 38-Strange pose error;
+	 * 39-Driver communication error; 40-Parameter error; 41-External axis exceeded software limit error; 42-Planning and timeout warning;
+	 * 43-Safety door warning; 44-Exercise warning; 45-Interference zone warning; 46-Security wall warning;
+	 * 47-Robot Enable; 48-Auto-lifting in disconnection; 49-Cube Interference Zone Trigger 1; 50-Cube Interference Zone Trigger 2; 51-Cube Interference Zone Trigger 3; 52-Cube Interference Zone Trigger 4;
+	 * 53-Gripper workpiece drop error;
+	 * 201‑E‑stop output signal 1(2Ch); 202‑E‑stop output signal 2(2Ch); 203‑Safety status output(2Ch); 204‑Protective stop status output(2Ch); 205‑Robot in motion(2Ch);
+	 * 206‑Robot reduction mode(2Ch); 207‑Robot non‑reduction mode(2Ch);
 	 * @return Error code
 	 */
 	errno_t GetDOConfig(int config[8]);
@@ -1232,9 +1257,10 @@ public:
 	 * @param [in] tool Tool number
 	 * @param [in] workPiece Workpiece number
 	 * @param [out] joint_pos Joint position
+	 * @param [in] config Joint space configuration, [-1]- based on the current joint position, [0~7]- based on the specific joint space configuration
 	 * @return Error code
 	 */
-	errno_t GetInverseKinExaxis(int type, DescPose desc_pos, ExaxisPos exaxis, int tool, int workPiece, JointPos& joint_pos);
+	errno_t GetInverseKinExaxis(int type, DescPose desc_pos, ExaxisPos exaxis, int tool, int workPiece, JointPos& joint_pos, int config = -1);
 
     /**
     *@brief  Forward kinematics solution
@@ -1603,10 +1629,10 @@ public:
 	errno_t  MoveGripper(int index, int pos, int vel, int force, int max_time, uint8_t block, int type, double rotNum, int rotVel, int rotTorque);
 
 	/**
-	 * @brief  Get the gripper motion status
-	 * @param  [out] fault 0-no error, 1-error
-	 * @param  [out] staus 0-the movement is not completed, 1-the movement is completed
-	 * @return  Error code 
+	 * @brief Get gripper motion status (Defined only by end‑effector open protocol. The motion status obtained from the adapted device is a transparent‑transmission value)
+	 * @param [out] fault 0‑No error, Other values‑Error occurred
+	 * @param [out] staus 0‑Motion not completed, 1‑Motion completed without object detected, 2‑Motion completed with object detected
+	 * @return Error code
 	 */
     errno_t  GetGripperMotionDone(uint16_t *fault, uint8_t *status);
 
@@ -1866,54 +1892,57 @@ public:
 
 
 	/**
-    *@brief  Spiral exploration
-    *@param  [in] rcs Reference frame, 0- tool frame, 1- base frame
-    *@param  [in] dr Feed per circle radius
-    *@param  [in] ft Force/torque threshold，fx,fy,fz,tx,ty,tz，range[0~100]
-    *@param  [in] max_t_ms Maximum exploration time, unit: ms
-    *@param  [in] max_vel Maximum linear velocity, unit: mm/s
-    *@return  Error code
-	 */	
-    errno_t  FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, float max_vel);	
+    * @brief Spiral exploration
+    * @param [in] rcs Reference frame, 0- tool frame, 1- base frame
+    * @param [in] dr Feed per circle radius
+    * @param [in] ft Force/torque threshold，fx,fy,fz,tx,ty,tz，range[0~100]
+    * @param [in] max_t_ms Maximum exploration time, unit: ms
+    * @param [in] max_vel Maximum linear velocity, unit: mm/s
+	* @param [in] strategy No detected force/moment processing strategy, 0-Error; 1-Warning and continue movement
+    * @return Error code
+	*/	
+    errno_t FT_SpiralSearch(int rcs, float dr, float ft, float max_t_ms, float max_vel, int strategy = 0);
 	
 	/**
-    *@brief Rotary insertion
-    *@param [in] rcs Reference frame, 0- tool frame, 1- base frame
-    *@param [in] angVelRot Angular velocity of rotation, unit: deg/s
-    *@param [in] ft  Force/torque threshold，fx,fy,fz,tx,ty,tz，range[0~100]
-    *@param [in] max_angle Maximum rotation Angle, unit: deg
-    *@param [in] orn Force/torque direction, 1- along the z axis, 2- around the z axis
-    *@param [in] max_angAcc Maximum rotational acceleration, in deg/s^2, not used yet, default is 0
-    *@param [in] rotorn  Rotation direction, 1- clockwise, 2- counterclockwise
-	*@param [in] strategy No detected force/moment processing strategy, 0-Error; 1-Warning and continue movement.
-    *@return  Error code
-	 */	
-    errno_t  FT_RotInsertion(int rcs, float angVelRot, float ft, float max_angle, uint8_t orn, float max_angAcc, uint8_t rotorn, int strategy = 0);
+    * @brief Rotary insertion
+    * @param [in] rcs Reference frame, 0- tool frame, 1- base frame
+    * @param [in] angVelRot Angular velocity of rotation, unit: deg/s
+    * @param [in] ft  Force/torque threshold，fx,fy,fz,tx,ty,tz，range[0~100]
+    * @param [in] max_angle Maximum rotation Angle, unit: deg
+    * @param [in] orn Force/torque direction, 1- along the z axis, 2- around the z axis
+    * @param [in] max_angAcc Maximum rotational acceleration, in deg/s^2, not used yet, default is 0
+    * @param [in] rotorn  Rotation direction, 1- clockwise, 2- counterclockwise
+	* @param [in] strategy No detected force/moment processing strategy, 0-Error; 1-Warning and continue movement.
+    * @return  Error code
+	*/	
+    errno_t FT_RotInsertion(int rcs, float angVelRot, float ft, float max_angle, uint8_t orn, float max_angAcc, uint8_t rotorn, int strategy = 0);
 	
 	/**
-    *@brief  Linear insertion
-    *@param  [in] rcs Reference frame, 0- tool frame, 1- base frame
-    *@param  [in] ft  Force/torque threshold，fx,fy,fz,tx,ty,tz，range[0~100]
-    *@param  [in] lin_v Linear velocity, unit: mm/s
-    *@param  [in] lin_a Linear acceleration, unit: mm/s^2, not used yet
-    *@param  [in] max_dis Maximum insertion distance, unit: mm
-    *@param  [in] linorn  Insert direction, 0- negative, 1- positive
-    *@return  Error code
-	 */	
-    errno_t  FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, float max_dis, uint8_t linorn);		
+    * @brief Linear insertion
+    * @param [in] rcs Reference frame, 0- tool frame, 1- base frame
+    * @param [in] ft  Force/torque threshold，fx,fy,fz,tx,ty,tz，range[0~100]
+    * @param [in] lin_v Linear velocity, unit: mm/s
+    * @param [in] lin_a Linear acceleration, unit: mm/s^2, not used yet
+    * @param [in] max_dis Maximum insertion distance, unit: mm
+    * @param [in] linorn  Insert direction, 0- negative, 1- positive
+	* @param [in] strategy No detected force/moment processing strategy, 0-Error; 1-Warning and continue movement
+    * @return  Error code
+	*/	
+    errno_t FT_LinInsertion(int rcs, float ft, float lin_v, float lin_a, float max_dis, uint8_t linorn, int strategy = 0);
 
 	/**
-    *@brief  Surface positioning
-    *@param  [in] rcs Reference frame, 0- tool frame, 1- base frame
-    *@param  [in] dir  The direction of travel, 1- positive, 2- negative
-    *@param  [in] axis Axis of movement, 1-x axis, 2-y axis, 3-z axis
-    *@param  [in] lin_v Explore the linear velocity in mm/s
-    *@param  [in] lin_a Explore linear acceleration, in mm/s^2, not used yet, default to 0
-    *@param  [in] max_dis Maximum exploration distance, in mm
-    *@param  [in] ft  Action termination force/torque threshold，fx,fy,fz,tx,ty,tz  
-    *@return  Error code
-	 */	
-    errno_t  FT_FindSurface(int rcs, uint8_t dir, uint8_t axis, float lin_v, float lin_a, float max_dis, float ft);	
+    * @brief Surface positioning
+    * @param [in] rcs Reference frame, 0- tool frame, 1- base frame
+    * @param [in] dir  The direction of travel, 1- positive, 2- negative
+    * @param [in] axis Axis of movement, 1-x axis, 2-y axis, 3-z axis
+    * @param [in] lin_v Explore the linear velocity in mm/s
+    * @param [in] lin_a Explore linear acceleration, in mm/s^2, not used yet, default to 0
+    * @param [in] max_dis Maximum exploration distance, in mm
+    * @param [in] ft Action termination force/torque threshold，fx,fy,fz,tx,ty,tz  
+	* @param [in] strategy No detected force/moment processing strategy, 0-Error; 1-Warning and continue movement
+    * @return Error code
+	*/	
+    errno_t FT_FindSurface(int rcs, uint8_t dir, uint8_t axis, float lin_v, float lin_a, float max_dis, float ft, int strategy = 0);
 	
 	/**
     *@brief  Calculation of midplane position starts
@@ -5340,6 +5369,65 @@ public:
 	 * @return Error code, returns 0 on success
 	 */
 	errno_t WorkPieceTrsfEnd();
+
+	/**
+	 * @brief Get checksum of safety configuration parameters
+	 * @param [out] status Verification status, 0‑valid, 1‑verifying, 2‑verification failed
+	 * @param [out] checksum Checksum, 8‑digit hexadecimal value
+	 * @return Error code
+	 */
+	errno_t GetSafetyParamsCheckSum(int& status, uint32_t& checksum);
+
+	/**
+	 * @brief Verify safety operation password
+	 * @param [in] status Verification mode, 0‑enable, 1‑disable
+	 * @param [in] password Password string
+	 * @return Error code
+	 */
+	errno_t SafetyOPPasswordCheck(int status, std::string password);
+
+	/**
+	 * @brief Wait for gripper motion completion status
+	 * @param[in] status 0: Motion not finished; 1: Motion finished, no object detected; 2: Motion finished, object detected
+	 * @param[in] timeout Timeout period in milliseconds; -1 indicates infinite waiting
+	 * @param[in] strategy 0: Halt and trigger error alert; 1: Keep running
+	 * @param[in] type 0: Parallel gripper; 1: Rotary gripper
+	 * @return Execution error code
+	 */
+	errno_t GripperWaitMotionDone(int status, int timeout, int strategy, int type);
+
+	/**
+	 * @brief Safety dual‑channel CI function configuration
+	 * @param [in] ID Dual‑channel ID; [0‑3]
+	 * @param [in] config Function configuration; 0‑No configuration; 201‑External E‑stop input signal 1; 202‑External E‑stop input signal 2; 203‑Level‑1 reduction mode; 204‑Level‑2 reduction mode; 205‑Level‑3 reduction mode;
+								   206‑Normal stop; 207‑Safety wall 1; 208‑Safety wall 2; 209‑Safety wall 3; 210‑Safety wall 4; 211‑Safety wall 5; 212‑Safety wall 6; 213‑Safety wall 7;
+								   214‑Safety wall 8; 215‑Safety stop reset;
+	 * @return Error code
+	 */
+	errno_t SetSafetyDIConfig(int ID, int config);
+	/**
+	 * @brief Safety dual‑channel CO function configuration
+	 * @param [in] ID Dual‑channel ID; [0‑3]
+	 * @param [in] config Function configuration; 0‑No configuration; 201‑E‑stop output signal 1; 202‑E‑stop output signal 2; 203‑Safety status output; 204‑Protective stop status output; 205‑Robot in motion;
+								   206‑Robot reduction mode; 207‑Robot non‑reduction mode;
+	 * @return Error code
+	 */
+	errno_t SetSafetyDOConfig(int ID, int config);
+
+	/**
+	 * @brief Switch manual high‑speed mode
+	 * @param [in] state 0‑Exit manual high‑speed; 1‑Enter manual high‑speed
+	 * @return Error code
+	 */
+	errno_t HiSpeedManualSwitch(int state);
+
+	/**
+	 * @brief Obtain the current upper‑computer system time and send it to the robot for system time synchronization.
+	 * Due to QNX system limitations, the synchronization accuracy is at minute‑level.
+	 * @return Error code
+	 */
+	errno_t SetRobotTime();
+
 
 
 	/**
