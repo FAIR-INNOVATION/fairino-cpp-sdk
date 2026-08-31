@@ -117,3 +117,16 @@ elseif(UNIX)
     target_link_libraries(test_fairino pthread)
     #target_link_libraries(test_fairino ${CMAKE_CURRENT_SOURCE_DIR}/LinuxBuild/bin/libfairino.so)
 endif()
+
+# Install rules
+install(TARGETS fairino
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+install(FILES
+  ${ROBOT_INCLUDE}/robot.h
+  ${ROBOT_INCLUDE}/robot_types.h
+  ${ROBOT_INCLUDE}/robot_error.h
+  DESTINATION include/fairino
+)
