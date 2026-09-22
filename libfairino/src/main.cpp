@@ -417,18 +417,20 @@ int TestServoJ(void)
 int TestServoJUDP(void)
 {
     ROBOT_STATE_PKG pkg = {};
-    FRRobot robot;
+    FRRobot robot(true);
     int rtn = 0;
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
     rtn = robot.SetCmdRpyCallback(UDPFrameCallBack);
     printf("SetCmdRpyCallback rtn is %d\n", rtn);
-    rtn = robot.RPC("192.168.58.2");
+    robot.SetReConnectParam(true, 300000, 50);
+    robot.MtlsLink("");
+    rtn = robot.RPC("192.168.56.2");
     if (rtn != 0)
     {
         return -1;
     }
-    robot.SetReConnectParam(true, 30000, 50);
+    
     JointPos j(0, -90, 90, 0, 0, 0);
     ExaxisPos epos(0, 0, 0, 0);
     DescPose offset_pos(0, 0, 0, 0, 0, 0);
@@ -454,8 +456,8 @@ int TestServoJUDP(void)
         printf("ServoMoveStart rtn is %d\n", rtn);
         while (count)
         {
-            rtn = robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID, comType);
-            printf("ServoJ rtn is %d\n", rtn);
+            rtn = robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID, 1);
+            //printf("ServoJ rtn is %d\n", rtn);
             j.jPos[0] += dt;
             j.jPos[1] += dt;
             j.jPos[2] += dt;
@@ -473,8 +475,8 @@ int TestServoJUDP(void)
         printf("ServoMoveStart rtn is %d\n", rtn);
         while (count)
         {
-            robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID, comType);
-            printf("ServoJ rtn is %d\n", rtn);
+            robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID, 1);
+            //printf("ServoJ rtn is %d\n", rtn);
             j.jPos[0] -= dt;
             j.jPos[1] -= dt;
             j.jPos[2] -= dt;
@@ -1613,6 +1615,372 @@ int TestWorkPieceTrsf()
     printf("WorkPieceTrsfEnd rtn is %d\n", rtn);
     robot.CloseRPC();
     robot.Sleep(2000);
+}
+
+
+// Lua round‑trip motion + speed increment test
+// SetSpeed(20)
+// MoveJ(point1) → while(1): MoveJ(point2)/SetSpeed(30)/MoveJ(point1)/SetSpeed(40)
+void TestMoveJSpeedLoop()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return;
+    }
+
+    // Point1 joint: 23.424,-76.529,114.134,-113.992,46.783,-69.413
+    JointPos pos1(23.424, -76.529, 114.134, -113.992, 46.783, -69.413);
+    // Point1 cartesian: -416.922,-366.417,371.091,-37.336,27.024,-139.857
+    DescPose pose1(-416.922, -366.417, 371.091, -37.336, 27.024, -139.857);
+    // Point2(inside loop) joint: only j5 differs = -153.191
+    JointPos pos2(23.424, -76.529, 114.134, -113.992, -153.191, -69.413);
+    // Point2(inside loop) cartesian: -454.146,-210.648,256.427,116.099,-4.858,-165.734
+    DescPose pose2(-454.146, -210.648, 256.427, 116.099, -4.858, -165.734);
+
+    DescPose offdese(0, 0, 0, 0, 0, 0);
+    // Extended axis: 0.000,0.000,0.000,0.000
+    ExaxisPos epos(0, 0, 0, 0);
+
+    // SetSpeed(20)
+    rtn = robot.SetSpeed(20);
+    printf("SetSpeed(20): %d\n", rtn);
+
+    // Initial MoveJ to point1 (tool=8, user=0, vel/acc/ovl=100, blendT=-1 reach target, no offset)
+    rtn = robot.MoveJ(&pos1, &pose1, 8, 0, 100, 100, 100, &epos, -1, 0, &offdese);
+    printf("MoveJ pos1: %d\n", rtn);
+
+    // while(1) infinite loop for round‑trip motion, speed increases 20→30→40
+    while (true)
+    {
+        // MoveJ to point2
+        rtn = robot.MoveJ(&pos2, &pose2, 8, 0, 100, 100, 100, &epos, -1, 0, &offdese);
+        printf("MoveJ pos2: %d\n", rtn);
+
+        // SetSpeed(30)
+        rtn = robot.SetSpeed(30);
+        printf("SetSpeed(30): %d\n", rtn);
+
+        // MoveJ back to point1
+        rtn = robot.MoveJ(&pos1, &pose1, 8, 0, 100, 100, 100, &epos, -1, 0, &offdese);
+        printf("MoveJ pos1: %d\n", rtn);
+
+        // SetSpeed(40)
+        rtn = robot.SetSpeed(40);
+        printf("SetSpeed(40): %d\n", rtn);
+    }
+
+    // Note: above while(true) is infinite loop, following code is unreachable
+    robot.Sleep(1000);
+    robot.CloseRPC();
+    robot.Sleep(1000);
+}
+
+// Python test_moveL_speed_loop: MoveL 往返运动, 速度 20->30->40 递增
+void TestMoveLSpeedLoop()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return;
+    }
+    // 点1 关节: 52.055,-53.917,83.053,-119.137,-90.000,-40.315
+    JointPos pos1(52.055, -53.917, 83.053, -119.137, -90.000, -40.315);
+    // 点1 笛卡尔: -348.348,-612.635,203.147,-180.000,-0.000,-177.630
+    DescPose pose1(-348.348, -612.635, 203.147, -180.000, -0.000, -177.630);
+    // 点2 关节: -51.966,-68.141,106.161,-128.021,-90.000,-144.338
+    JointPos pos2(-51.966, -68.141, 106.161, -128.021, -90.000, -144.338);
+    // 点2 笛卡尔: -432.405,387.234,203.149,179.999,-0.000,-177.628
+    DescPose pose2(-432.405, 387.234, 203.149, 179.999, -0.000, -177.628);
+    DescPose offdese(0, 0, 0, 0, 0, 0);
+    // 扩展轴全 0
+    ExaxisPos epos(0, 0, 0, 0);
+
+    // SetSpeed(20)
+    rtn = robot.SetSpeed(20);
+    printf("SetSpeed(20): %d\n", rtn);
+    // 初始 MoveJ 到点1 (tool=8, user=0, vel/acc/ovl=100, blendT=-1 运动到位, 无偏移)
+    rtn = robot.MoveJ(&pos1, &pose1, 8, 0, 100, 100, 100, &epos, -1, 0, &offdese);
+    printf("MoveJ pos1: %d\n", rtn);
+    // while True: MoveL 往返, 速度递增 20->30->40
+    // 注: Python config=-1(参考当前关节逆解), C++ MoveL 重载无 config 参数
+    while (true)
+    {
+        // MoveL 到点2 (blendR=-1 运动到位, blendMode=0, search=0, 无偏移, oacc=100)
+        rtn = robot.MoveL(&pos2, &pose2, 8, 0, 100, 100, 100, -1, 0, &epos, 0, 0, &offdese, 100, 0, 0, 10);
+        printf("MoveL pos2: %d\n", rtn);
+        // SetSpeed(30)
+        rtn = robot.SetSpeed(30);
+        printf("SetSpeed(30): %d\n", rtn);
+        // MoveL 回点1
+        rtn = robot.MoveL(&pos1, &pose1, 8, 0, 100, 100, 100, -1, 0, &epos, 0, 0, &offdese, 100, 0, 0, 10);
+        printf("MoveL pos1: %d\n", rtn);
+        // SetSpeed(40)
+        rtn = robot.SetSpeed(40);
+        printf("SetSpeed(40): %d\n", rtn);
+    }
+    robot.Sleep(1000);
+    robot.CloseRPC();
+    robot.Sleep(1000);
+}
+
+// Python test_moveC_speed_loop: MoveC 往返运动, 速度 20->30->40 递增
+void TestMoveCSpeedLoop()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return;
+    }
+    // 起点/end1 关节与笛卡尔: -90.489,-84.415,127.849,-133.531,-90.000,-74.001 / -98.324,431.220,203.588,-179.974,-0.093,73.512
+    JointPos posStart(-90.489, -84.415, 127.849, -133.531, -90.000, -74.001);
+    DescPose poseStart(-98.324, 431.220, 203.588, -179.974, -0.093, 73.512);
+    // 中间点: -108.333,-61.555,95.797,-124.336,-89.971,-91.845 / 101.649,631.196,203.595,-179.974,-0.094,73.512
+    JointPos posMid(-108.333, -61.555, 95.797, -124.336, -89.971, -91.845);
+    DescPose poseMid(101.649, 631.196, 203.595, -179.974, -0.094, 73.512);
+    // end2: -90. 253,-35.630,49.719,-104.188,-90.001,-73.765 / -98.326,831.170,203.600,-179.973,-0.094,73.512
+    JointPos posEnd2(-90.253, -35.630, 49.719, -104.188, -90.001, -73.765);
+    DescPose poseEnd2(-98.326, 831.170, 203.600, -179.973, -0.094, 73.512);
+    DescPose offdese(0, 0, 0, 0, 0, 0);
+    ExaxisPos epos(0, 0, 0, 0);
+
+    // SetSpeed(20)
+    rtn = robot.SetSpeed(20);
+    printf("SetSpeed(20): %d\n", rtn);
+    // 初始 MoveJ 到起点
+    rtn = robot.MoveJ(&posStart, &poseStart, 8, 0, 100, 100, 100, &epos, -1, 0, &offdese);
+    printf("MoveJ start: %d\n", rtn);
+    // while True: MoveC 往返(mid->end2 / mid->start), 速度递增
+    // 注: Python config=-1, C++ MoveC 重载无 config 参数
+    while (true)
+    {
+        // 第一轮: MoveC mid -> end2 (ovl=100, blendR=-1, oacc=100, 无偏移)
+        rtn = robot.MoveC(&posMid, &poseMid, 8, 0, 100, 100, &epos, 0, &offdese, &posEnd2, &poseEnd2, 8, 0, 100, 100, &epos, 0, &offdese, 100, -1, 100, 0);
+        printf("MoveC mid->end2: %d\n", rtn);
+        // SetSpeed(30)
+        rtn = robot.SetSpeed(30);
+        printf("SetSpeed(30): %d\n", rtn);
+        // 第二轮: MoveC mid -> start(=end1, 回到起点)
+        rtn = robot.MoveC(&posMid, &poseMid, 8, 0, 100, 100, &epos, 0, &offdese, &posStart, &poseStart, 8, 0, 100, 100, &epos, 0, &offdese, 100, -1, 100, 0);
+        printf("MoveC mid->start: %d\n", rtn);
+        // SetSpeed(40)
+        rtn = robot.SetSpeed(40);
+        printf("SetSpeed(40): %d\n", rtn);
+    }
+    robot.Sleep(1000);
+    robot.CloseRPC();
+    robot.Sleep(1000);
+}
+
+// Python test_circle_speed_loop: Circle 运动, 速度 30/40 递增
+void TestCircleSpeedLoop()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return;
+    }
+    // 起点: -90.489,-84.415,127.849,-133.531,-90.000,-74.001 / -98.324,431.220,203.588,-179.974,-0.093,73.512
+    JointPos posStart(-90.489, -84.415, 127.849, -133.531, -90.000, -74.001);
+    DescPose poseStart(-98.324, 431.220, 203.588, -179.974, -0.093, 73.512);
+    // 中间点: -108.333,-61.555,95.797,-124.336,-89.971,-91.845 / 101.649,631.196,203.595,-179.974,-0.094,73.512
+    JointPos posMid(-108.333, -61.555, 95.797, -124.336, -89.971, -91.845);
+    DescPose poseMid(101.649, 631.196, 203.595, -179.974, -0.094, 73.512);
+    // 终点: -90.253,-35.630,49.719,-104.188,-90.001,-73.765 / -98.326,831.170,203.600,-179.973,-0.094,73.512
+    JointPos posEnd(-90.253, -35.630, 49.719, -104.188, -90.001, -73.765);
+    DescPose poseEnd(-98.326, 831.170, 203.600, -179.973, -0.094, 73.512);
+    DescPose offdese(0, 0, 0, 0, 0, 0);
+    ExaxisPos epos(0, 0, 0, 0);
+
+    // SetSpeed(20)
+    rtn = robot.SetSpeed(20);
+    printf("SetSpeed(20): %d\n", rtn);
+    // 初始 MoveJ 到起点
+    rtn = robot.MoveJ(&posStart, &poseStart, 8, 0, 100, 100, 100, &epos, -1, 0, &offdese);
+    printf("MoveJ start: %d\n", rtn);
+    // while True: Circle(mid->end), 速度 30/40 交替
+    // 注: Python config=-1, C++ Circle 重载无 config 参数
+    while (true)
+    {
+        // SetSpeed(30)
+        rtn = robot.SetSpeed(30);
+        printf("SetSpeed(30): %d\n", rtn);
+        // Circle mid -> end (ovl=100, blendR=-1, oacc=100, 无偏移)
+        rtn = robot.Circle(&posMid, &poseMid, 8, 0, 100, 100, &epos, &posEnd, &poseEnd, 8, 0, 100, 100, &epos, 100, 0, &offdese, 100, -1, 0);
+        printf("Circle mid->end: %d\n", rtn);
+        // SetSpeed(40)
+        rtn = robot.SetSpeed(40);
+        printf("SetSpeed(40): %d\n", rtn);
+    }
+    robot.Sleep(1000);
+    robot.CloseRPC();
+    robot.Sleep(1000);
+}
+
+int TestSetPhySpeedInstant()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+
+    double inputVal = 0.0;
+    while (true)
+    {
+        std::cout << "Please input speed value: ";
+        if (std::cin >> inputVal)
+        {
+            robot.SetPhySpeedInstant(inputVal);
+        }
+        else
+        {
+            // 输入错误，清空cin状态
+            std::cin.clear();
+            std::cin.ignore();
+            std::cout << "Invalid number!" << std::endl;
+        }
+    }
+
+    robot.CloseRPC();
+    robot.Sleep(1000);
+    return 0;
+}
+
+void robotThreadFunc(FRRobot* pRobot)
+{
+    double inputVal = 0.0;
+    while (true)
+    {
+        std::cout << "Please input speed value: ";
+        if (std::cin >> inputVal)
+        {
+            pRobot->SetPhySpeedInstant(inputVal);
+        }
+        else
+        {
+            // 输入错误，清空cin状态
+            std::cin.clear();
+            std::cin.ignore();
+            std::cout << "Invalid number!" << std::endl;
+        }
+    }
+}
+
+int TestSetPhySpeed()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+
+    std::thread th(robotThreadFunc, &robot);
+
+    JointPos j1(-60.206, -49.449, 79.476, -124.322, -88.416, -45.209);
+    DescPose d1(-412.929, 510.912, 94.557, -175.850, -1.933, 74.992);
+    JointPos j2(-141.282, -40.962, 62.359, -110.496, -85.512, -126.379);
+    DescPose d2(586.847, 510.915, 94.560, -175.851, -1.934, 74.991);
+
+    ExaxisPos ex(0.0, 0.0, 0.0, 0.0);
+    DescPose zeroOff(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    while (true)
+    {
+        rtn = robot.MoveL(&j1, &d1, 1, 0, 100, 100, 100, -1, 0, &ex, 0, 0, &zeroOff, 100, 0, 0, 10);
+        rtn = robot.MoveL(&j2, &d2, 1, 0, 100, 100, 100, -1, 0, &ex, 0, 0, &zeroOff, 100, 0, 0, 10);
+    }
+
+    robot.CloseRPC();
+    robot.Sleep(1000);
+    return 0;
+}
+
+int TestTCFToAllJoint()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+
+    DescPose curTcp(0, 0, 0, 0, 0, 0);
+    rtn = robot.GetActualTCPPose(1, &curTcp);
+    if (rtn != 0)
+    {
+        return rtn;
+    }
+
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << "cur TCF: x=" << curTcp.tran.x << ", y=" << curTcp.tran.y << ", z=" << curTcp.tran.z << ", "
+        << "a=" << curTcp.rpy.rx << ", b=" << curTcp.rpy.ry << ", c=" << curTcp.rpy.rz << std::endl;
+
+    ExaxisPos exPos(0, 0, 0, 0);
+
+    std::vector<JointPos> allJoints(8, JointPos(0, 0, 0, 0, 0, 0));
+
+    rtn = robot.TCFToAllJoint(curTcp, 0, 0, exPos, allJoints);
+    if (rtn != 0)
+    {
+        return rtn;
+    }
+
+    for (int i = 0; i < 8; i++)
+    {
+        JointPos joint = allJoints[i];
+
+        std::cout << "JOINT" << (i + 1) << ": "
+            << "j1=" << joint.jPos[0] << ", j2=" << joint.jPos[1] << ", j3=" << joint.jPos[2] << ", "
+            << "j4=" << joint.jPos[3] << ", j5=" << joint.jPos[4] << ", j6=" << joint.jPos[5] << std::endl;
+
+        DescPose pos(0, 0, 0, 0, 0, 0);
+        rtn = robot.GetForwardKin(&joint, &pos);
+        if (rtn != 0)
+        {
+
+            continue;
+        }
+
+        std::cout << "POS" << (i + 1) << ": "
+            << "x=" << pos.tran.x << ", y=" << pos.tran.y << ", z=" << pos.tran.z << ", "
+            << "a=" << pos.rpy.rx << ", b=" << pos.rpy.ry << ", c=" << pos.rpy.rz << std::endl;
+    }
+
+    return 0;
 }
 
 #pragma endregion
@@ -6873,26 +7241,64 @@ int TestStable()
     robot.Sleep(1000000);
 }
 
-using JointPose = std::vector<double>;
+
+
+/**
+ * @brief 仅 TCP 8080 通道验证
+ */
+int TestSendModeTcp()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot(true);
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    rtn = robot.SetCmdRpyCallback(UDPFrameCallBack);
+    robot.MtlsLink("D://TLSCERTS/");
+    robot.SetReConnectParam(true, 300000, 50);
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+
+    std::string mode0 = "/f/bIII52III236III7IIIMode(0)III/b/f";
+    std::string mode1 = "/f/bIII52III236III7IIIMode(1)III/b/f";
+    printf("[SEND] %s\n", mode0.c_str());
+    robot.SendTCPFrame(mode0);
+    robot.Sleep(1000);
+    printf("[SEND] %s\n", mode1.c_str());
+    robot.SendTCPFrame(mode1);
+    robot.Sleep(1000);
+    printf("[SEND] %s\n", mode0.c_str());
+    robot.SendTCPFrame(mode0);
+    robot.CloseRPC();
+    robot.Sleep(1000);
+    return 0;
+}
+
 
 int main() 
 {
-    TestSetAndGetRobotTime();
-    return 0;
     ROBOT_STATE_PKG pkg = {};
-    FRRobot robot;
+    FRRobot robot(true);
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
     robot.SetReConnectParam(true, 30000, 500);
     int rtn = robot.RPC("192.168.58.2");
     if (rtn != 0)
     {
+        printf("robot RPC failed, errcode is %d\n", rtn);
         return -1;
     }
 
-    
-
+    rtn = robot.SetSpeed(20);
+    printf("SetSpeed 20 rtn is %d\n", rtn);
     robot.Sleep(1000);
+    rtn = robot.SetSpeed(66);
+    printf("SetSpeed 60 rtn is %d\n", rtn);
+
+
     robot.CloseRPC();
     robot.Sleep(1000);
     return 0;

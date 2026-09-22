@@ -29,12 +29,15 @@ elseif(UNIX)
     add_definitions(-DLINUX_OPTION)
 endif()
 
+add_subdirectory(src/src/mbedtls)
+
 set(BASE_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/Base)
 set(LOG_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/Log)
 set(ROBOT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/Robot-EN)
 set(CNDE_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/CNDE)
 set(TCP_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/ComClient)
 set(XMLRPC_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/include/XmlRpc)
+set(MBEDTLS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/src/mbedtls/include)
 
 
 set(BASE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/src/Base)
@@ -51,6 +54,7 @@ include_directories(${ROBOT_INCLUDE})
 include_directories(${CNDE_INCLUDE})
 include_directories(${TCP_INCLUDE})
 include_directories(${XMLRPC_INCLUDE})
+include_directories(${MBEDTLS_INCLUDE})
 
 
 file(GLOB ALL_INCLUDE ${BASE_INCLUDE}/*.h
@@ -70,8 +74,6 @@ file(GLOB ALL_SRC ${BASE_SRC}/*.cpp
                     ${XMLRPC_SRC}/*.cpp
                     ${CNDE_SRC}/*.cpp)
 
-
-
 if(WIN32)
     # 静态库路径
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE  ${CMAKE_CURRENT_SOURCE_DIR}/build/bin/Release)
@@ -84,13 +86,18 @@ if(WIN32)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG  ${CMAKE_CURRENT_SOURCE_DIR}/build/bin/Debug)
 
     add_library(fairino SHARED ${ALL_INCLUDE} ${ALL_SRC})
-    #add_library(fairinod STATIC ${ALL_INCLUDE} ${ALL_SRC})
-    target_link_libraries(fairino ws2_32)
-    target_link_libraries(fairino Shlwapi)
+    #add_library(fairinod STATIC ${ALL_INCLUDE} ${ALL_SRC}) 
+
+    #link mbedtls library
+    target_link_libraries(fairino PRIVATE mbedtls mbedx509 mbedcrypto)
+    #link some network library
+    target_link_libraries(fairino PRIVATE bcrypt ws2_32 Shlwapi crypt32)
         
     add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-    target_link_libraries(test_fairino ws2_32)
-    target_link_libraries(test_fairino Shlwapi)
+    #link mbedtls library
+    target_link_libraries(test_fairino PRIVATE mbedtls mbedx509 mbedcrypto)
+    #link some network library
+    target_link_libraries(test_fairino PRIVATE bcrypt ws2_32 Shlwapi crypt32)
 
 elseif(UNIX)
     # 静态库路径
@@ -100,13 +107,15 @@ elseif(UNIX)
 
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/LinuxBuild/bin)
     add_library(fairino SHARED ${ALL_INCLUDE} ${ALL_SRC})
-    # 添加调试信息
+    #link mbedtls library
+    target_link_libraries(fairino PRIVATE mbedtls mbedx509 mbedcrypto)
+
     SET(CMAKE_BUILD_TYPE "Release")  
     target_compile_options(fairino PRIVATE -g)
     # 关闭优化选项
     target_compile_options(fairino PRIVATE -O0)
     # 为动态库生成版本信息
-    set_target_properties(fairino PROPERTIES VERSION 2.3.9 SOVERSION 2)
+    set_target_properties(fairino PROPERTIES VERSION 2.4.0 SOVERSION 2)
 
     add_executable(test_fairino ${ALL_INCLUDE} ${ALL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
     SET(CMAKE_BUILD_TYPE "Release")
@@ -114,6 +123,7 @@ elseif(UNIX)
     target_compile_options(test_fairino PRIVATE -g)
     # 关闭优化选项
     target_compile_options(test_fairino PRIVATE -O0)
-    target_link_libraries(test_fairino pthread)
-    #target_link_libraries(test_fairino ${CMAKE_CURRENT_SOURCE_DIR}/LinuxBuild/bin/libfairino.so)
+    target_link_libraries(test_fairino PUBLIC pthread)
+    #link mbedtls library
+    target_link_libraries(test_fairino PRIVATE mbedtls mbedx509 mbedcrypto)
 endif()

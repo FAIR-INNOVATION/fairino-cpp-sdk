@@ -2,6 +2,8 @@
 #include "robot_types.h"
 #include "robot_error.h"
 #include "FRCNDEClient.h"
+#include "mTLSClient.h"
+#include "DTLSClient.h"
 #include "Utility.h"
 
 #include "logger.h"
@@ -45,12 +47,12 @@
     // #include <filesystem>
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
-    #define SDK_VERSION_MINOR "3"
-    #define SDK_VERSION_RELEASE "9"
+    #define SDK_VERSION_MINOR "4"
+    #define SDK_VERSION_RELEASE "0"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.3.9.0-robot v3.9.9"
+#define SDK_RELEASE "SDK V2.4.0.0-robot v4.0.0"
 
 #define ROBOT_CNDE_TCP_PORT 20005
 #define ROBOT_CMD_PORT 8080
@@ -81,8 +83,9 @@ using namespace XmlRpc;
 /**
  * @brief  机器人接口类构造函数
  */
-FRRobot::FRRobot(void)
+FRRobot::FRRobot(bool _TLSEnable)
 {
+    TLSEnable = _TLSEnable;
     char url[64] = "192.168.58.2";
     memset(serverUrl, 0, 64);
     strncpy(serverUrl, url, strlen(url));
@@ -99,8 +102,17 @@ FRRobot::FRRobot(void)
     robot_instcmd_send_exit = 0;
     robot_task_exit = 0;
     g_sock_com_err = ERR_SUCCESS;
-    cmdClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_CMD_PORT);
-    udpCmdClient = std::make_shared<FRUdpClient>();
+    if (TLSEnable == true)
+    {   
+        cmdClient = std::make_shared<MTLSClient>(robot_ip, ROBOT_CMD_PORT);
+        udpCmdClient = std::make_shared<DTLSClient>();
+    }
+    else
+    {
+        cmdClient = std::make_shared<FRTcpClient>(robot_ip, ROBOT_CMD_PORT);
+        udpCmdClient = std::make_shared<FRUdpClient>();
+    }
+
     cndeClient = std::make_shared<FRCNDEClient>(robot_state_pkg, &g_sock_com_err);
 }
 
@@ -115,11 +127,11 @@ void FRRobot::RobotInstCmdSendRoutineThread()
     {
         if (is_sendcmd && strlen(g_sendbuf) > 0)
         {
-            sendbyte = cmdClient->Send(g_sendbuf, strlen(g_sendbuf));
+            std::visit([&](auto& sp) { if (sp) sendbyte = sp->Send(g_sendbuf, strlen(g_sendbuf)); }, cmdClient);
             logger_info("cmd send:%s.", g_sendbuf);
             if (sendbyte < 0)
             {
-                cmdClient->Close();
+                std::visit([&](auto& sp) { if (sp) sendbyte = sp->Close(); }, cmdClient);
                 g_sock_com_err = ERR_SOCKET_COM_FAILED;
                 memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
                 logger_error("cmd send %s error", g_sendbuf);
@@ -149,7 +161,7 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
     while (!robot_instcmd_recv_exit)
     {
         memset(g_recvbuf, 0, BUFFER_SIZE * sizeof(char));
-        recvbyte = cmdClient->RecvFrame(g_recvbuf, BUFFER_SIZE * sizeof(char));
+        std::visit([&](auto& sp) { if (sp) recvbyte = sp->RecvFrame(g_recvbuf, BUFFER_SIZE * sizeof(char)); }, cmdClient);
         if (recvbyte > 0)
         {
             logger_info("recv cmd is %s.", (char*)g_recvbuf);
@@ -174,7 +186,7 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
         }
     }
 
-    cmdClient->Close();
+    std::visit([&](auto& sp) { if (sp) sp->Close(); }, cmdClient);
     g_sock_com_err = ERR_SOCKET_COM_FAILED;
     memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
    
@@ -254,21 +266,39 @@ errno_t FRRobot::RPC(const char *ip)
     memset(serverUrl, 0, 64);
     sprintf(serverUrl, "%s", ip);
     logger_info("serverUrl:%s", serverUrl);
-
     memset(robot_ip, 0, 64);
     strncpy(robot_ip, ip, strlen(ip));
 
     int rtn = cndeClient->Connect(robot_ip, ROBOT_CNDE_TCP_PORT);
     if (rtn != 0)
     {
+        logger_error("cnde CONN RTN %d   %s", rtn, robot_ip);
         CloseRPC();
         return rtn;
     }
 
-    cmdClient->SetIpConfig(robot_ip);
-    rtn = cmdClient->Connect();
+    bool robotServerTLSEnable = false;
+    rtn = GetTLSEnableState(robotServerTLSEnable);
+    if (rtn == ERR_XMLRPC_CMD_FAILED)
+    {
+        logger_error("GetTLSEnableState unsupported by controller");
+    }
+    else if (rtn != 0)
+    {
+        return rtn;  //检验SDK未启用、单一控制源，并返回错误码
+    }
+
+    if (robotServerTLSEnable != TLSEnable)
+    {
+        g_sock_com_err = ERR_CMD_TLS_ENABLE_STATE;
+        return g_sock_com_err;   //检测SDK端与服务端的指令协议加密开启状态是否一致，并返回错误码
+    }
+
+    std::visit([&](auto& sp) { if (sp) sp->SetIpConfig(robot_ip); }, cmdClient);
+    std::visit([&](auto& sp) { if (sp) rtn = sp->Connect(); }, cmdClient);
     if (rtn != 0)
     {
+        logger_error("RPC Fail. TCP CMD CONN RTN %d", rtn);
         CloseRPC();
         return rtn;
     }
@@ -289,8 +319,12 @@ errno_t FRRobot::RPC(const char *ip)
     thread taskRoutineThread(&FRRobot::RobotTaskRoutineThread, this);
     taskRoutineThread.detach();
 
-    udpCmdClient->Connect(string(robot_ip), ROBOT_UDP_CMD_PORT);
-
+    std::visit([&](auto& sp) { if (sp) rtn = sp->Connect(string(robot_ip), ROBOT_UDP_CMD_PORT); }, udpCmdClient);
+    if(rtn != 0)
+    {
+        logger_error("RPC Fail. UDP CMD CONN RTN %d", rtn);
+        return rtn;
+    }
     Sleep(1000);
     logger_info("RPC SUCCESS.");
     rpc_done = true;
@@ -309,15 +343,9 @@ errno_t FRRobot::CloseRPC()
 
     Sleep(500);
 
-    if (cmdClient != nullptr)
-    {
-        cmdClient->Close();
-    }
+    std::visit([&](auto& sp) { if (sp) sp->Close(); }, cmdClient);
 
-    if (udpCmdClient != nullptr)
-    {
-        udpCmdClient->Close();
-    }
+    std::visit([&](auto& sp) { if (sp) sp->Close(); }, udpCmdClient);
 
     if (cndeClient != nullptr)
     {
@@ -1445,7 +1473,8 @@ errno_t FRRobot::ServoMoveStart(int comType)
     {
         string cmdStr = string("ServoMoveStart()");
         FRAME frame(cmdFrameCnt, 689, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -1500,7 +1529,8 @@ errno_t FRRobot::ServoMoveEnd(int comType)
     {
         string cmdStr = string("ServoMoveEnd()");
         FRAME frame(cmdFrameCnt, 690, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -4566,6 +4596,74 @@ errno_t FRRobot::GetInverseKinHasSolution(int type, DescPose *desc_pos, JointPos
         }
         else{
             logger_error("execute GetInverseKinHasSolution fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 获取8组逆解
+ * @param [in] tcfPose 笛卡尔位姿
+ * @param [in] tool 工具坐标系
+ * @param [in] workpiece 工件坐标系
+ * @param [in] exPos 扩展轴位置
+ * @param [out] jointPos 输出8组关节角度
+ * @return 错误码
+ */
+errno_t FRRobot::TCFToAllJoint(DescPose tcfPose, int tool, int workpiece, ExaxisPos exPos, std::vector<JointPos>& jointPos)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0][0] = tcfPose.tran.x;
+    param[0][1] = tcfPose.tran.y;
+    param[0][2] = tcfPose.tran.z;
+    param[0][3] = tcfPose.rpy.rx;
+    param[0][4] = tcfPose.rpy.ry;
+    param[0][5] = tcfPose.rpy.rz;
+    param[1] = tool;
+    param[2] = workpiece;
+    param[3][0] = exPos.ePos[0];
+    param[3][1] = exPos.ePos[1];
+    param[3][2] = exPos.ePos[2];
+    param[3][3] = exPos.ePos[3];
+
+    if (c.execute("TCFToAllJoint", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            jointPos.clear();
+            jointPos.reserve(8);
+
+            string paramStr = (string)result[1];
+            cout << "str is " << paramStr << endl;
+            std::vector<std::string> parS = split(paramStr, ',');
+            if (parS.size() != 48)
+            {
+                logger_error("get TCFToAllJoint size fail");
+                return -1;
+            }
+            for (int i = 0; i < 48; i++)
+            {
+                jointPos[i/6].jPos[i % 6] = (float)stod(parS[i]);
+            }
+        }
+        else 
+        {
+            logger_error("execute TCFToAllJoint fail %d", errcode);
         }
     }
     else
@@ -8295,7 +8393,7 @@ errno_t FRRobot::GetSDKComState(int *state)
 {
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        if (cndeClient->GetReConnState() || cmdClient->GetReConnState())
+        if (cndeClient->GetReConnState() || std::visit([](auto& sp) { return sp && sp->GetReConnState(); }, cmdClient))
         {
             *state = 2;  //正在重连
         }
@@ -10848,6 +10946,11 @@ errno_t FRRobot::GetLuaList(std::list<std::string>* luaNames)
     XmlRpcValue param, result;
     if (c.execute("GetLuaListPrepare", param, result))
     {
+        if (result.getType() == XmlRpc::XmlRpcValue::Type::TypeInt)
+        {
+            return int(result);
+        }
+
         errcode = int(result[0]);
         if (0 == errcode)
         {
@@ -10864,7 +10967,7 @@ errno_t FRRobot::GetLuaList(std::list<std::string>* luaNames)
         c.close();
         return ERR_XMLRPC_CMD_FAILED;
     }
-
+   
     c.close();
     
     for (int i = 0; i < luaNum; i++)
@@ -15376,7 +15479,8 @@ errno_t FRRobot::ServoJTStart(int comType)
     {
         string cmdStr = string("ServoJTStart()");
         FRAME frame(cmdFrameCnt, 1199, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -15493,7 +15597,8 @@ errno_t FRRobot::ServoJT(float torque[], double interval, int checkFlag, double 
 
         string cmdStr = string("ServoJT(") + torqueStr + "," + to_string(interval) + "," + to_string(checkFlag) + "," + jPowerLimitStr + "," + jVelLimitStr + ")";
         FRAME frame(cmdFrameCnt, 1200, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -15549,7 +15654,8 @@ errno_t FRRobot::ServoJTEnd(int comType)
     {
         string cmdStr = string("ServoJTEnd()");
         FRAME frame(cmdFrameCnt, 1201, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -19875,7 +19981,7 @@ bool FRRobot::IsSockError()
         Sleep(100);
     }
 
-    while (cmdClient->GetReConnState())
+    while (std::visit([](auto& sp) { return sp && sp->GetReConnState(); }, cmdClient))
     {
         //如果正在重连，就等待重连结果
         Sleep(100);
@@ -19917,7 +20023,7 @@ int FRRobot::GetSafetyCode()
 errno_t FRRobot::SetReConnectParam(bool enable, int reconnectTime, int period)
 {
     cndeClient->SetReConnectParam(enable, reconnectTime, period);
-    cmdClient->SetReConnectParam(enable, reconnectTime, period);
+    std::visit([&](auto& sp) { if (sp) sp->SetReConnectParam(enable, reconnectTime, period); }, cmdClient);
     return 0;
 }
 
@@ -23178,7 +23284,8 @@ errno_t FRRobot::SendUDPFrame(std::string frame)
         return ERR_PARAM_VALUE;
     }
 
-    int rtn = udpCmdClient->SendFrame(frame);
+    int rtn = 0;
+    std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(frame); }, udpCmdClient);
     if (rtn != 0)
     {
         return ERR_SOCKET_SEND_FAILED;
@@ -23199,7 +23306,7 @@ errno_t FRRobot::SetCmdRpyCallback(void (*CallBack)(int comType, int count, int 
         return ERR_PARAM_VALUE;
     }
 
-    udpCmdClient->SetUDPCmdRpyCallback(CallBack);
+    std::visit([&](auto& sp) { if (sp) sp->SetUDPCmdRpyCallback(CallBack); }, udpCmdClient);
     return 0;
 }
 
@@ -23367,6 +23474,22 @@ errno_t FRRobot::SetRobotTime()
 
     logger_info("%s", cmdStr);
 
+    return 0;
+}
+
+/**
+* @brief 通过 TCP 8080 发送自定义指令帧（mTLS 模式下自动经加密通道）
+* @param frame 完整指令帧，如 "/f/bIII52III236III7IIIMode(0)III/b/f"
+* @return 错误码
+*/
+int FRRobot::SendTCPFrame(string frame)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    
+    std::visit([&](auto& sp) { if (sp) return sp->Send((char*)(frame.c_str()), frame.size()); }, cmdClient);
     return 0;
 }
 

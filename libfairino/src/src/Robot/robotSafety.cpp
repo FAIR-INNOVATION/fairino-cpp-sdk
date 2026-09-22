@@ -1,6 +1,10 @@
 #include "robot.h"
 #include "robot_types.h"
 #include "robot_error.h"
+#include "FRUdpClient.h"
+#include "FRTcpClient.h"
+#include "mTLSClient.h"
+#include "DTLSClient.h"
 #include "logger.h"
 #include "XmlRpc.h"
 #include <stdio.h>
@@ -177,4 +181,72 @@ errno_t FRRobot::SetSafetyDOConfig(int ID, int config)
 
     c.close();
     return errcode;
+}
+
+/**
+ * @brief 设置SDK指令通讯TLS加密参数
+ * @param [in] enable    true：使能TLS加密；false：不加密
+ * @param [in] certPath  证书路径；为空时默认为可执行文件所在目录下的证书；证书名称：ca.crt;client.crt;client.key
+ * @return 错误码
+ */
+errno_t FRRobot::MtlsLink(std::string certPath)
+{
+    if (TLSEnable)
+    {
+        std::visit([&](auto& sp) { if (sp) sp->SetTLSCertPath(certPath); }, cmdClient);
+        std::visit([&](auto& sp) { if (sp) sp->SetTLSCertPath(certPath); }, udpCmdClient);
+    }
+    else
+    {
+        std::visit([&](auto& sp) { if (sp) sp->SetTLSCertPath(""); }, cmdClient);
+        std::visit([&](auto& sp) { if (sp) sp->SetTLSCertPath(""); }, udpCmdClient);
+    }
+    return 0;
+}
+
+
+/**
+* @brief 获取机器人指令协议服务端TLS加密使能状态
+* @param [out] enable 0-未使能；1-使能
+* @return 错误码
+*/
+errno_t FRRobot::GetTLSEnableState(bool& enable)
+{
+    try
+    {
+        if (IsSockError())
+        {
+            return g_sock_com_err;
+        }
+        int errcode = 0;
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("GetTLSEnableState", param, result))
+        {
+            errcode = int(result[0]);
+            if (errcode == 0)
+            {
+                enable = ((int)result[1] == 1 ? true : false);
+            }
+            else
+            {
+                logger_error("execute GetTLSEnableState fail %d", errcode);
+            }
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+
+        return errcode;
+    }
+    catch (...)
+    {
+        logger_error("GetTLSEnableState exception");
+        return ERR_XMLRPC_CMD_FAILED;
+    }
 }

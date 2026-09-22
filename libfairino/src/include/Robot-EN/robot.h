@@ -16,19 +16,23 @@
 #include <list>
 #include <vector>
 #include <memory>
+#include <variant>
 
 class FRTcpClient;
 class FRUdpClient;
 class FRCNDEClient;
+class MTLSClient;
+class DTLSClient;
 
 class FR_LIB_EXPORT FRRobot
 {
 public:
     /**
-	 *@brief  Robot interface class constructor
+	 * @brief Robot interface class constructor
+	 * @param [in] _TLSEnable Robot SDK Integration Command Protocol Communication Encryption Enable
 	 */
-    FRRobot();
-    
+	FRRobot(bool _TLSEnable = false);
+
 	/**
     *@brief  Establish communication with the robot controller
     *@param  [in] ip  Controller IP address. The default value is 192.168.58.2
@@ -1262,6 +1266,17 @@ public:
 	 */
 	errno_t GetInverseKinExaxis(int type, DescPose desc_pos, ExaxisPos exaxis, int tool, int workPiece, JointPos& joint_pos, int config = -1);
 
+	/**
+	 * @brief Solve inverse kinematics and obtain 8 sets of inverse solutions
+	 * @param [in] tcfPose Cartesian pose
+	 * @param [in] tool Tool coordinate system
+	 * @param [in] workpiece Workpiece coordinate system
+	 * @param [in] exPos External axis position
+	 * @param [out] jointPos Output 8 sets of joint angles
+	 * @return Error code
+	 */
+	errno_t TCFToAllJoint(DescPose tcfPose, int tool, int workpiece, ExaxisPos exPos, std::vector<JointPos>& jointPos);
+
     /**
     *@brief  Forward kinematics solution
     *@param  [in] joint_pos Joint position
@@ -2196,11 +2211,12 @@ public:
 	errno_t GetDHCompensation(double dhCompensation[6]);
 
 	/**
-	 * @brief 点位表切换
-	 * @param [in] pointTableName 要切换的点位表名称    pointTable1.db
+	 * @brief Switch point tables and apply
+	 * @param [in] pointTableName pointTableName Name of the point table to switch to   "pointTable1.db"
 	 * @return error code
 	 */
 	errno_t PointTableSwitch(const std::string pointTableName);
+
 	/**
 	 * @brief Download the point table database
 	 * @param [in] pointTableName The name of the point table to be downloaded   pointTable1.db
@@ -3852,7 +3868,7 @@ public:
 
 	/**
 	 * @brief Set welder control mode
-	 * @param [in] mode Welder control mode; 0-DC one-knob mode; 1-Pulse one-knob mode; 2-JOB mode; 3-Local control mode; 4-Separate mode; 5-CC/CV mode; 6-TIG; 7-CMT
+	 * @param [in] mode Welder control mode; 0-DC one-knob mode; 1-Pulse one-knob mode; 2-JOB mode; 3-Local control mode; 4-Separate mode; 5-CC/CV mode; 6-TIG; 7-CMT; 8-Panasonic-Pulse mode, 9-Panasonic-No pulse mode
 	 * @param [in] ioType Control type; 0-Control box IO; 1-Digital communication protocol (UDP); 2-Digital communication protocol (ModbusTCP)
 	 * @return Error code
 	 */
@@ -5428,7 +5444,33 @@ public:
 	 */
 	errno_t SetRobotTime();
 
+	/**
+	 * @brief Set TLS encryption certificate path
+	 * @param [in] certPath  Certificate path; if empty, defaults to the certificates in the executable file directory; certificate names: ca.crt; client.crt; client.key
+	 * @return Error code
+	 */
+	errno_t MtlsLink(std::string certPath = "");
 
+	/**
+	 * @brief Send a custom command frame via TCP 8080 (automatically through the encrypted channel in mTLS mode)
+	 * @param [in] frame Complete command frame, e.g. "/f/bIII52III236III7IIIMode(0)III/b/f"
+	 * @return Error code
+	 */
+	errno_t SendTCPFrame(std::string frame);
+
+	/**
+	 * @brief Set physical speed instantly
+	 * @param [in] speed Physical speed value, mm/s
+	 * @return Error code
+	 */
+	errno_t SetPhySpeedInstant(double speed);
+
+	/**
+	 * @brief Get TLS enable state of robot command protocol server
+	 * @param [out] enable 0-disabled; 1-enabled
+	 * @return Error code
+	 */
+	errno_t GetTLSEnableState(bool& enable);
 
 	/**
 	 *@brief  Robot interface class destructor
@@ -5493,9 +5535,10 @@ private:
 
 	char robot_ip[64];
 	std::shared_ptr<ROBOT_STATE_PKG> robot_state_pkg;
-	std::shared_ptr <FRTcpClient> cmdClient;
-	std::shared_ptr <FRUdpClient> udpCmdClient;
 	std::shared_ptr <FRCNDEClient> cndeClient;
+	std::variant<std::shared_ptr<FRTcpClient>, std::shared_ptr<MTLSClient>> cmdClient;
+	std::variant<std::shared_ptr<FRUdpClient>, std::shared_ptr<DTLSClient>> udpCmdClient;
+	bool TLSEnable = false;
 };
 
 #endif

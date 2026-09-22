@@ -50,7 +50,7 @@ public:
     int SendFrame(std::string sendFrame);
 
     void (*UdpRecvFrameCallBack)(int, int, int, int, std::string) = nullptr;
-
+    int SetTLSCertPath(std::string path);
 #ifdef WIN32
     typedef SOCKET socket_fd;
     sockaddr_in addrUDPServer = {};
@@ -64,5 +64,5 @@ public:
     int timeout = 500;   //recv¡¢send³¬Ê±Ê±¼äms
     socket_fd fd;
     bool runFlag = true;
-
+    std::string certPath = "";
 };

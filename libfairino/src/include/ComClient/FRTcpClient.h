@@ -63,7 +63,7 @@ public:
 
     int SetIpConfig(std::string IP);
     int SetPortConfig(int port);
-
+    int SetTLSCertPath(std::string path);
 
 private:
     int SetTimeOut(int timeout);
@@ -88,5 +88,6 @@ private:
     bool reconnFlag = false;
 
     bool connFlag = true;
+    std::string certPath = "";
 };
 

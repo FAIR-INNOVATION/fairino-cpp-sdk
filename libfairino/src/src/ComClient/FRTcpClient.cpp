@@ -539,3 +539,9 @@ int FRTcpClient::SetPortConfig(int port)
     robotPort = port;
     return 0;
 }
+
+int FRTcpClient::SetTLSCertPath(std::string path)
+{
+    certPath = path;
+    return 0;
+}

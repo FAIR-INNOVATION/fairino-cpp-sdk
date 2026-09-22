@@ -132,7 +132,10 @@ typedef  struct ExaxisPos
 
 	ExaxisPos()
 	{
-
+		ePos[0] = 0.0;
+		ePos[1] = 0.0;
+		ePos[2] = 0.0;
+		ePos[3] = 0.0;
 	}
 
 }ExaxisPos;

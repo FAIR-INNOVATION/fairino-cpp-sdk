@@ -141,3 +141,9 @@ int FRUdpClient::SendFrame(string sendFrame)
 	
 	return 0;
 }
+
+int FRUdpClient::SetTLSCertPath(std::string path)
+{
+	certPath = path;
+	return 0;
+}

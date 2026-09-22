@@ -13,6 +13,9 @@
 #include <iomanip>
 #include <FrameHandle.h>
 #include "FRUdpClient.h"
+#include "FRTcpClient.h"
+#include "mTLSClient.h"
+#include "DTLSClient.h"
 
 using namespace std;
 using namespace XmlRpc;
@@ -94,12 +97,25 @@ errno_t FRRobot::ServoJ(JointPos* joint_pos, ExaxisPos* axisPos, float acc, floa
 
         string cmdStr = string("ServoJ(") + jointStr + "," + axisStr + "," + to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
         FRAME frame(cmdFrameCnt, 376, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
         }
         cmdFrameCnt++;
+    }
+    else if (comType == 2)
+    {
+        char jointStr[128] = { 0 };
+        snprintf(jointStr, 128, "{%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}", joint_pos->jPos[0], joint_pos->jPos[1], joint_pos->jPos[2], joint_pos->jPos[3], joint_pos->jPos[4], joint_pos->jPos[5]);
+        char axisStr[128] = { 0 };
+        snprintf(axisStr, 128, "{%.3f,%.3f,%.3f,%.3f}", axisPos->ePos[0], axisPos->ePos[1], axisPos->ePos[2], axisPos->ePos[3]);
+
+        string cmdStr = string("ServoJ(") + jointStr + "," + axisStr + "," + to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
+        FRAME frame(cmdFrameCnt, 376, cmdStr);
+        string servoJStr = PackFrame(frame);
+        return SendTCPFrame(servoJStr);
     }
     else
     {
@@ -209,7 +225,8 @@ errno_t FRRobot::ServoJ(std::vector<JointPos> joint_pos, ExaxisPos* axisPos, flo
 
         string cmdStr = string("ServoJ(") + jointStr + "," + axisStr + "," + to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
         FRAME frame(cmdFrameCnt, 376, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -451,7 +468,8 @@ errno_t FRRobot::ServoJV(double jointVel[6], double exisVel[4], float acc, float
         string cmdStr = string("ServoJV(") + jointVelStr + "," + exaxisVelStr + "," + 
         to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
         FRAME frame(cmdFrameCnt, 1337, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -512,7 +530,8 @@ errno_t FRRobot::ServoMITStart(int comType)
     {
         string cmdStr = string("ServoMITStart()");
         FRAME frame(cmdFrameCnt, 1334, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -573,7 +592,8 @@ errno_t FRRobot::ServoMITEnd(int comType)
     {
         string cmdStr = string("ServoMITEnd()");
         FRAME frame(cmdFrameCnt, 1335, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -684,7 +704,8 @@ errno_t FRRobot::ServoMIT(double posGain[6], double desPos[6], double velGain[6]
 
         string cmdStr = string("ServoMIT(") + posGainStr + "," + desPosStr + "," + velGainStr + "," + desVelStr + "," + torque_ffStr + "," + to_string(interval) + ")";
         FRAME frame(cmdFrameCnt, 1336, cmdStr);
-        int rtn = udpCmdClient->SendFrame(PackFrame(frame));
+        int rtn = 0;
+        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -949,6 +970,7 @@ errno_t FRRobot::WaitStationaryMotionDone()
     {
         return g_sock_com_err;
     }
+
     int errcode = 0;
     XmlRpcClient c(serverUrl, 20003);
     XmlRpcValue param, result;
@@ -971,4 +993,22 @@ errno_t FRRobot::WaitStationaryMotionDone()
 
     c.close();
     return errcode;
+}
+
+/**
+* @brief 即时设置物理速度
+* @param [in] speed 物理速度值, mm/s
+* @return 错误码
+*/
+errno_t FRRobot::SetPhySpeedInstant(double speed)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    string cmdStr = string("SetPhySpeed(") + to_string(speed) + ")";
+    FRAME frame(cmdFrameCnt, 983, cmdStr);
+    string SetPhySpeedInstantStr = PackFrame(frame);
+    return SendTCPFrame(SetPhySpeedInstantStr);
 }

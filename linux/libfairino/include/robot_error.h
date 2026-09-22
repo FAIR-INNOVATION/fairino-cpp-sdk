@@ -1,6 +1,7 @@
 #pragma once
 
-#define     ERR_CNDE_STATES_START_FAILED           -21	  //Failed to start the robot's CNDE status feedback
+#define     ERR_CMD_TLS_ENABLE_STATE               -22    // TLS enable state mismatch between robot SDK and server of command protocol
+#define     ERR_CNDE_STATES_START_FAILED           -21	  // Failed to start the robot's CNDE status feedback
 #define     ERR_TOO_MANY_STATES                    -20    // Configuration state list length exceeds limit
 #define     ERR_NEED_AT_LEAST_ONE_STATE            -19    // At least one state is required
 #define     ERR_STATE_INVALID                      -18    // Invalid state value
