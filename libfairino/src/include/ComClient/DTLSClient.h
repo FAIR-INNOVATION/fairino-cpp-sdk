@@ -30,6 +30,7 @@
 #include <iostream>
 #include "XmlRpc.h"
 #include "logger.h"
+#include "FRUDPClientBase.h"
 
 #include <cstring>
 extern "C"
@@ -52,39 +53,26 @@ extern "C"
 #define FR_LIB_DTLS_EXPORT
 #endif
 
-class FR_LIB_DTLS_EXPORT DTLSClient
+class FR_LIB_DTLS_EXPORT DTLSClient : public FRUDPClientBase
 {
 public:
     DTLSClient();
-    ~DTLSClient();
+    ~DTLSClient() override;
 
-    int Connect(std::string IP, int port, bool startRecvThread = true);
+    // FRUDPClientBase overrides
+    int Connect(std::string IP, int port) override;
+    int Close() override;
+    void RobotUDPCmdRecvThread() override;
+    int SetUDPCmdRpyCallback(void (*CallBack)(int, int, int, int, std::string)) override;
+    int SendFrame(std::string sendFrame) override;
+    int SetTLSCertPath(std::string path) override;
+    bool CheckCertExists() override;
+
+    // DTLSClient-specific functions
+    int Connect(std::string IP, int port, bool startRecvThread);
     int ReConnect();
     void ResetConnection();
-    int Close();
-
-    void RobotUDPCmdRecvThread();
-    int SetUDPCmdRpyCallback(void (*CallBack)(int, int, int, int, std::string));
-    int SendFrame(std::string sendFrame);
     int RecvFrame(std::string& recvFrame);
-
-    void (*UdpRecvFrameCallBack)(int, int, int, int, std::string) = nullptr;
-
-    int SetTLSCertPath(std::string path);
-
-#ifdef WIN32
-    typedef SOCKET socket_fd;
-    sockaddr_in addrUDPServer = {};
-#else
-    typedef int socket_fd;
-    struct sockaddr_in addrUDPServer = {};
-#endif
-
-    std::string robotIP = "";
-    int robotPort = 0;
-    int timeout = 500;   //recv、send超时时间ms
-    socket_fd fd;
-    bool runFlag = true;
 
     int reConnTime = 30000;        //30000 ms
     bool reconnEnable = true;      //重连使能
@@ -108,7 +96,6 @@ public:
     mbedtls_x509_crt ca_crt;
     mbedtls_x509_crt client_crt;
     mbedtls_pk_context client_pk;
-    std::string certPath = "";
     bool inited = false;   // 一次性资源是否已初始化
     std::thread recvThread;
     bool recvThreadRunning = false;

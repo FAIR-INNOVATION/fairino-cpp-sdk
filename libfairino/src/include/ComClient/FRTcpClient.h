@@ -27,6 +27,7 @@
 #endif
 
 #include <iostream>
+#include "FRTCPClientBase.h"
 #include "XmlRpc.h"
 #include "logger.h"
 
@@ -37,33 +38,30 @@
 #endif
 
 
-class FR_LIB_TCP_EXPORT FRTcpClient
+class FR_LIB_TCP_EXPORT FRTcpClient : public FRTCPClientBase
 {
 public:
     FRTcpClient(std::string IP, int port);
-    ~FRTcpClient();
+    ~FRTcpClient() override;
 
-    int Connect();
-    int ReConnect();
+    // FRTCPClientBase overrides
+    int Connect() override;
+    int ReConnect() override;
+    int Send(char* sendBuf, int sendSize) override;
+    int Recv(char* recvBuf, int recvSize) override;
+    int RecvFrame(char* recvBuf, int recvSize) override;
+    int Close() override;
+    int SetIpConfig(std::string IP) override;
+    int SetPortConfig(int port) override;
+    int SetReConnectParam(bool enable, int reconnectTime = 30000, int period = 50) override;
+    bool GetReConnectEnable() override;
+    bool GetReConnState() override;
+    int SetTLSCertPath(std::string path) override;
+    bool CheckCertExists() override;
 
-    int Send(char* sendBuf, int sendSize);
-
-    int Recv(char* recvBuf, int recvSize);
-
+    // FRTcpClient-specific functions
     int RecvPkg(char* recvBuf, int recvSize);
-    int RecvFrame(char* recvBuf, int recvSize);
     int RecvCNDEPkg(char* recvBuf);
-
-    int Close();
-
-    int SetReConnectParam(bool enable, int reconnectTime = 30000, int period = 50);
-    bool GetReConnectEnable();
-
-    bool GetReConnState();
-
-    int SetIpConfig(std::string IP);
-    int SetPortConfig(int port);
-    int SetTLSCertPath(std::string path);
 
 private:
     int SetTimeOut(int timeout);
@@ -76,18 +74,6 @@ private:
     struct sockaddr_in servAddr;
 #endif
 
-    std::string robotIP = "";
-    int robotPort = 0;
     socket_fd fd = 0;
 
-    int reConnTime = 30000;        //30000 ms
-    bool reconnEnable = true;  //重连使能
-
-    int timeOut = 50000;  // 默认1s
-
-    bool reconnFlag = false;
-
-    bool connFlag = true;
-    std::string certPath = "";
 };
-

@@ -26,6 +26,7 @@
  * Created on: 2015-04-28
  */
 #include <elog.h>
+#include <limits.h>
 #ifdef WIN32
 #include <stdio.h>
 #include <windows.h>
@@ -81,7 +82,7 @@ void elog_port_deinit(void) {
 void elog_port_output(const char *log, size_t size) {
     /* output to terminal */
 #ifdef ELOG_TERMINAL_ENABLE
-    printf("%.*s", size, log);
+    printf("%.*s", size > INT_MAX ? INT_MAX : (int)size, log);
 #endif
 #ifdef ELOG_FILE_ENABLE
     /* write the file */

@@ -1,5 +1,6 @@
 #include "FRUdpClient.h"
 #include "FrameHandle.h"
+#include <climits>
 #include <cstring>
 using namespace std;
 
@@ -133,7 +134,13 @@ int FRUdpClient::SetUDPCmdRpyCallback(void (*CallBack)(int, int, int, int, strin
 
 int FRUdpClient::SendFrame(string sendFrame)
 {
-	int rtn = sendto(fd, sendFrame.c_str(), sendFrame.length(), 0, (sockaddr*)&addrUDPServer, sizeof(addrUDPServer));
+	if (sendFrame.size() > static_cast<size_t>(INT_MAX))
+	{
+		logger_error("UDP frame is too large: %zu", sendFrame.size());
+		return 1;
+	}
+
+	int rtn = sendto(fd, sendFrame.c_str(), static_cast<int>(sendFrame.size()), 0, (sockaddr*)&addrUDPServer, sizeof(addrUDPServer));
 	if (rtn != sendFrame.length())
 	{
 		return 1;
@@ -146,4 +153,9 @@ int FRUdpClient::SetTLSCertPath(std::string path)
 {
 	certPath = path;
 	return 0;
+}
+
+bool FRUdpClient::CheckCertExists()
+{
+	return true;
 }

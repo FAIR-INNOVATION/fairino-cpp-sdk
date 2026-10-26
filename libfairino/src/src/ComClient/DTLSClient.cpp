@@ -4,6 +4,7 @@
 #include "logger.h"
 #include "Utility.h"
 #include <cstring>
+#include <climits>
 
 
 using namespace std;
@@ -130,7 +131,7 @@ int DTLSClient::Connect(std::string IP, int port, bool startRecvThread)
 		return -9;
 	}
 #endif
-	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	socket_fd fd = socket(AF_INET, SOCK_DGRAM, 0);
 
 
 	struct sockaddr_in addr = {};
@@ -169,7 +170,14 @@ int DTLSClient::Connect(std::string IP, int port, bool startRecvThread)
 		return -16;
 	}
 
-	net.fd = fd;   // 交给 mbedtls，后面 net_free 会自动 close
+#ifdef WIN32
+	if (fd > static_cast<SOCKET>(INT_MAX))
+	{
+		closesocket(fd);
+		return -17;
+	}
+#endif
+	net.fd = static_cast<int>(fd);
 
 #ifdef WIN32
 	DWORD tv = 500;
@@ -237,6 +245,11 @@ int DTLSClient::Connect(std::string IP, int port, bool startRecvThread)
 	}
 
 	return 0;
+}
+
+int DTLSClient::Connect(std::string IP, int port)
+{
+	return Connect(IP, port, true);
 }
 
 int DTLSClient::Close()
@@ -309,14 +322,12 @@ void DTLSClient::RobotUDPCmdRecvThread()
 
 			if (UdpRecvFrameCallBack == nullptr)
 			{
-				std::cout << "UdpRecvFrameCallBack == nullptr\n";
 				continue;
 			}
 
 			try
 			{
 				UdpRecvFrameCallBack(COM_UDP, recvFrame.count, recvFrame.cmdID, recvFrame.contentLen, recvFrame.content);
-				cout << "recv a frame" << endl;
 			}
 			catch (...)
 			{
@@ -454,8 +465,18 @@ void DTLSClient::ResetConnection()
 int DTLSClient::SetTLSCertPath(std::string path)
 {
 	certPath = path;
-	std::string CA_CERT_FILE = certPath + "ca.crt";
-	std::string CLIENT_CERT_FILE = certPath + "client.crt";
-	std::string CLIENT_KEY_FILE = certPath + "client.key";
+	CA_CERT_FILE = certPath + "ca.crt";
+	CLIENT_CERT_FILE = certPath + "client.crt";
+	CLIENT_KEY_FILE = certPath + "client.key";
 	return 0;
+}
+
+bool DTLSClient::CheckCertExists()
+{
+	if (!CheckFileIsExist(CA_CERT_FILE) || !CheckFileIsExist(CLIENT_CERT_FILE) || !CheckFileIsExist(CLIENT_KEY_FILE))
+	{
+		return false;
+	}
+	
+	return true;
 }

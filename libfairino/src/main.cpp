@@ -218,8 +218,6 @@ void TestSetAndGetRobotTime()
 }
 
 
-
-
 #pragma endregion
 #pragma region 机器人运动
 
@@ -386,12 +384,12 @@ int TestServoJ(void)
     ExaxisPos epos(0, 0, 0, 0);
     float vel = 0.0;
     float acc = 0.0;
-    float cmdT = 0.008;
-    float filterT = 0.0;
+    float cmdT = 0.008f;
+    float filterT = 0.0f;
     float gain = 0.0;
     uint8_t flag = 0;
     int count = 500;
-    float dt = 0.1;
+    float dt = 0.1f;
     int cmdID = 0;
     int ret = robot.GetActualJointPosDegree(flag, &j);
     if (ret == 0)
@@ -402,7 +400,7 @@ int TestServoJ(void)
             robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID);
             j.jPos[0] += dt;
             count -= 1;
-            robot.WaitMs(cmdT * 1000);
+            robot.WaitMs(static_cast<int>(cmdT * 1000));
         }
         robot.ServoMoveEnd();
     }
@@ -417,17 +415,18 @@ int TestServoJ(void)
 int TestServoJUDP(void)
 {
     ROBOT_STATE_PKG pkg = {};
-    FRRobot robot(true);
+    FRRobot robot(false);
     int rtn = 0;
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
     rtn = robot.SetCmdRpyCallback(UDPFrameCallBack);
     printf("SetCmdRpyCallback rtn is %d\n", rtn);
     robot.SetReConnectParam(true, 300000, 50);
-    robot.MtlsLink("");
-    rtn = robot.RPC("192.168.56.2");
+    //robot.MtlsLink("D://zUP/");
+    rtn = robot.RPC("192.168.58.2");
     if (rtn != 0)
     {
+        printf("robot RPC failed, errcode is %d\n", rtn);
         return -1;
     }
     
@@ -439,24 +438,24 @@ int TestServoJUDP(void)
         robot.MoveJ(&j, 0, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
         float vel = 0.0;
         float acc = 0.0;
-        float cmdT = 0.016;
-        float filterT = 0.0;
+        float cmdT = 0.016f;
+        float filterT = 0.0f;
         float gain = 0.0;
         uint8_t flag = 0;
-        float dt = 0.1;
+        float dt = 0.1f;
         int cmdID = 0;
         int ret = robot.GetActualJointPosDegree(flag, &j);
         if (ret != 0)
         {
             printf("GetActualJointPosDegree errcode:%d\n", ret);
         }
-        int comType = 1;
+        int comType = 0;
         int count = 300;
         rtn = robot.ServoMoveStart(comType);
         printf("ServoMoveStart rtn is %d\n", rtn);
         while (count)
         {
-            rtn = robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID, 1);
+            rtn = robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID, comType);
             //printf("ServoJ rtn is %d\n", rtn);
             j.jPos[0] += dt;
             j.jPos[1] += dt;
@@ -466,7 +465,7 @@ int TestServoJUDP(void)
             j.jPos[5] += dt;
             //epos.ePos[0] += dt;
             count -= 1;
-            robot.Sleep(15);
+            robot.Sleep(8);
         }
         robot.ServoMoveEnd(comType);
         printf("ServoMoveEnd rtn is %d\n", rtn);
@@ -475,7 +474,7 @@ int TestServoJUDP(void)
         printf("ServoMoveStart rtn is %d\n", rtn);
         while (count)
         {
-            robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID, 1);
+            robot.ServoJ(&j, &epos, acc, vel, cmdT, filterT, gain, cmdID, comType);
             //printf("ServoJ rtn is %d\n", rtn);
             j.jPos[0] -= dt;
             j.jPos[1] -= dt;
@@ -485,11 +484,72 @@ int TestServoJUDP(void)
             j.jPos[5] -= dt;
             //epos.ePos[0] -= dt;
             count -= 1;
-            robot.Sleep(15);
+            robot.Sleep(8);
         }
         robot.ServoMoveEnd(comType);
         printf("ServoMoveEnd rtn is %d\n", rtn);
     }
+    robot.Sleep(4000);
+    robot.CloseRPC();
+    return 0;
+}
+
+int TestServoJWithFiltertime()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot(false);
+    int rtn = 0;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    rtn = robot.SetCmdRpyCallback(UDPFrameCallBack);
+    printf("SetCmdRpyCallback rtn is %d\n", rtn);
+    robot.SetReConnectParam(true, 300000, 50);
+    rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        printf("robot RPC failed, errcode is %d\n", rtn);
+        return -1;
+    }
+
+    JointPos j(70.000000, -49.000000, -109.000000, -81.000000, 76.000000, 93.000000);
+    ExaxisPos epos(0, 0, 0, 0);
+    DescPose offset_pos(0, 0, 0, 0, 0, 0);
+
+    robot.MoveJ(&j, 1, 0, 100, 100, 100, &epos, -1, 0, &offset_pos);
+    float vel = 0.0;
+    float acc = 0.0;
+    float cmdT = 0.008f;
+    float filterT = 0.0f;
+    float gain = 0.0;
+    uint8_t flag = 0;
+    float dt = 0.1f;
+    int cmdID = 0;
+    int ret = robot.GetActualJointPosDegree(flag, &j);
+    if (ret != 0)
+    {
+        printf("GetActualJointPosDegree errcode:%d\n", ret);
+    }
+    int comType = 0;
+    int count = 300;
+    int filtertime = 0;
+    std::vector<double> ServoGain = { 22.0, 22.0, 22.0, 22.0, 22.0, 22.0 };
+    rtn = robot.ServoMoveStart(comType, filtertime, ServoGain);
+    printf("ServoMoveStart rtn is %d\n", rtn);
+
+    std::ifstream fin("D://zUP/6RPTPpath.txt");
+
+    std::string line;
+    while (std::getline(fin, line))
+    {
+        JointPos p = {};
+        int ret = sscanf(line.c_str(), "ServoJ(%lf,%lf,%lf,%lf,%lf,%lf,", &p.jPos[0], &p.jPos[1], &p.jPos[2], &p.jPos[3], &p.jPos[4], &p.jPos[5]);
+        rtn = robot.ServoJ(&p, &epos, acc, vel, cmdT, filterT, gain, cmdID, comType);
+    }
+    fin.close();
+
+    robot.ServoMoveEnd(comType);
+    printf("ServoMoveEnd rtn is %d\n", rtn);
+       
     robot.Sleep(4000);
     robot.CloseRPC();
     return 0;
@@ -589,7 +649,7 @@ int TestServoJMultiPos()
 
             ExaxisPos axisPos = { 0.0, 0.0, 0.0, 0.0 };
             int servoJCmdCount = 0;
-            rtn = robot.ServoJ(joint_pos, &axisPos, 100.0, 100.0, 0.008, 0.008, 1.0, servoJCmdCount);
+            rtn = robot.ServoJ(joint_pos, &axisPos, 100.0f, 100.0f, 0.008f, 0.008f, 1.0f, servoJCmdCount);
             if (rtn != 0)
             {
                 break;
@@ -652,7 +712,7 @@ int ServoJTWithSafety(FRRobot* robot)
     int error = 0;
     while (count > 0)
     {
-        torques[2] = torques[2] + 0.01;
+        torques[2] = torques[2] + 0.01f;
         error = robot->ServoJT(torques, 0.008, checkFlag, jPowerLimit, jVelLimit);
         if (error != 0)
         {
@@ -700,7 +760,7 @@ int TestServoJTUDP(void)
     printf("ServoJTStart rtn is %d\n", rtn);
     while (true)
     {
-        torques[0] = 0.05;
+        torques[0] = 0.05f;
         rtn = robot.ServoJT(torques, 0.001, checkFlag, jPowerLimit, jVelLimit, comType);
         printf("ServoJT rtn is %d\n", rtn);
         robot.Sleep(1);
@@ -712,7 +772,7 @@ int TestServoJTUDP(void)
     }
     while (true)
     {
-        torques[0] = -0.03;
+        torques[0] = -0.03f;
         rtn = robot.ServoJT(torques, 0.001, checkFlag, jPowerLimit, jVelLimit, comType);
         printf("ServoJT rtn is %d\n", rtn);
         robot.Sleep(1);
@@ -749,7 +809,7 @@ int TestServoCart(void)
     int mode = 0;
     float vel = 0.0;
     float acc = 0.0;
-    float cmdT = 0.008;
+    float cmdT = 0.008f;
     float filterT = 0.0;
     float gain = 0.0;
     uint8_t flag = 0;
@@ -763,6 +823,57 @@ int TestServoCart(void)
         desc_pos_dt.tran.x += 0.01;
         //exaxis.ePos[0] += 0.01;
     }
+    robot.CloseRPC();
+    return 0;
+}
+
+int TestServoCartWithFiltertime()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+    DescPose desc_pos_dt = { 542.1690,34.7990,114.4800,169.808000,-3.600000,-133.152000 };
+    ExaxisPos exaxis = { 0.0, 0.0, 0.0, 0.0 };
+    float pos_gain[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    int mode = 0;
+    float vel = 0.0;
+    float acc = 0.0;
+    float cmdT = 0.008f;
+    float filterT = 0.0;
+    float gain = 0.0;
+    uint8_t flag = 0;
+    int count = 5000;
+    robot.SetSpeed(20);
+    DescPose offset_pos(0, 0, 0, 0, 0, 0);
+    robot.MoveL(&desc_pos_dt, 1, 0, 100, 100, 100, -1, 0, &exaxis, 0, 0, &offset_pos);
+
+    int filtertime = 0;
+    //std::vector<double> ServoGain = {-1.0, -1.0, -1.0, -1.0, -1.0, -1.0};
+    std::vector<double> ServoGain = { 20.0, 20.0, 20.0, 20.0, 20.0, 20.0 };
+    rtn = robot.ServoMoveStart(0, filtertime, ServoGain);
+
+    std::ifstream fin("D://zUP/6RCARpath.txt");
+
+    std::string line;
+    while (std::getline(fin, line))
+    {
+        JointPos p = {};
+        int ret = sscanf(line.c_str(), "ServoCart(0,%lf,%lf,%lf,%lf,%lf,%lf,", &desc_pos_dt.tran.x, &desc_pos_dt.tran.y, &desc_pos_dt.tran.z, &desc_pos_dt.rpy.rx, &desc_pos_dt.rpy.ry, &desc_pos_dt.rpy.rz);
+        rtn = robot.ServoCart(mode, &desc_pos_dt, exaxis, pos_gain, acc, vel, cmdT, filterT, gain);
+        printf("ServoCart rtn is %d\n", rtn);
+        //robot.Sleep(8);
+    }
+    fin.close();
+
+    robot.ServoMoveEnd();
+
     robot.CloseRPC();
     return 0;
 }
@@ -1414,6 +1525,7 @@ int TestSplineWeaveBackCenter()
     robot.NewSplinePoint(&j3, &desc_pos3, tool, user, vel, acc, ovl, -1, 0);
     robot.NewSplinePoint(&j4, &desc_pos4, tool, user, vel, acc, ovl, -1, 1);
     robot.NewSplineEnd();
+    return 0;
 }
 
 //ty = 0
@@ -1561,6 +1673,7 @@ int TestWeaveSpeedAndOffset()
     std::cout << "============================================================" << std::endl;
     std::cout << "  摆动调速与实时偏移测试 完成" << std::endl;
     std::cout << "============================================================" << std::endl;
+    return 0;
 }
 
 int TestWorkPieceTrsf()
@@ -1596,7 +1709,7 @@ int TestWorkPieceTrsf()
 
     int tool = 1;
     int workpiece = 1;
-    double blend = 5.0;
+    float blend = 5.0f;
 
     robot.MoveJ(&j1, &desc1, tool, workpiece, 100, 100, 100, &exaxis, -1, 0, &offset);
     robot.MoveJ(&j2, &desc2, tool, workpiece, 100, 100, 100, &exaxis, blend, 0, &offset);
@@ -1615,6 +1728,7 @@ int TestWorkPieceTrsf()
     printf("WorkPieceTrsfEnd rtn is %d\n", rtn);
     robot.CloseRPC();
     robot.Sleep(2000);
+    return 0;
 }
 
 
@@ -2026,12 +2140,12 @@ int TestAODO(void)
     }
     for (int i = 0; i < 100; i++)
     {
-        robot.SetAO(0, i * 40.96, block);
+        robot.SetAO(0, i * 40.96f, block);
         robot.Sleep(30);
     }
     for (int i = 0; i < 100; i++)
     {
-        robot.SetToolAO(0, i * 40.96, block);
+        robot.SetToolAO(0, i * 40.96f, block);
         robot.Sleep(30);
     }
     robot.CloseRPC();
@@ -2058,11 +2172,13 @@ int TestGetDIAI(void)
     float value = 0.0;
     robot.GetDI(0, block, &di);
     printf("di0:%u\n", di);
-    tool_di = robot.GetToolDI(1, block, &tool_di);
+    const int toolDiResult = robot.GetToolDI(1, block, &tool_di);
+    (void)toolDiResult;
     printf("tool_di1:%u\n", tool_di);
     robot.GetAI(0, block, &ai);
     printf("ai0:%f\n", ai);
-    tool_ai = robot.GetToolAI(0, block, &tool_ai);
+    const int toolAiResult = robot.GetToolAI(0, block, &tool_ai);
+    (void)toolAiResult;
     printf("tool_ai0:%f\n", tool_ai);
     uint8_t _button_state = 0;
     robot.GetAxlePointRecordBtnState(&_button_state);
@@ -2455,7 +2571,7 @@ int TestLoadInstall(void)
     printf("GetDefaultTransVel is %f\n", defaultVel);
     for (int i = 1; i < 21; i++)
     {
-        robot.SetSysVarValue(i, i + 0.5);
+        robot.SetSysVarValue(i, static_cast<float>(i) + 0.5f);
         robot.Sleep(100);
     }
     for (int i = 1; i < 21; i++)
@@ -2561,10 +2677,10 @@ int TestFriction(void)
         return -1;
     }
     robot.SetReConnectParam(true, 30000, 500);
-    float lcoeff[6] = { 0.9,0.9,0.9,0.9,0.9,0.9 };
-    float wcoeff[6] = { 0.4,0.4,0.4,0.4,0.4,0.4 };
-    float ccoeff[6] = { 0.6,0.6,0.6,0.6,0.6,0.6 };
-    float fcoeff[6] = { 0.89,0.89,0.89,0.78,0.78,0.78 };
+    float lcoeff[6] = { 0.9f,0.9f,0.9f,0.9f,0.9f,0.9f };
+    float wcoeff[6] = { 0.4f,0.4f,0.4f,0.4f,0.4f,0.4f };
+    float ccoeff[6] = { 0.6f,0.6f,0.6f,0.6f,0.6f,0.6f };
+    float fcoeff[6] = { 0.89f,0.89f,0.89f,0.78f,0.78f,0.78f };
     rtn = robot.FrictionCompensationOnOff(1);
     printf("FrictionCompensationOnOff rtn is %d\n", rtn);
     rtn = robot.SetFrictionValue_level(lcoeff);
@@ -2778,6 +2894,7 @@ int TestSensitivityCalib()
     rtn = robot.SetAdmittanceParams(M, B, K, threshold, calibResult, setZeroFlag);
     printf("SetAdmittanceParams rtn is %d\n", rtn);
     robot.CloseRPC();
+    return 0;
 }
 
 int TestSlavePortErr()
@@ -2907,7 +3024,7 @@ int TestCollision(void)
     int mode = 0;
     int config = 1;
     float level1[6] = { 1.0,2.0,3.0,4.0,5.0,6.0 };
-    float level2[6] = { 0.5,0.2,0.3,0.4,0.5,0.6 };
+    float level2[6] = { 0.5f,0.2f,0.3f,0.4f,0.5f,0.6f };
     rtn = robot.SetAnticollision(mode, level1, config);
     printf("SetAnticollision mode 0 rtn is %d\n", rtn);
     mode = 1;
@@ -3349,7 +3466,7 @@ int TestCoord()
 
 
     robot.GetExToolCoordWithID(21, extoolCoord, exworkpieceCoord);
-    printf("GetExToolCoordWithID %d, %f %f %f %f %f %f\n", id,
+    printf("GetExToolCoordWithID %d, %f %f %f %f %f %f %f %f %f %f %f %f\n", id,
         extoolCoord.tran.x, extoolCoord.tran.y, extoolCoord.tran.z,
         extoolCoord.rpy.rx, extoolCoord.rpy.ry, extoolCoord.rpy.rz,
         exworkpieceCoord.tran.x, exworkpieceCoord.tran.y, exworkpieceCoord.tran.z,
@@ -3391,7 +3508,7 @@ int TestCoord()
     DescPose coordSet(0, 1, 2, 3, 4, 5);
     robot.SetToolCoord(1, &coordSet, 0, 0, 1, 0);
     robot.SetWObjCoord(1, &coordSet, 0);
-    robot.SetLoadWeight(1, 1.3);
+    robot.SetLoadWeight(1, 1.3f);
     //DescTran cog = {};
     cog.x = 10;
     cog.y = 20;
@@ -3854,43 +3971,43 @@ int TestStationaryTrack()
     // Step 1: SetDO 控制信号
     printf("--- Step 1: SetDO(6,1) ---\n");
     rtn = robot.SetDO(6, 1, 0, 0);
-    printf("  SetDO(6,1) rtn={0}\n", rtn);
+    printf("  SetDO(6,1) rtn=%d\n", rtn);
 
     // Step 2: 传送带跟踪开始
     printf("--- Step 2: ConveyorTrackStart(2) ---\n");
     rtn = robot.ConveyorTrackStart(2);
-    printf("  ConveyorTrackStart(2) rtn={0}\n", rtn);
+    printf("  ConveyorTrackStart(2) rtn=%d\n", rtn);
 
     // Step 3: 工件IO检测
     printf("--- Step 3: ConveyorIODetect(10000) ---\n");
     rtn = robot.ConveyorIODetect(10000);
-    printf("  ConveyorIODetect(10000) rtn={0}\n", rtn);
+    printf("  ConveyorIODetect(10000) rtn=%d\n", rtn);
 
     // Step 4: 获取跟踪数据
     printf("--- Step 4: ConveyorGetTrackData(2) ---\n");
     rtn = robot.ConveyorGetTrackData(2);
-    printf("  ConveyorGetTrackData(2) rtn={0}\n", rtn);
+    printf("  ConveyorGetTrackData(2) rtn=%d\n", rtn);
 
     // Step 5: 静止跟踪参数配置 (时间模式, 200s, 距离5)
     printf("--- Step 5: SetStationaryTrackPara(0,200,5) ---\n");
     rtn = robot.SetStationaryTrackPara(0, 5, 5);
-    printf("  SetStationaryTrackPara(0,200,5) rtn={0}\n", rtn);
+    printf("  SetStationaryTrackPara(0,200,5) rtn=%d\n", rtn);
 
     // Step 6: 执行静止跟踪运动
     printf("--- Step 6: MoveStationary() ---\n");
     rtn = robot.MoveStationary();
     rtn = robot.WaitStationaryMotionDone();
-    printf("  MoveStationary() rtn={0}\n", rtn);
+    printf("  MoveStationary() rtn=%d\n", rtn);
 
     // Step 7: 传送带跟踪结束
     printf("--- Step 7: ConveyorTrackEnd() ---\n");
     rtn = robot.ConveyorTrackEnd();
-    printf("  ConveyorTrackEnd() rtn={0}\n", rtn);
+    printf("  ConveyorTrackEnd() rtn=%d\n", rtn);
 
     // Step 8: SetDO 关闭信号
     printf("--- Step 8: SetDO(6,0) ---\n");
     rtn = robot.SetDO(6, 0, 0, 0);
-    printf("  SetDO(6,0) rtn={0}\n", rtn);
+    printf("  SetDO(6,0) rtn=%d\n", rtn);
 
     printf("\n========== 静止跟踪测试完成 ==========\n");
     return 0;
@@ -4053,6 +4170,7 @@ int TestAxleGenCom()
         cnt++;
     }
     robot.CloseRPC();
+    return 0;
 }
 int TestCtrlOpenLuaOperate()
 {
@@ -4103,10 +4221,7 @@ void TestLaserConfig()
 {
     ROBOT_STATE_PKG pkg = {};
     FRRobot robot;
-    uint8_t ctrl[20];
-    uint8_t state;
-    int pressVlaue;
-    int error;
+
     robot.CloseRPC();
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
@@ -4139,10 +4254,6 @@ void TestLaserRecordAndReplay()
 {
     ROBOT_STATE_PKG pkg = {};
     FRRobot robot;
-    uint8_t ctrl[20];
-    uint8_t state;
-    int pressVlaue;
-    int error;
     robot.CloseRPC();
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
@@ -4252,10 +4363,6 @@ void testLasertrackandExitAxis()
 {
     ROBOT_STATE_PKG pkg = {};
     FRRobot robot;
-    uint8_t ctrl[20];
-    uint8_t state;
-    int pressVlaue;
-    int error;
     robot.CloseRPC();
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
@@ -4902,9 +5009,9 @@ int TestFiveDexterousHands()
 
     // ==================== 8. 测试完成 ====================
     printf("\n===== 测试完成 =====\n");
-    printf("  功能开关设置/读取  ✓\n");
-    printf("  灵巧手激活        ✓\n");
-    printf("  10次往复运动      ✓\n");
+    printf("  功能开关设置/读取  [OK]\n");
+    printf("  灵巧手激活        [OK]\n");
+    printf("  10次往复运动      [OK]\n");
     return 0;
 }
 
@@ -4934,6 +5041,49 @@ int TestGripperWaitMotionDone()
     robot.Sleep(1000);
     robot.CloseRPC();
     robot.Sleep(1000);
+    return 0;
+}
+
+int TestGetGripperMotionDone()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    robot.SetReConnectParam(true, 30000, 500);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+    uint8_t status = 0;
+    uint16_t fault = 0;
+    // Gripper open
+    rtn = robot.MoveGripper(2, 50, 50, 100, 30000, 0, 0, 0, 0, 0);
+    printf("MoveGripper(open) ret=%d\n", rtn);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    robot.GetRobotRealTimeState(&pkg);
+    printf(" gripper_motiondone %d)\n", pkg.gripper_motiondone);
+    // Gripper close
+    rtn = robot.MoveGripper(2, 90, 100, 100, 30000, 0, 0, 0, 0, 0);
+    printf("MoveGripper(close) ret=%d\n", rtn);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    robot.GetRobotRealTimeState(&pkg);
+    printf(" gripper_motiondone %d)\n", pkg.gripper_motiondone);
+    // Wait for motion completion without object detection, timeout 5s, stop and report error
+    rtn = robot.GripperWaitMotionDone(2, 5000, 0, 0);
+    printf("GripperWaitMotionDone(wait for completion, no object detected) ret=%d\n", rtn);
+    while (true)
+    {
+        robot.GetGripperMotionDone(&fault, &status);
+        printf("motion status:%d,%d\n", fault, status);
+        robot.GetRobotRealTimeState(&pkg);
+        printf(" error code %d,%d\n", pkg.main_code, pkg.sub_code);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    robot.CloseRPC();
+    robot.Sleep(1000);
+    return 0;
 }
 
 
@@ -5118,7 +5268,7 @@ int TestFTControlWithAdjustCoeff(void)
     robot.SetReConnectParam(true, 30000, 500);
     uint8_t sensor_id = 1;
     uint8_t select[6] = { 0,0,1,0,0,0 };
-    float ft_pid[6] = { 0.0008, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    float ft_pid[6] = { 0.0008f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     uint8_t adj_sign = 0;
     uint8_t ILC_sign = 0;
     float max_dis = 1000.0;
@@ -5137,7 +5287,6 @@ int TestFTControlWithAdjustCoeff(void)
     double polishRadio = 0.0;
     int filter_Sign = 0;
     int posAdapt_sign = 1;
-    int isNoBlock;
     ft.fz = -10.0;
     robot.MoveL(&desc_p1, 1, 0, 100, 100, 100, -1, 0, &epos, 0, 0, &offset_pos);
     robot.MoveL(&desc_p2, 1, 0, 100, 100, 100, -1, 0, &epos, 0, 0, &offset_pos);
@@ -5193,7 +5342,7 @@ int TestFTSearch(void)
     //恒力参数
     uint8_t status = 1;  //恒力控制开启标志，0-关，1-开
     int sensor_num = 1; //力传感器编号
-    float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //最大阈值
+    float gain[6] = { 0.0001f,0.0f,0.0f,0.0f,0.0f,0.0f };  //最大阈值
     uint8_t adj_sign = 0;  //自适应启停状态，0-关闭，1-开启
     uint8_t ILC_sign = 0;  //ILC控制启停状态，0-停止，1-训练，2-实操
     float max_dis = 100.0;  //最大调整距离
@@ -5204,7 +5353,7 @@ int TestFTSearch(void)
 
     //螺旋线探索参数
     int rcs = 0;  //参考坐标系，0-工具坐标系，1-基坐标系
-    float dr = 0.7;  //每圈半径进给量，单位mm
+    float dr = 0.7f;  //每圈半径进给量，单位mm
     float fFinish = 1.0; //力或力矩阈值（0~100），单位N或Nm
     float t = 60000.0; //最大探索时间，单位ms
     float vmax = 3.0; //线速度最大值，单位mm/s
@@ -5233,7 +5382,7 @@ int TestFTSearch(void)
     robot.FT_Control(status, sensor_num, select1, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
     uint8_t select2[6] = { 1,1,1,0,0,0 };  //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
-    gain[0] = 0.00005;
+    gain[0] = 0.00005f;
     ft.fz = -30.0;
     status = 1;
     robot.FT_Control(status, sensor_num, select2, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
@@ -5275,7 +5424,7 @@ int TestRotInsert()
     float angAccmax = 0; //最大旋转角加速度，单位°/s^2,暂不使用
     uint8_t status = 1;  //恒力控制开启标志，0-关，1-开
     int sensor_num = 11; //力传感器编号
-    float gain[6] = { 0.0001,0.0,0.0,0.0,0.0,0.0 };  //最大阈值
+    float gain[6] = { 0.0001f,0.0f,0.0f,0.0f,0.0f,0.0f };  //最大阈值
     uint8_t adj_sign = 0;  //自适应启停状态，0-关闭，1-开启
     uint8_t ILC_sign = 0;  //ILC控制启停状态，0-停止，1-训练，2-实操
     float max_dis = 1000.0;  //最大调整距离
@@ -5296,7 +5445,7 @@ int TestRotInsert()
     robot.MoveL(&j1, &desc_p1, 2, 0, 100.0, 180.0, 100.0, -1.0, &epos, 0, 1, &offset_pos);
     uint8_t select3[6] = { 0,0,1,0,0,0 };  //六个自由度选择[fx,fy,fz,mx,my,mz]，0-不生效，1-生效
     ft.fz = -5.0;
-    gain[0] = 0.0001;
+    gain[0] = 0.0001f;
     status = 1;
     robot.FT_Control(1, sensor_num, select3, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
     rtn = robot.FT_LinInsertion(rcs, 10, 1, 1, 100, 1);
@@ -5305,7 +5454,7 @@ int TestRotInsert()
 
     ft.fz = -30.0;
     robot.FT_Control(1, sensor_num, select3, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
-    rtn = robot.FT_RotInsertion(rcs, angVelRot, forceInsertion, angleMax, orn, angAccmax, rotorn, 0);
+    rtn = robot.FT_RotInsertion(rcs, angVelRot, forceInsertion, static_cast<float>(angleMax), orn, angAccmax, rotorn, 0);
     printf("FT_RotInsertion rtn is %d\n", rtn);
     robot.FT_Control(0, sensor_num, select3, &ft, gain, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
 
@@ -5440,7 +5589,7 @@ int TestCompliance(void)
     uint8_t flag = 1;
     int sensor_id = 1;
     uint8_t select[6] = { 0,0,1,0,0,0 };
-    float ft_pid[6] = { 0.0005,0.0,0.0,0.0,0.0,0.0 };
+    float ft_pid[6] = { 0.0005f,0.0f,0.0f,0.0f,0.0f,0.0f };
     uint8_t adj_sign = 0;
     uint8_t ILC_sign = 0;
     float max_dis = 100.0;
@@ -5461,7 +5610,7 @@ int TestCompliance(void)
     ft.fy = -10.0;
     ft.fz = -10.0;
     robot.FT_Control(flag, sensor_id, select, &ft, ft_pid, adj_sign, ILC_sign, max_dis, max_ang, 0, 0, 0);
-    float p = 0.00005;
+    float p = 0.00005f;
     float force = 30.0;
     rtn = robot.FT_ComplianceStart(p, force);
     printf("FT_ComplianceStart rtn is %d\n", rtn);
@@ -5593,10 +5742,6 @@ int TestImpedanceControl()
 {
     ROBOT_STATE_PKG pkg = {};
     FRRobot robot;
-    uint8_t ctrl[20];
-    uint8_t state;
-    int pressVlaue;
-    int error;
     robot.CloseRPC();
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
@@ -5987,6 +6132,7 @@ int testSyncMoveJ()
     //开始同步运动
     robot.ExtAxisSyncMoveJ(endjointPos, 1, 0, 100, 100, 20, endexaxisPos, -1, 0, offdese);
     robot.CloseRPC();
+    return 0;
 }
 
 int testSyncMoveL()
@@ -6055,6 +6201,7 @@ int testSyncMoveL()
     rtn = robot.ExtAxisSyncMoveL(enddescPose, 1, 0, 20, 100, 20, -1, endexaxisPos, 0, offdese);
     printf("ExtAxisSyncMoveL rtn is %d\n", rtn);
     robot.CloseRPC();
+    return 0;
 }
 
 
@@ -6123,6 +6270,7 @@ int testSyncMoveC()
     //开始同步运动
     robot.ExtAxisSyncMoveC(middescPose, 1, 0, 20, 100, midexaxisPos, 0, offdese, enddescPose, 1, 0, 20, 100, endexaxisPos, 0, offdese, 100, -1);
     robot.CloseRPC();
+    return 0;
 }
 
 int TestUDPAxisCalib(void)
@@ -6728,7 +6876,7 @@ int WeldTraceControlWithCtrlBoxAI(FRRobot* robot)
     cout << "ArcWeldTraceAIChannelVoltage rtn is " << rtn << endl;
     rtn = robot->ArcWeldTraceCurrentPara(0, 5, 0, 500);
     cout << "ArcWeldTraceCurrentPara rtn is " << rtn << endl;
-    rtn = robot->ArcWeldTraceVoltagePara(1.018, 10, 0, 50);
+    rtn = robot->ArcWeldTraceVoltagePara(1.018f, 10, 0, 50);
     cout << "ArcWeldTraceVoltagePara rtn is " << rtn << endl;
     robot->MoveJ(&safejointPos, &safedescPose, 1, 0, 10, 100, 100, &exaxisPos, -1, 0, &offdese);
     robot->MoveJ(&startjointPos, &startdescPose, 1, 0, 10, 100, 100, &exaxisPos, -1, 0, &offdese);
@@ -6848,6 +6996,7 @@ int TestCustomWeaveSetPara()
     robot.MoveL(&j2, &desc_p2, 1, 0, 100, 100, 10, -1, &epos, 0, 0, &offset_pos, 0, 100);
     robot.WeaveEnd(0);
     robot.CloseRPC();
+    return 0;
 }
 
 int TestLaserWeld()
@@ -7088,6 +7237,15 @@ int TestFirmWareUpgrade()
     robot.Sleep(200);
     rtn = robot.JointAllParamUpgrade("D://zUP/upgrade/jointallparameters.db");
     printf("robot JointAllParamUpgrade rtn is %d\n", rtn);
+
+    int upgradeProgress = 0;
+    while (upgradeProgress < 100)
+    {
+        robot.GetJointAllParamUpgradeProgress(upgradeProgress);
+        printf("robot joint all param upgrade progress : %d\n", upgradeProgress);
+        robot.Sleep(200);
+    }
+
     rtn = robot.SetCtrlFirmwareUpgrade(2, "D://zUP/upgrade/FAIR_Cobot_Cbd_Asix_V2.0.bin");
     printf("robot SetCtrlFirmwareUpgrade config param rtn is %d\n", rtn);
     rtn = robot.SetEndFirmwareUpgrade(2, "D://zUP/upgrade/FAIR_Cobot_Axle_Asix_V2.4.bin");
@@ -7278,10 +7436,10 @@ int TestSendModeTcp()
 }
 
 
-int main() 
+int main2() 
 {
     ROBOT_STATE_PKG pkg = {};
-    FRRobot robot(true);
+    FRRobot robot(false);
     robot.LoggerInit();
     robot.SetLoggerLevel(1);
     robot.SetReConnectParam(true, 30000, 500);
@@ -7292,14 +7450,54 @@ int main()
         return -1;
     }
 
-    rtn = robot.SetSpeed(20);
-    printf("SetSpeed 20 rtn is %d\n", rtn);
-    robot.Sleep(1000);
-    rtn = robot.SetSpeed(66);
-    printf("SetSpeed 60 rtn is %d\n", rtn);
+    rtn = robot.Mode(0);
+    printf("Mode 0 rtn is %d\n", rtn);
+    robot.Sleep(2000);
+    rtn = robot.Mode(1);
+    printf("Mode 1 rtn is %d\n", rtn);
 
 
     robot.CloseRPC();
     robot.Sleep(1000);
+    return 0;
+}
+
+
+
+
+int main()
+{
+    ROBOT_STATE_PKG pkg = {};
+    FRRobot robot;
+    robot.LoggerInit();
+    robot.SetLoggerLevel(1);
+    int rtn = robot.RPC("192.168.58.2");
+    if (rtn != 0)
+    {
+        return -1;
+    }
+    robot.SetReConnectParam(true, 30000, 500);
+    robot.Sleep(200);
+
+    int count = 0;
+    while (true)
+    {
+        rtn = robot.DataPackageUpgrade("D://zUP/upgrade/FR5/fr_user_data.tar.gz");
+        printf("robot DataPackageUpgrade rtn is %d\n", rtn);
+
+        int upgradeProgress = 0;
+        while (upgradeProgress < 100)
+        {
+            robot.GetDataPackageUpgradeProgress(upgradeProgress);
+            printf("robot data package upgrade progress : %d\n", upgradeProgress);
+            robot.Sleep(200);
+        }
+        count++;
+        printf("robot DataPackageUpgrade count %d\n", count);
+
+        robot.Sleep(1000);
+    }
+    
+    robot.CloseRPC();
     return 0;
 }

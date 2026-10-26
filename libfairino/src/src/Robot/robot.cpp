@@ -12,6 +12,7 @@
 #include "network.h"
 #include <stdio.h>
 #include <string.h>
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <chrono>
@@ -26,6 +27,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <climits>
 #include "FRTcpClient.h"
 #include "FRUdpClient.h"
 #include "FrameHandle.h"
@@ -48,11 +50,11 @@
     // SDK版本号
     #define SDK_VERSION_MAJOR "2"
     #define SDK_VERSION_MINOR "4"
-    #define SDK_VERSION_RELEASE "0"
+    #define SDK_VERSION_RELEASE "1"
     #define SDK_VERSION_RELEASE_NUM "0"
     #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.4.0.0-robot v4.0.0"
+#define SDK_RELEASE "SDK V2.4.1.0-robot v4.0.1"
 
 #define ROBOT_CNDE_TCP_PORT 20005
 #define ROBOT_CMD_PORT 8080
@@ -127,11 +129,12 @@ void FRRobot::RobotInstCmdSendRoutineThread()
     {
         if (is_sendcmd && strlen(g_sendbuf) > 0)
         {
-            std::visit([&](auto& sp) { if (sp) sendbyte = sp->Send(g_sendbuf, strlen(g_sendbuf)); }, cmdClient);
+            const int sendSize = static_cast<int>(strlen(g_sendbuf));
+            if (cmdClient) sendbyte = cmdClient->Send(g_sendbuf, sendSize);
             logger_info("cmd send:%s.", g_sendbuf);
             if (sendbyte < 0)
             {
-                std::visit([&](auto& sp) { if (sp) sendbyte = sp->Close(); }, cmdClient);
+                if (cmdClient) sendbyte = cmdClient->Close();
                 g_sock_com_err = ERR_SOCKET_COM_FAILED;
                 memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
                 logger_error("cmd send %s error", g_sendbuf);
@@ -161,7 +164,7 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
     while (!robot_instcmd_recv_exit)
     {
         memset(g_recvbuf, 0, BUFFER_SIZE * sizeof(char));
-        std::visit([&](auto& sp) { if (sp) recvbyte = sp->RecvFrame(g_recvbuf, BUFFER_SIZE * sizeof(char)); }, cmdClient);
+        if (cmdClient) recvbyte = cmdClient->RecvFrame(g_recvbuf, BUFFER_SIZE * sizeof(char));
         if (recvbyte > 0)
         {
             logger_info("recv cmd is %s.", (char*)g_recvbuf);
@@ -186,7 +189,7 @@ void FRRobot::RobotInstCmdRecvRoutineThread()
         }
     }
 
-    std::visit([&](auto& sp) { if (sp) sp->Close(); }, cmdClient);
+    if (cmdClient) cmdClient->Close();
     g_sock_com_err = ERR_SOCKET_COM_FAILED;
     memset(robot_state_pkg.get(), 0, sizeof(ROBOT_STATE_PKG));
    
@@ -285,6 +288,7 @@ errno_t FRRobot::RPC(const char *ip)
     }
     else if (rtn != 0)
     {
+        CloseRPC();
         return rtn;  //检验SDK未启用、单一控制源，并返回错误码
     }
 
@@ -294,8 +298,18 @@ errno_t FRRobot::RPC(const char *ip)
         return g_sock_com_err;   //检测SDK端与服务端的指令协议加密开启状态是否一致，并返回错误码
     }
 
-    std::visit([&](auto& sp) { if (sp) sp->SetIpConfig(robot_ip); }, cmdClient);
-    std::visit([&](auto& sp) { if (sp) rtn = sp->Connect(); }, cmdClient);
+    if (TLSEnable)
+    {
+        if (cmdClient && !cmdClient->CheckCertExists()) g_sock_com_err = ERR_CMD_TLS_CERT_NOT_FOUND;
+        if (udpCmdClient && !udpCmdClient->CheckCertExists()) g_sock_com_err = ERR_CMD_TLS_CERT_NOT_FOUND;
+        if (g_sock_com_err != ERR_SUCCESS)
+        {
+            return g_sock_com_err;
+        }
+    }
+
+    if (cmdClient) cmdClient->SetIpConfig(robot_ip);
+    if (cmdClient) rtn = cmdClient->Connect();
     if (rtn != 0)
     {
         logger_error("RPC Fail. TCP CMD CONN RTN %d", rtn);
@@ -319,10 +333,11 @@ errno_t FRRobot::RPC(const char *ip)
     thread taskRoutineThread(&FRRobot::RobotTaskRoutineThread, this);
     taskRoutineThread.detach();
 
-    std::visit([&](auto& sp) { if (sp) rtn = sp->Connect(string(robot_ip), ROBOT_UDP_CMD_PORT); }, udpCmdClient);
+    if (udpCmdClient) rtn = udpCmdClient->Connect(string(robot_ip), ROBOT_UDP_CMD_PORT);
     if(rtn != 0)
     {
         logger_error("RPC Fail. UDP CMD CONN RTN %d", rtn);
+        CloseRPC();
         return rtn;
     }
     Sleep(1000);
@@ -343,9 +358,9 @@ errno_t FRRobot::CloseRPC()
 
     Sleep(500);
 
-    std::visit([&](auto& sp) { if (sp) sp->Close(); }, cmdClient);
+    if (cmdClient) cmdClient->Close();
 
-    std::visit([&](auto& sp) { if (sp) sp->Close(); }, udpCmdClient);
+    if (udpCmdClient) udpCmdClient->Close();
 
     if (cndeClient != nullptr)
     {
@@ -1436,9 +1451,11 @@ errno_t FRRobot::NewSpiral(DescPose* desc_pos, int tool, int user, float vel, fl
 /**
  * @brief 伺服运动开始，配合ServoJ、ServoCart指令使用
  * @param [in] comType 指令下发类型；0-xmlrpc；1-UDP(对应机器人20007端口)
- * @return  错误码
+ * @param [in] filtertime 滤波时间，单位ms，默认0
+ * @param [in] gain位置环增益数组，长度应为6，依次对应J1~J6关节位置环增益；默认值{ -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 }
+ * @return 错误码
  */
-errno_t FRRobot::ServoMoveStart(int comType)
+errno_t FRRobot::ServoMoveStart(int comType, int filtertime, std::vector<double> gain)
 {
     if (IsSockError())
     {
@@ -1456,6 +1473,13 @@ errno_t FRRobot::ServoMoveStart(int comType)
     {
         XmlRpcClient c(serverUrl, 20003);
         XmlRpcValue param, result;
+        param[0] = filtertime;
+        param[1] = gain[0];
+        param[2] = gain[1];
+        param[3] = gain[2];
+        param[4] = gain[3];
+        param[5] = gain[4];
+        param[6] = gain[5];
 
         if (c.execute("ServoMoveStart", param, result))
         {
@@ -1471,10 +1495,12 @@ errno_t FRRobot::ServoMoveStart(int comType)
     }
     else if (comType == 1)
     {
-        string cmdStr = string("ServoMoveStart()");
+        char paramStr[128] = { 0 };
+        snprintf(paramStr, 128, "%d,{%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}", filtertime, gain[0], gain[1], gain[2], gain[3], gain[4], gain[5]);
+        string cmdStr = string("ServoMoveStart(") + paramStr + string(")");
         FRAME frame(cmdFrameCnt, 689, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -1530,7 +1556,7 @@ errno_t FRRobot::ServoMoveEnd(int comType)
         string cmdStr = string("ServoMoveEnd()");
         FRAME frame(cmdFrameCnt, 690, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -3582,7 +3608,7 @@ errno_t FRRobot::SetAnticollision(int mode, float level[6], int config)
             {
                 return ERR_PARAM_VALUE;
             }
-            level[i] = level[i] * 10.0;
+            level[i] = level[i] * 10.0f;
         }
     }
     param[1][0] = level[0];
@@ -6392,9 +6418,9 @@ errno_t FRRobot::MoveGripper(int index, int pos, int vel, int force, int max_tim
 }
 
 /**
- * @brief 获取夹爪运动状态（仅末端开放协议定义，已适配设备获取的运动状态为透传值）
+ * @brief 获取夹爪运动状态
  * @param [out] fault 0-无错误，其他-有错误
- * @param [out] status 0-运动未完成，1-运动完成未检测到物体 2-运动完成检测到物体
+ * @param [out] status 0-运动未完成，1-运动完成未检测到物体，2-运动完成检测到物体，3-运动完成检测到物体掉落
  * @return 错误码
  */
 errno_t FRRobot::GetGripperMotionDone(uint16_t *fault, uint8_t *status)
@@ -8393,7 +8419,7 @@ errno_t FRRobot::GetSDKComState(int *state)
 {
     if (g_sock_com_err == ERR_SUCCESS)
     {
-        if (cndeClient->GetReConnState() || std::visit([](auto& sp) { return sp && sp->GetReConnState(); }, cmdClient))
+        if (cndeClient->GetReConnState() || (cmdClient && cmdClient->GetReConnState()))
         {
             *state = 2;  //正在重连
         }
@@ -9146,7 +9172,7 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
         std::ostringstream headerStream;
         headerStream << POINT_TABLE_HEAD << std::setw(8) << std::setfill('0') << total_size << compute_md5;
         std::string send_buf_first = headerStream.str();
-        int send_bytes = send(fd, const_cast<char *>(send_buf_first.c_str()), send_buf_first.length(), 0);
+        int send_bytes = send(fd, const_cast<char *>(send_buf_first.c_str()), static_cast<int>(send_buf_first.length()), 0);
         if ((send_bytes < 0) || (static_cast<unsigned int>(send_bytes) != send_buf_first.length()))
         {
             logger_error("send head %s fail.", send_buf_first.c_str());
@@ -9157,17 +9183,19 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
 
         // 发送点位表;
         send_bytes = 0;
-        unsigned int total_send_bytes = 0;
+        size_t total_send_bytes = 0;
         bool send_point_table_success = true;
         while (total_send_bytes < send_buf.length())
         {
             send_bytes = 0;
-            send_bytes = send(fd, const_cast<char *>(send_buf.c_str() + total_send_bytes), send_buf.length() - total_send_bytes, 0);
+            const size_t remainingBytes = send_buf.length() - total_send_bytes;
+            const int bytesToSend = static_cast<int>((std::min)(remainingBytes, static_cast<size_t>(INT_MAX)));
+            send_bytes = send(fd, const_cast<char *>(send_buf.c_str() + total_send_bytes), bytesToSend, 0);
             if (send_bytes < 0)
             {
-                logger_error("has send bytes %d", total_send_bytes);
+                logger_error("has send bytes %zu", total_send_bytes);
                 logger_error("send buf is: %s.", send_buf.c_str()+total_send_bytes);
-                logger_error("send bytes is %d", send_buf.length() - total_send_bytes);
+                logger_error("send bytes is %zu", remainingBytes);
                 errcode = ERR_SOCKET_SEND_FAILED;
                 send_point_table_success = false;
                 break;
@@ -9179,12 +9207,12 @@ errno_t FRRobot::PointTableUpLoad(const std::string &pointTableFilePath)
             logger_error("send point table fail \n");
             break;
         }
-        logger_info("except %d, total send bytes: %d", send_buf.length(), total_send_bytes);
+        logger_info("except %zu, total send bytes: %zu", send_buf.length(), total_send_bytes);
 
         // 发送文件尾;
         send_bytes = 0;
         string send_buf_last = POINT_TABLE_TAIL;
-        send_bytes = send(fd, const_cast<char *>(send_buf_last.c_str()), send_buf_last.length(), 0);
+        send_bytes = send(fd, const_cast<char *>(send_buf_last.c_str()), static_cast<int>(send_buf_last.length()), 0);
         if ((send_bytes < 0) || (static_cast<unsigned int>(send_bytes) != send_buf_last.length()))
         {
             logger_error("send last buf : %s fail.", send_buf_last.c_str());
@@ -10656,7 +10684,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
         return errcode;
     }
 
-    int curSendSize = 0;
+    size_t curSendSize = 0;
 
     std::vector<char> sendBuf(FILE_SUBPACK_SIZE);
 
@@ -10680,7 +10708,9 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
                 int singleSendBytes = 0;
                 while (retryTimes < 5)
                 {
-                    singleSendBytes = send(fd, sendBuf.data() + sent, bytes_read - sent, 0);
+                    const size_t remainingBytes = bytes_read - sent;
+                    const int bytesToSend = static_cast<int>((std::min)(remainingBytes, static_cast<size_t>(INT_MAX)));
+                    singleSendBytes = send(fd, sendBuf.data() + sent, bytesToSend, 0);
                     if (singleSendBytes <= 0)
                     {
                         Sleep(50);
@@ -10688,7 +10718,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
 
                         if (retryTimes == 4)
                         {
-                            logger_error("Send file failed, total size is %d, current send size is %d", file_size, curSendSize);
+                            logger_error("Send file failed, total size is %ld, current send size is %zu", file_size, curSendSize);
                             errcode = ERR_SOCKET_SEND_FAILED;
                             fr_network::close_fd(fd);
                             return errcode;
@@ -10703,7 +10733,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
                 sent += singleSendBytes;
             }
             curSendSize += bytes_read;
-            logger_error("Send sent file bytes is %d", curSendSize);
+            logger_error("Send sent file bytes is %zu", curSendSize);
         }
     }
 
@@ -10712,7 +10742,7 @@ errno_t FRRobot::FileUpLoad(int fileType, std::string filePath, int reUp)
     // 发送文件尾;
     send_bytes = 0;
     string send_buf_last = POINT_TABLE_TAIL;
-    send_bytes = send(fd, send_buf_last.c_str(), send_buf_last.length(), 0);
+    send_bytes = send(fd, send_buf_last.c_str(), static_cast<int>(send_buf_last.length()), 0);
     if ((send_bytes != send_buf_last.length()))
     {
         logger_error("send last buf failed; errno is %s", strerror(errno));
@@ -15480,7 +15510,7 @@ errno_t FRRobot::ServoJTStart(int comType)
         string cmdStr = string("ServoJTStart()");
         FRAME frame(cmdFrameCnt, 1199, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -15598,7 +15628,7 @@ errno_t FRRobot::ServoJT(float torque[], double interval, int checkFlag, double 
         string cmdStr = string("ServoJT(") + torqueStr + "," + to_string(interval) + "," + to_string(checkFlag) + "," + jPowerLimitStr + "," + jVelLimitStr + ")";
         FRAME frame(cmdFrameCnt, 1200, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -15655,7 +15685,7 @@ errno_t FRRobot::ServoJTEnd(int comType)
         string cmdStr = string("ServoJTEnd()");
         FRAME frame(cmdFrameCnt, 1201, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -19981,7 +20011,7 @@ bool FRRobot::IsSockError()
         Sleep(100);
     }
 
-    while (std::visit([](auto& sp) { return sp && sp->GetReConnState(); }, cmdClient))
+    while (cmdClient && cmdClient->GetReConnState())
     {
         //如果正在重连，就等待重连结果
         Sleep(100);
@@ -20023,7 +20053,7 @@ int FRRobot::GetSafetyCode()
 errno_t FRRobot::SetReConnectParam(bool enable, int reconnectTime, int period)
 {
     cndeClient->SetReConnectParam(enable, reconnectTime, period);
-    std::visit([&](auto& sp) { if (sp) sp->SetReConnectParam(enable, reconnectTime, period); }, cmdClient);
+    if (cmdClient) cmdClient->SetReConnectParam(enable, reconnectTime, period);
     return 0;
 }
 
@@ -23285,7 +23315,7 @@ errno_t FRRobot::SendUDPFrame(std::string frame)
     }
 
     int rtn = 0;
-    std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(frame); }, udpCmdClient);
+    if (udpCmdClient) rtn = udpCmdClient->SendFrame(frame);
     if (rtn != 0)
     {
         return ERR_SOCKET_SEND_FAILED;
@@ -23306,7 +23336,7 @@ errno_t FRRobot::SetCmdRpyCallback(void (*CallBack)(int comType, int count, int 
         return ERR_PARAM_VALUE;
     }
 
-    std::visit([&](auto& sp) { if (sp) sp->SetUDPCmdRpyCallback(CallBack); }, udpCmdClient);
+    if (udpCmdClient) udpCmdClient->SetUDPCmdRpyCallback(CallBack);
     return 0;
 }
 
@@ -23482,15 +23512,155 @@ errno_t FRRobot::SetRobotTime()
 * @param frame 完整指令帧，如 "/f/bIII52III236III7IIIMode(0)III/b/f"
 * @return 错误码
 */
-int FRRobot::SendTCPFrame(string frame)
+errno_t FRRobot::SendTCPFrame(string frame)
 {
     if (IsSockError())
     {
         return g_sock_com_err;
     }
     
-    std::visit([&](auto& sp) { if (sp) return sp->Send((char*)(frame.c_str()), frame.size()); }, cmdClient);
-    return 0;
+    if (frame.size() > static_cast<size_t>(INT_MAX))
+    {
+        logger_error("SendTCPFrame frame is too large: %zu", frame.size());
+        return ERR_PARAM_VALUE;
+    }
+
+    return cmdClient ? cmdClient->Send(const_cast<char*>(frame.data()), static_cast<int>(frame.size())) : ERR_SOCKET_COM_FAILED;
 }
 
+/**
+* @brief 数据备份包上传升级
+* @param [in] filePath 上传数据备份包文件路径；D://zUP/fr_user_data.tar.gz
+* @return 错误码
+*/
+errno_t FRRobot::DataPackageUpgrade(std::string filePath)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
 
+    int errcode = FileUpLoad(7, filePath);
+    if (0 == errcode)
+    {
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("DataPackageUpgrade", param, result))
+        {
+            errcode = int(result);
+            if (0 != errcode)
+            {
+                logger_error("DataPackageUpgrade failed error code is: %d", errcode);
+            }
+            c.close();
+
+            return errcode;
+        }
+        else 
+        {
+            logger_error("execute DataPackageUpgrade fail.");
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+    }
+    else 
+    {
+        logger_error("DataPackageUpgrade upload file fail. errcode is: %d.", errcode);
+    }
+
+    return errcode;
+
+}
+
+/**
+* @brief 获取数据备份包升级进度百分比
+* @param [out] progress 升级进度百分比[0-100], -1:升级失败
+* @return 错误码
+*/
+errno_t FRRobot::GetDataPackageUpgradeProgress(int& progress)
+{
+    try
+    {
+        if (IsSockError())
+        {
+            return g_sock_com_err;
+        }
+        int errcode = 0;
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("GetDataPackageUpgradeProgress", param, result))
+        {
+            errcode = int(result[0]);
+            if (errcode == 0)
+            {
+                progress = (int)result[1];
+            }
+            else
+            {
+                logger_error("execute GetDataPackageUpgradeProgress fail %d", errcode);
+            }
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+
+        return errcode;
+    }
+    catch (...)
+    {
+        logger_error("GetDataPackageUpgradeProgress exception");
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+}
+
+/**
+* @brief 获取关节全参数升级进度百分比
+* @param [out] progress 升级进度百分比[0-100], -1:升级失败
+* @return 错误码
+*/
+errno_t FRRobot::GetJointAllParamUpgradeProgress(int& progress)
+{
+    try
+    {
+        if (IsSockError())
+        {
+            return g_sock_com_err;
+        }
+        int errcode = 0;
+        XmlRpcClient c(serverUrl, 20003);
+        XmlRpcValue param, result;
+
+        if (c.execute("GetJointAllParamUpgradeProgress", param, result))
+        {
+            errcode = int(result[0]);
+            if (errcode == 0)
+            {
+                progress = (int)result[1];
+            }
+            else
+            {
+                logger_error("execute GetJointAllParamUpgradeProgress fail %d", errcode);
+            }
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+
+        c.close();
+
+        return errcode;
+    }
+    catch (...)
+    {
+        logger_error("GetJointAllParamUpgradeProgress exception");
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+}

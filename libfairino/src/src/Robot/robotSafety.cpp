@@ -15,6 +15,8 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
+#include <climits>
 
 using namespace std;
 using namespace XmlRpc;
@@ -40,9 +42,19 @@ errno_t FRRobot::GetSafetyParamsCheckSum(int& status, uint32_t& checksum)
         errcode = int(result[0]);
         if (errcode == 0)
         {
-            status = (double)result[1];
-            double tmpSum = (double)result[2];
-            checksum = tmpSum;
+            const double statusValue = static_cast<double>(result[1]);
+            const double checksumValue = static_cast<double>(result[2]);
+            if (!std::isfinite(statusValue) || std::trunc(statusValue) != statusValue ||
+                statusValue < INT_MIN || statusValue > INT_MAX ||
+                !std::isfinite(checksumValue) || std::trunc(checksumValue) != checksumValue ||
+                checksumValue < 0 || checksumValue > UINT32_MAX)
+            {
+                logger_error("invalid safety checksum response: status=%f, checksum=%f", statusValue, checksumValue);
+                c.close();
+                return ERR_XMLRPC_CMD_FAILED;
+            }
+            status = static_cast<int>(statusValue);
+            checksum = static_cast<uint32_t>(checksumValue);
         }
         else
         {
@@ -193,13 +205,13 @@ errno_t FRRobot::MtlsLink(std::string certPath)
 {
     if (TLSEnable)
     {
-        std::visit([&](auto& sp) { if (sp) sp->SetTLSCertPath(certPath); }, cmdClient);
-        std::visit([&](auto& sp) { if (sp) sp->SetTLSCertPath(certPath); }, udpCmdClient);
+        if (cmdClient) cmdClient->SetTLSCertPath(certPath);
+        if (udpCmdClient) udpCmdClient->SetTLSCertPath(certPath);
     }
     else
     {
-        std::visit([&](auto& sp) { if (sp) sp->SetTLSCertPath(""); }, cmdClient);
-        std::visit([&](auto& sp) { if (sp) sp->SetTLSCertPath(""); }, udpCmdClient);
+        if (cmdClient) cmdClient->SetTLSCertPath("");
+        if (udpCmdClient) udpCmdClient->SetTLSCertPath("");
     }
     return 0;
 }

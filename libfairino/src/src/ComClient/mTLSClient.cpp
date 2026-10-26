@@ -2,6 +2,7 @@
 #include "logger.h"
 #include <iostream>
 #include <cstring>
+#include <Utility.h>
 
 
 MTLSClient::MTLSClient(std::string IP, int port)
@@ -324,8 +325,18 @@ void MTLSClient::ResetConnection()
 int MTLSClient::SetTLSCertPath(std::string path)
 {
     certPath = path;
-    std::string CA_CERT_FILE = certPath + "ca.crt";
-    std::string CLIENT_CERT_FILE = certPath + "client.crt";
-    std::string CLIENT_KEY_FILE = certPath + "client.key";
+    CA_CERT_FILE = certPath + "ca.crt";
+    CLIENT_CERT_FILE = certPath + "client.crt";
+    CLIENT_KEY_FILE = certPath + "client.key";
     return 0;
+}
+
+bool MTLSClient::CheckCertExists()
+{
+    if (!CheckFileIsExist(CA_CERT_FILE) || !CheckFileIsExist(CLIENT_CERT_FILE) || !CheckFileIsExist(CLIENT_KEY_FILE))
+    {
+        return false;
+    }
+
+    return true;
 }

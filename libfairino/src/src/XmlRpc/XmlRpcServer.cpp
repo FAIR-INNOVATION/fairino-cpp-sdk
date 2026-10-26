@@ -272,13 +272,12 @@ void
 XmlRpcServer::listMethods(XmlRpcValue& result)
 {
   int i = 0;
-  result.setSize(_methods.size()+1);
+  result.setSize(static_cast<int>(_methods.size() + 1));
   for (MethodMap::iterator it=_methods.begin(); it != _methods.end(); ++it)
     result[i++] = it->first;
 
   // Multicall support is built into XmlRpcServerConnection
   result[i] = MULTICALL;
 }
-
 
 

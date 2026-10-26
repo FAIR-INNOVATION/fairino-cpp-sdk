@@ -28,6 +28,7 @@
 
 #include <iostream>
 #include <cstring>
+#include "FRTCPClientBase.h"
 extern "C"
 {
 #include "mbedtls/net_sockets.h"
@@ -53,31 +54,38 @@ extern "C"
 #define FR_LIB_MTLS_EXPORT
 #endif
 
-class FR_LIB_MTLS_EXPORT MTLSClient
+class FR_LIB_MTLS_EXPORT MTLSClient : public FRTCPClientBase
 {
 public:
     MTLSClient(std::string IP, int port);
-    ~MTLSClient();
+    ~MTLSClient() override;
 
-    int Connect();
-    int ReConnect();
+    // FRTCPClientBase overrides
+    int Connect() override;
+    int ReConnect() override;
+    int Send(char* sendBuf, int sendSize) override;
+    int Recv(char* recvBuf, int recvSize) override;
+    int RecvFrame(char* recvBuf, int recvSize) override;
+    int Close() override;
+    int SetIpConfig(std::string IP) override;
+    int SetPortConfig(int port) override;
+    int SetReConnectParam(bool enable, int reconnectTime = 30000, int period = 50) override;
+    bool GetReConnectEnable() override;
+    bool GetReConnState() override;
+    int SetTLSCertPath(std::string path) override;
+    bool CheckCertExists() override;
+
+    // MTLSClient-specific functions
     void ResetConnection();
-    int Send(char* sendBuf, int sendSize);
+    using FRTCPClientBase::robotIP;
+    using FRTCPClientBase::robotPort;
+    using FRTCPClientBase::reConnTime;
+    using FRTCPClientBase::reconnEnable;
+    using FRTCPClientBase::timeOut;
+    using FRTCPClientBase::reconnFlag;
+    using FRTCPClientBase::connFlag;
+    using FRTCPClientBase::certPath;
 
-    int Recv(char* recvBuf, int recvSize);
-
-    int RecvFrame(char* recvBuf, int recvSize);
-    int Close();
-
-    int SetIpConfig(std::string IP);
-    int SetPortConfig(int port);
-    int SetReConnectParam(bool enable, int reconnectTime = 30000, int period = 50);
-    bool GetReConnectEnable();
-    bool GetReConnState();
-    int SetTLSCertPath(std::string path);
-
-    std::string robotIP = "";
-    int robotPort = 0;
     std::string CA_CERT_FILE = "ca.crt";
     std::string CLIENT_CERT_FILE = "client.crt";
     std::string CLIENT_KEY_FILE = "client.key";
@@ -93,12 +101,6 @@ public:
     mbedtls_x509_crt ca_crt;
     mbedtls_x509_crt client_crt;
     mbedtls_pk_context client_pk;
-    std::string certPath = "";
-    int reConnTime = 30000;        //30000 ms
-    bool reconnEnable = true;      //重连使能
-    int timeOut = 50000;           // 默认1s
-    bool reconnFlag = false;
-    bool connFlag = true;
 
     bool inited = false;   
     std::mutex sslMutex;

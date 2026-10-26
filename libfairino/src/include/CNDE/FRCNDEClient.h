@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #include "robot_types.h"
 #include "FRTcpClient.h"
 #include <mutex>
@@ -56,7 +58,7 @@ private:
 
 	std::mutex recvCNDEPkgMutex;
 
-	std::map<RobotState, std::tuple<std::string, int, std::string, std::string>> allStates;  //
+	std::map<RobotState, std::tuple<std::string, std::size_t, std::string, std::string>> allStates;  //
 //           枚举键                 cnde状态名称 结构体索引  结构体中的数据类型  cnde中的数据类型
 
 	std::vector<RobotState> configStates;

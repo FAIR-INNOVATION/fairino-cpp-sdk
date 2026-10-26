@@ -395,7 +395,7 @@ int FRTcpClient::RecvCNDEPkg(char* recvBuf)
         {
             if (!connFlag)
             {
-                return 0;
+                return -5;
             }
 #ifdef WIN32
             if (WSAGetLastError() == WSAETIMEDOUT)
@@ -544,4 +544,9 @@ int FRTcpClient::SetTLSCertPath(std::string path)
 {
     certPath = path;
     return 0;
+}
+
+bool FRTcpClient::CheckCertExists()
+{
+    return true;
 }

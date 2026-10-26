@@ -31,7 +31,7 @@ typedef struct FRAME
 		head = "/f/b";
 		count = _count;
 		cmdID = _cmdID;
-		contentLen = _content.length();
+		contentLen = static_cast<int>(_content.length());
 		content = _content;
 		tail = "/b/f";
 	}

@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <chrono>
+#include <climits>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -98,7 +99,7 @@ errno_t FRRobot::ServoJ(JointPos* joint_pos, ExaxisPos* axisPos, float acc, floa
         string cmdStr = string("ServoJ(") + jointStr + "," + axisStr + "," + to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
         FRAME frame(cmdFrameCnt, 376, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -156,7 +157,11 @@ errno_t FRRobot::ServoJ(std::vector<JointPos> joint_pos, ExaxisPos* axisPos, flo
         return GetSafetyCode();
     }
 
-    int pointNum = joint_pos.size();
+    if (joint_pos.size() > static_cast<size_t>(INT_MAX))
+    {
+        return ERR_PARAM_NUM;
+    }
+    int pointNum = static_cast<int>(joint_pos.size());
 
     int errcode = 0;
     if (comType == 0)
@@ -226,7 +231,7 @@ errno_t FRRobot::ServoJ(std::vector<JointPos> joint_pos, ExaxisPos* axisPos, flo
         string cmdStr = string("ServoJ(") + jointStr + "," + axisStr + "," + to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
         FRAME frame(cmdFrameCnt, 376, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -469,7 +474,7 @@ errno_t FRRobot::ServoJV(double jointVel[6], double exisVel[4], float acc, float
         to_string(acc) + "," + to_string(vel) + "," + to_string(cmdT) + "," + to_string(filterT) + "," + to_string(gain) + "," + to_string(id) + ")";
         FRAME frame(cmdFrameCnt, 1337, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -531,7 +536,7 @@ errno_t FRRobot::ServoMITStart(int comType)
         string cmdStr = string("ServoMITStart()");
         FRAME frame(cmdFrameCnt, 1334, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -593,7 +598,7 @@ errno_t FRRobot::ServoMITEnd(int comType)
         string cmdStr = string("ServoMITEnd()");
         FRAME frame(cmdFrameCnt, 1335, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;
@@ -705,7 +710,7 @@ errno_t FRRobot::ServoMIT(double posGain[6], double desPos[6], double velGain[6]
         string cmdStr = string("ServoMIT(") + posGainStr + "," + desPosStr + "," + velGainStr + "," + desVelStr + "," + torque_ffStr + "," + to_string(interval) + ")";
         FRAME frame(cmdFrameCnt, 1336, cmdStr);
         int rtn = 0;
-        std::visit([&](auto& sp) { if (sp) rtn = sp->SendFrame(PackFrame(frame)); }, udpCmdClient);
+        if (udpCmdClient) rtn = udpCmdClient->SendFrame(PackFrame(frame));
         if (rtn != 0)
         {
             return ERR_SOCKET_SEND_FAILED;

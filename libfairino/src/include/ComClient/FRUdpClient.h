@@ -27,6 +27,7 @@
 #endif
 
 #include <iostream>
+#include "FRUDPClientBase.h"
 #include "XmlRpc.h"
 #include "logger.h"
 
@@ -36,33 +37,18 @@
 #define FR_LIB_UDP_EXPORT
 #endif
 
-class FR_LIB_UDP_EXPORT FRUdpClient
+class FR_LIB_UDP_EXPORT FRUdpClient : public FRUDPClientBase
 {
 public:
     FRUdpClient();
-    ~FRUdpClient();
+    ~FRUdpClient() override;
 
-    int Connect(std::string IP, int port);
-    int Close();
-
-    void RobotUDPCmdRecvThread();
-    int SetUDPCmdRpyCallback(void (*CallBack)(int, int, int, int, std::string));
-    int SendFrame(std::string sendFrame);
-
-    void (*UdpRecvFrameCallBack)(int, int, int, int, std::string) = nullptr;
-    int SetTLSCertPath(std::string path);
-#ifdef WIN32
-    typedef SOCKET socket_fd;
-    sockaddr_in addrUDPServer = {};
-#else
-    typedef int socket_fd;
-    struct sockaddr_in addrUDPServer = {};
-#endif
-
-    std::string robotIP = "";
-    int robotPort = 0;
-    int timeout = 500;   //recv¡¢send³¬Ê±Ê±¼äms
-    socket_fd fd;
-    bool runFlag = true;
-    std::string certPath = "";
+    // FRUDPClientBase overrides
+    int Connect(std::string IP, int port) override;
+    int Close() override;
+    void RobotUDPCmdRecvThread() override;
+    int SetUDPCmdRpyCallback(void (*CallBack)(int, int, int, int, std::string)) override;
+    int SendFrame(std::string sendFrame) override;
+    int SetTLSCertPath(std::string path) override;
+    bool CheckCertExists() override;
 };

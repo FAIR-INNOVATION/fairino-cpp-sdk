@@ -16,13 +16,10 @@
 #include <list>
 #include <vector>
 #include <memory>
-#include <variant>
 
-class FRTcpClient;
-class FRUdpClient;
+class FRTCPClientBase;
+class FRUDPClientBase;
 class FRCNDEClient;
-class MTLSClient;
-class DTLSClient;
 
 class FR_LIB_EXPORT FRRobot
 {
@@ -356,9 +353,11 @@ public:
 	/**
 	 * @brief Start servo motion, used with ServoJ and ServoCart commands
 	 * @param [in] comType Command transmission type; 0-xmlrpc; 1-UDP (corresponds to robot port 20007)
+	 * @param [in] filtertime Filter time in ms, default value is 0
+     * @param [in] gain Position loop gain array with a length of 6, corresponding to the position loop gains of joints J1~J6 in sequence; default value { -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 }
 	 * @return  Error code
 	 */
-	errno_t ServoMoveStart(int comType = 0);
+	errno_t ServoMoveStart(int comType = 0, int filtertime = 0, std::vector<double> gain = { -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 });
 
 	/**
 	 * @brief End servo motion, used with ServoJ and ServoCart commands
@@ -1644,9 +1643,9 @@ public:
 	errno_t  MoveGripper(int index, int pos, int vel, int force, int max_time, uint8_t block, int type, double rotNum, int rotVel, int rotTorque);
 
 	/**
-	 * @brief Get gripper motion status (Defined only by end‑effector open protocol. The motion status obtained from the adapted device is a transparent‑transmission value)
+	 * @brief Get gripper motion status
 	 * @param [out] fault 0‑No error, Other values‑Error occurred
-	 * @param [out] staus 0‑Motion not completed, 1‑Motion completed without object detected, 2‑Motion completed with object detected
+	 * @param [out] staus 0‑Motion not completed, 1‑Motion completed without object detected, 2‑Motion completed with object detected, 3-Object drop detected after motion completion
 	 * @return Error code
 	 */
     errno_t  GetGripperMotionDone(uint16_t *fault, uint8_t *status);
@@ -5404,7 +5403,7 @@ public:
 
 	/**
 	 * @brief Wait for gripper motion completion status
-	 * @param[in] status 0: Motion not finished; 1: Motion finished, no object detected; 2: Motion finished, object detected
+	 * @param[in] status 0: Motion not finished; 1: Motion finished, no object detected; 2: Motion finished, object detected; 3: Object drop detected after motion completion
 	 * @param[in] timeout Timeout period in milliseconds; -1 indicates infinite waiting
 	 * @param[in] strategy 0: Halt and trigger error alert; 1: Keep running
 	 * @param[in] type 0: Parallel gripper; 1: Rotary gripper
@@ -5473,6 +5472,25 @@ public:
 	errno_t GetTLSEnableState(bool& enable);
 
 	/**
+	 * @brief Upload and upgrade with data backup package
+	 * @param [in] filePath File path of the uploaded data backup package; e.g. D://zUP/fr_user_data.tar.gz
+	 * @return Error code
+	 */
+	errno_t DataPackageUpgrade(std::string filePath);
+	/**
+	 * @brief Get the upgrade progress percentage of data backup package
+	 * @param [out] progress Upgrade progress percentage [0-100], -1: upgrade failed
+	 * @return Error code
+	 */
+	errno_t GetDataPackageUpgradeProgress(int& progress);
+	/**
+	 * @brief Get the upgrade progress percentage of all joint parameters
+	 * @param [out] progress Upgrade progress percentage [0-100], -1: upgrade failed
+	 * @return Error code
+	 */
+	errno_t GetJointAllParamUpgradeProgress(int& progress);
+
+	/**
 	 *@brief  Robot interface class destructor
 	 */
 	~FRRobot();
@@ -5536,8 +5554,8 @@ private:
 	char robot_ip[64];
 	std::shared_ptr<ROBOT_STATE_PKG> robot_state_pkg;
 	std::shared_ptr <FRCNDEClient> cndeClient;
-	std::variant<std::shared_ptr<FRTcpClient>, std::shared_ptr<MTLSClient>> cmdClient;
-	std::variant<std::shared_ptr<FRUdpClient>, std::shared_ptr<DTLSClient>> udpCmdClient;
+	std::shared_ptr<FRTCPClientBase> cmdClient;
+	std::shared_ptr<FRUDPClientBase> udpCmdClient;
 	bool TLSEnable = false;
 };
 

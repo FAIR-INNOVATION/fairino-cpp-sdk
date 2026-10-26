@@ -965,7 +965,7 @@ errno_t FRRobot::SetStationaryTrackPara(int trackMode, double trackTime, int tra
 
 /**
  * @brief 等待夹爪运动状态
- * @param [in] status 0-运动未完成，1-运动完成未检测到物体 2-运动完成检测到物体
+ * @param [in] status 0-运动未完成，1-运动完成未检测到物体，2-运动完成检测到物体，3-运动完成检测到物体掉落
  * @param [in] timeout 超时时间（ms）-1永久等待
  * @param [in] strategy 0-停止报错，1-继续运行
  * @param [in] type 0-平行夹爪，1-旋转夹爪

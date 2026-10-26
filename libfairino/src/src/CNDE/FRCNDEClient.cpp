@@ -326,7 +326,7 @@ int FRCNDEClient::SendCNDEOutputConfig()
     startPkg.len = static_cast<uint16_t>(configNameListStr.length() + 2);
     std::vector<char> startFrame = CNDEPkgToFrame(startPkg);
 
-    int rtn = rtClient->Send(startFrame.data(), startFrame.size());
+    int rtn = rtClient->Send(startFrame.data(), static_cast<int>(startFrame.size()));
     if (rtn <= 0)
     {
         logger_error("CNDE Send output config pkg Failed;  %d", rtn);
@@ -347,7 +347,7 @@ int FRCNDEClient::SendCNDEOutputConfig()
         }
         else if (recvLen == 0)  //发生重连，需要再次发送开始指令帧
         {
-            rtClient->Send(startFrame.data(), startFrame.size());
+            rtClient->Send(startFrame.data(), static_cast<int>(startFrame.size()));
         }
         else
         {
@@ -404,7 +404,7 @@ int FRCNDEClient::SetCNDEStart()
     //{
     //    printf(" %x", (unsigned char)startFrame[i]);
     //}
-    int rtn = rtClient->Send(startFrame.data(), startFrame.size());
+    int rtn = rtClient->Send(startFrame.data(), static_cast<int>(startFrame.size()));
     if (rtn <= 0)
     {
         logger_error("CNDE Send Start pkg Failed;  %d", rtn);
@@ -425,7 +425,7 @@ int FRCNDEClient::SetCNDEStart()
         }
         else if (recvLen == 0)  //发生重连，需要再次发送开始指令帧
         {
-            rtClient->Send(startFrame.data(), startFrame.size());
+            rtClient->Send(startFrame.data(), static_cast<int>(startFrame.size()));
             logger_error("send another start after reconnect;");
         }
         else
@@ -469,7 +469,7 @@ int FRCNDEClient::SetCNDEStop()
     startPkg.len = 0;
 
     std::vector<char> startFrame = CNDEPkgToFrame(startPkg);
-    int rtn = rtClient->Send(startFrame.data(), startFrame.size());
+    int rtn = rtClient->Send(startFrame.data(), static_cast<int>(startFrame.size()));
     if (rtn != 0)
     {
         logger_error("CNDE Send Stop pkg Failed;");
@@ -490,7 +490,7 @@ int FRCNDEClient::SetCNDEStop()
         }
         else if (recvLen == 0)  //发生重连，需要再次发送停止指令帧
         {
-            rtClient->Send(startFrame.data(), startFrame.size());
+            rtClient->Send(startFrame.data(), static_cast<int>(startFrame.size()));
         }
         else
         {

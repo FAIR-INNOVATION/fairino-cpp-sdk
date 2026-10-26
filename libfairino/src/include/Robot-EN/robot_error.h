@@ -1,5 +1,6 @@
 #pragma once
 
+#define     ERR_CMD_TLS_CERT_NOT_FOUND             -23    // TLS Enabled, Certificate File Missing(client.crt/client.key/ca.crt) 
 #define     ERR_CMD_TLS_ENABLE_STATE               -22    // TLS enable state mismatch between robot SDK and server of command protocol
 #define     ERR_CNDE_STATES_START_FAILED           -21	  // Failed to start the robot's CNDE status feedback
 #define     ERR_TOO_MANY_STATES                    -20    // Configuration state list length exceeds limit
