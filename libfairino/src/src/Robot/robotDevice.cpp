@@ -1000,3 +1000,963 @@ errno_t FRRobot::GripperWaitMotionDone(int status, int timeout, int strategy, in
     c.close();
     return errcode;
 }
+
+/**
+ * @brief 设置焊接类型
+ * @param [in] type 0-电弧焊；1-激光焊
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldType(int type)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = type;
+
+    if (c.execute("SetWeldType", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置焊机厂商
+ * @param [in] value 101-麦格米特；102-OTC；103-松下；104-米勒；1001-everlast激光焊
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldCompany(int value)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = value;
+
+    if (c.execute("SetWeldCompany", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置送丝速度
+ * @param [in] io_type 0-IO；1-UDP；2-modbusTCP
+ * @param [in] status 送丝速度值
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldWFS(int io_type, double status)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = io_type;
+    param[1] = status;
+
+    if (c.execute("SetWeldWFS", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置焊接弧长
+ * @param [in] io_type 0-IO；1-UDP；2-modbusTCP
+ * @param [in] status 弧长
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldArcLen(int io_type, int status)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = io_type;
+    param[1] = status;
+
+    if (c.execute("SetWeldArcLen", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置电弧控制值
+ * @param [in] io_type 0-IO；1-UDP；2-modbusTCP
+ * @param [in] status 电弧控制值
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldArcCtrl(int io_type, int status)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = io_type;
+    param[1] = status;
+
+    if (c.execute("SetWeldArcCtrl", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置程序槽号
+ * @param [in] io_type 0-IO；1-UDP；2-modbusTCP
+ * @param [in] status 程序槽号值
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldSlot(int io_type, int status)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = io_type;
+    param[1] = status;
+
+    if (c.execute("SetWeldSlot", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置"禁止焊接"DO
+ * @param [in] io_type 0-IO；1-UDP；2-modbusTCP
+ * @param [in] status 0-关闭"禁止焊接"；1-开启"禁止焊接"
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldDisable(int io_type, int status)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = io_type;
+    param[1] = status;
+
+    if (c.execute("SetWeldDisable", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置送丝速度UDP自定义控制字序号
+ * @param [in] udpNum UDP自定义控制字序号，默认44
+ * @return 错误码
+ */
+errno_t FRRobot::SetweldWFSUdpNum(int udpNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = udpNum;
+
+    if (c.execute("SetweldWFSUdpNum", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置弧长UDP自定义控制字序号
+ * @param [in] udpNum UDP自定义控制字序号，默认45
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldArcLenUdpNum(int udpNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = udpNum;
+
+    if (c.execute("SetWeldArcLenUdpNum", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置电弧控制UDP自定义控制字序号
+ * @param [in] udpNum UDP自定义控制字序号，默认46
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldArcCtrlUdpNum(int udpNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = udpNum;
+
+    if (c.execute("SetWeldArcCtrlUdpNum", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置程序槽号UDP自定义控制字序号
+ * @param [in] udpNum UDP自定义控制字序号，默认47
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldSlotUdpNum(int udpNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = udpNum;
+
+    if (c.execute("SetWeldSlotUdpNum", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置"禁止焊接"UDP扩展DO序号
+ * @param [in] DONum UDP扩展DO序号，默认18
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldDisableExtDoNum(int DONum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = DONum;
+
+    if (c.execute("SetWeldDisableExtDoNum", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置"协同状态"UDP扩展DI序号
+ * @param [in] DINum UDP扩展DI序号，默认-1不启用
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldSynStateExtDINum(int DINum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = DINum;
+
+    if (c.execute("SetWeldSynStateExtDINum", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取"协同状态"
+ * @param [in] io_type 0-IO；1-UDP；2-modbusTCP
+ * @param [out] synState 0-非协同；1-协同
+ * @return 错误码
+ */
+errno_t FRRobot::GetWeldSynState(int io_type, int& synState)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = io_type;
+
+    if (c.execute("GetWeldSynState", param, result))
+    {
+        errcode = int(result[0]);
+        synState = int(result[1]);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置"送丝速度"UDP自定义状态字序号
+ * @param [in] udpNum UDP自定义状态字序号，默认47
+ * @return 错误码
+ */
+errno_t FRRobot::SetWeldWfsFeedbackUdpNum(int udpNum)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = udpNum;
+
+    if (c.execute("SetWeldWfsFeedbackUdpNum", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+* @brief 获取"送丝速度"当前值
+* @param [in] io_type 0-IO；1-UDP；2-modbusTCP
+* @param [out] weldWfsFdbk 当前送丝速度
+* @return 错误码
+*/
+errno_t FRRobot::GetWeldWfsFeedback(int io_type, double& weldWfsFdbk)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = io_type;
+
+    if (c.execute("GetWeldWfsFeedback", param, result))
+    {
+        if (result.size() >= 2)
+        {
+            errcode = int(result[0]);
+            if (errcode == 0)
+            {
+                weldWfsFdbk = double(result[1]);
+            }
+        }
+        else
+        {
+            weldWfsFdbk = double(result[0]);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置启用末端吸盘动作控制功能码
+ * @param [in] id 站号
+ * @param [in] func 功能码数组，长度16，下标0~15对应Bit0~Bit15：
+ * 0-吸盘初始化；1-设置通道一最大真空度；2-设置通道一最小真空度；
+ * 3-设置通道二最大真空度；4-设置通道二最小真空度；5-读通道一状态；6-读通道二状态；
+ * 7-读初始化状态；8-读故障码；9-读通道一实际真空度；10-读通道二实际真空度；
+ * 11-通道一控制使能；12-通道二控制使能；每项 0-不启用；1-启用
+ * @return 错误码
+ */
+errno_t FRRobot::SetAxleSuckerFunc(int id, const std::vector<int>& func)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (func.empty() || func.size() > 16)
+    {
+        return ERR_PARAM_NUM;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+    for (int i = 0; i < func.size(); i++)
+    {
+        param[1][i] = func[i];
+    }
+
+    if (c.execute("SetAxleSuckerFunc", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取末端吸盘动作控制功能码
+ * @param [in] id 站号
+ * @param [out] func 功能码数组，长度16，下标0~15对应Bit0~Bit15，含义同 SetAxleSuckerFunc
+ * @return 错误码
+ */
+errno_t FRRobot::GetAxleSuckerFunc(int id, std::vector<int>& func)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (func.size() < 16)
+    {
+        return ERR_PARAM_NUM;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+
+    if (c.execute("GetAxleSuckerFunc", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            std::string s = std::string(result[1]);
+            size_t pos = 0, next;
+            for (int i = 0; i < 16; i++)
+            {
+                next = s.find(',', pos);
+                func[i] = std::stoi(s.substr(pos, next - pos));
+                pos = next + 1;
+            }
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置末端吸盘控制参数
+ * @param [in] id 站号
+ * @param [in] channel 通道使能，长度4：channel[0]=1-使能，0-不使能（下标0-3对应通道1-通道4）
+ * @param [in] minPress 最小真空度，长度4
+ * @param [in] maxPress 最大真空度（吸盘错误码），长度4
+ * @param [in] time 超时时间(ms)
+ * @return 错误码
+ */
+errno_t FRRobot::SetAxleSuckerCtrl(int id, const std::vector<int>& channel, const std::vector<int>& minPress, const std::vector<int>& maxPress, int time)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (channel.size() < 4 || minPress.size() < 4 || maxPress.size() < 4)
+    {
+        return ERR_PARAM_NUM;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+    for (int i = 0; i < 4; i++)
+    {
+        param[1][i] = channel[i];
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        param[2][i] = minPress[i];
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        param[3][i] = maxPress[i];
+    }
+    param[4] = time;
+
+    if (c.execute("SetAxleSuckerCtrl", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 激活/复位吸盘
+ * @param [in] id 站号
+ * @param [in] act 1-激活；0-复位
+ * @return 错误码
+ */
+errno_t FRRobot::SetAxleSuckerAct(int id, int act)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = id;
+    param[1] = act;
+
+    if (c.execute("SetAxleSuckerAct", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取末端吸盘状态
+ * @param [in] channel 吸盘通道；0-3（对应通道1-通道4）
+ * @param [out] enable 激活状态
+ * @param [out] done 吸附完成状态
+ * @param [out] vacuumValue 真空度
+ * @param [out] error 吸盘错误码
+ * @return 错误码
+ */
+errno_t FRRobot::GetAxleSuckerState(int channel, int& enable, int& done, int& vacuumValue, int& error)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = channel;
+
+    if (c.execute("GetAxleSuckerState", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            enable = int(result[1]);
+            done = int(result[2]);
+            vacuumValue = int(result[3]);
+            error = int(result[4]);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 等待末端吸盘吸附完成信号
+ * @param [in] channel 吸盘通道；0-3（对应通道1-通道4）
+ * @param [in] timeout 超时时间(ms)，-1 表示永远等待
+ * @param [in] state 状态：0-未吸附物体；1-吸附物体；2-物体脱落
+ * @param [in] strategy 超时策略：0-报错停止；1-继续运行
+ * @return 错误码
+ */
+errno_t FRRobot::WaitAxleSuckerState(int channel, int timeout, int state, int strategy)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = channel;
+    param[1] = timeout;
+    param[2] = state;
+    param[3] = strategy;
+
+    if (c.execute("WaitAxleSuckerState", param, result))
+    {
+        errcode = int(result);
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 设置末端LUA末端设备启用类型
+ * @param [in] forceSensorEnable 力传感器启用状态，0-不启用；1-启用
+ * @param [in] gripperEnable 夹爪启用状态，0-不启用；1-启用
+ * @param [in] IOEnable IO设备启用状态，0-不启用；1-启用
+ * @param [in] dexhandEnable 灵巧手设备启用状态，0-不启用；1-启用
+ * @param [in] suckerEnable 末端吸盘设备启用状态，0-不启用；1-启用；默认-1：不传或传-1时按原四参数下发，兼容未升级控制器
+ * @return 错误码
+ */
+errno_t FRRobot::SetAxleLuaEnableDeviceType(int forceSensorEnable, int gripperEnable, int IOEnable, int dexhandEnable, int suckerEnable)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    param[0] = forceSensorEnable;
+    param[1] = gripperEnable;
+    param[2] = IOEnable;
+    param[3] = dexhandEnable;
+
+    if (suckerEnable >= 0)
+    {
+        param[4] = suckerEnable;
+        if (c.execute("SetAxleLuaEnableDeviceType", param, result))
+        {
+            errcode = int(result);
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+    }
+    else
+    {
+        if (c.execute("SetAxleLuaEnableDeviceType", param, result))
+        {
+            errcode = int(result);
+        }
+        else
+        {
+            c.close();
+            return ERR_XMLRPC_CMD_FAILED;
+        }
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取末端LUA末端设备启用类型（含末端吸盘）
+ * @param [out] forceSensorEnable 力传感器启用状态，0-不启用；1-启用
+ * @param [out] gripperEnable 夹爪启用状态，0-不启用；1-启用
+ * @param [out] IOEnable IO设备启用状态，0-不启用；1-启用
+ * @param [out] dexhandEnable 灵巧手设备启用状态，0-不启用；1-启用
+ * @param [out] suckerEnable 末端吸盘设备启用状态，0-不启用；1-启用
+ * @return 错误码
+ */
+errno_t FRRobot::GetAxleLuaEnableDeviceType(int& forceSensorEnable, int& gripperEnable, int& IOEnable, int& dexhandEnable, int& suckerEnable)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetAxleLuaEnableDeviceType", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            forceSensorEnable = int(result[1]);
+            gripperEnable = int(result[2]);
+            IOEnable = int(result[3]);
+            dexhandEnable = int(result[4]);
+            if (result.size() > 5)
+            {
+                suckerEnable = int(result[5]);
+            }
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+
+/**
+ * @brief 获取当前配置的末端设备（含末端吸盘）
+ * @param [out] forceSensorEnable 力传感器启用设备编号 0-未启用；1-启用
+ * @param [out] gripperEnable 夹爪启用设备编号，0-不启用；1-启用
+ * @param [out] IODeviceEnable IO设备启用设备编号，0-不启用；1-启用
+ * @param [out] decHandEnable 灵巧手启用设备编号，0-不启用；1-启用
+ * @param [out] suckerEnable 末端吸盘启用设备编号，0-不启用；1-启用（逗号串第40~47项）
+ * @return 错误码
+ */
+errno_t FRRobot::GetAxleLuaEnableDevice(std::vector<int>& forceSensorEnable, std::vector<int>& gripperEnable, std::vector<int>& IODeviceEnable, std::vector<int>& decHandEnable, std::vector<int>& suckerEnable)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    if (forceSensorEnable.size() < 8 || gripperEnable.size() < 8 || IODeviceEnable.size() < 8 || decHandEnable.size() < 8 || suckerEnable.size() < 8)
+    {
+        return ERR_PARAM_NUM;
+    }
+
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetAxleLuaEnableDevice", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            std::string s = std::string(result[1]);
+            std::vector<std::string> items;
+            size_t pos = 0, next;
+            for (int i = 0; i < 48; i++)
+            {
+                next = s.find(',', pos);
+                items.push_back(s.substr(pos, next - pos));
+                pos = next + 1;
+            }
+            for (int i = 0; i < 8; i++)
+            {
+                forceSensorEnable[i] = std::stoi(items[i]);
+                gripperEnable[i] = std::stoi(items[i + 8]);
+                IODeviceEnable[i] = std::stoi(items[i + 16]);
+                decHandEnable[i] = std::stoi(items[i + 24]);
+                suckerEnable[i] = std::stoi(items[i + 40]);
+            }
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+    return errcode;
+}
+

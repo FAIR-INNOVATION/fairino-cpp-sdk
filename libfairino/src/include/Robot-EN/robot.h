@@ -1600,8 +1600,10 @@ public:
 	
 	/**
     *@brief  Configure the gripper
-    *@param  [in] company  Claw manufacturer, to be determined
-    *@param  [in] device  Device number, not used yet. The default value is 0
+    *@param  [in] company  Claw manufacturer, 1-ROBOTIQ，2-HITBOT，3-TIANJI，4-DAHUAN，5-ZHIXING，6-JODELL，7-MT，8-RM
+    *@param  [in] device  Device number, ROBOTIQ(0-2F-85;1-2F-140;2-Vacuum gripper;3-Three fingered gripper;4-Hand-E)，
+										HITBOT(0-Z-EFG-RNM;1-Z-EFG-100;2-Z-EFG-20P;3-Z-EFG-50)，TIANJI(0-TEG-110)，DAHUAN(0-PGI-140)，
+										ZHIXING(0-CTPM2F20)，JODELL(0-RG,1-REG)，MT(0-MT-ACTUATOR)，RM(0-RM-GB-11-40-2-ITG)
     *@param  [in] softvesion  Software version. The value is not used. The default value is 0
     *@param  [in] bus The device is attached to the terminal bus and is not in use. The default value is 0
     *@return  Error code
@@ -1609,9 +1611,11 @@ public:
 	errno_t  SetGripperConfig(int company, int device, int softvesion, int bus);
 	
 	/**
-    *@brief  Configure the gripper
-    *@param  [in] company  Claw manufacturer, to be determined
-    *@param  [in] device  Device number, not used yet. The default value is 0
+    *@brief  Get gripper config
+    *@param  [in] company  Claw manufacturer, 1-ROBOTIQ，2-HITBOT，3-TIANJI，4-DAHUAN，5-ZHIXING，6-JODELL，7-MT，8-RM
+    *@param  [in] device  Device number, ROBOTIQ(0-2F-85;1-2F-140;2-Vacuum gripper;3-Three fingered gripper;4-Hand-E)，
+										HITBOT(0-Z-EFG-RNM;1-Z-EFG-100;2-Z-EFG-20P;3-Z-EFG-50)，TIANJI(0-TEG-110)，DAHUAN(0-PGI-140)，
+										ZHIXING(0-CTPM2F20)，JODELL(0-RG,1-REG)，MT(0-MT-ACTUATOR)，RM(0-RM-GB-11-40-2-ITG)
     *@param  [in] softvesion  Software version. The value is not used. The default value is 0
     *@param  [in] bus The device is attached to the terminal bus and is not in use. The default value is 0
     *@return  Error code
@@ -2331,12 +2335,15 @@ public:
 	 * @param [in] weaveStationary weave position wait, 0- position continue to move within the waiting time; 1- The position is stationary during the waiting time
 	 * @param [in] weaveYawAngle Swing direction azimuth Angle (rotation around the z-axis of swing), unit °
 	 * @param [in] weaveRotAngle Swing direction lateral Angle (deflection around the X-axis of the swing), unit °
+	 * @param [in] weavePendulumLength Pendulum length of the weaving torch swing, unit mm
+	 * @param [in] weavePendulumAngle Pendulum angle of the weaving torch swing, unit °
 	 * @return Error code
 	 */
 	errno_t WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency, 
                             int weaveIncStayTime, double weaveRange, double weaveLeftRange, 
                             double weaveRightRange, int additionalStayTime, int weaveLeftStayTime, 
-                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle, double weaveRotAngle = 0);
+                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle, 
+							double weaveRotAngle = 0, double weavePendulumLength = 0, double weavePendulumAngle = 0);
 
 	/**
 	 * @brief Set weave parameters in real time
@@ -2387,6 +2394,14 @@ public:
 	 * @return Error code
 	 */
 	errno_t SetWeaveOffsetRT(DescPose offset);
+
+	/**
+	 * @brief Set real‑time motion offset
+	 * @param [in] mode Swing coordinate system; 0-Workpiece coordinate system; 1-Base coordinate system; 2-Tool coordinate system; 3-Swing coordinate system
+	 * @param [in] offset Real‑time offset [mm, °]
+	 * @return Error code
+	 */
+	errno_t SetCartOffsetRT(int mode, DescPose offset);
 
 	/**
 	 * @brief Forward Wire Feed
@@ -3706,9 +3721,10 @@ public:
 	* @param gripperEnable Specifies whether the gripper is enabled. 0- Disables the gripper. 1- Enable
 	* @param IOEnable IO Indicates whether the device is enabled. 0- Indicates that the device is disabled. 1- Enable
 	* @param dexhandEnable Dexterous Hand enable status, 0 - disabled; 1 - enabled
+    * @param [in] suckerEnable  End suction device enable status.0-disabled; 1-enabled; Default -1: If not passed or set to -1, the original four parameters will be sent for compatibility with non-upgraded controllers.
 	* @return  error code
 	*/
-	errno_t SetAxleLuaEnableDeviceType(int forceSensorEnable, int gripperEnable, int IOEnable, int dexhandEnable);
+	errno_t SetAxleLuaEnableDeviceType(int forceSensorEnable, int gripperEnable, int IOEnable, int dexhandEnable, int suckerEnable = -1);
 
 	/**
 	* @brief Get End LUA End Device Enable Type
@@ -5474,9 +5490,11 @@ public:
 	/**
 	 * @brief Upload and upgrade with data backup package
 	 * @param [in] filePath File path of the uploaded data backup package; e.g. D://zUP/fr_user_data.tar.gz
+     * @param [in] isSafetyParamUpgrade  Whether safety configuration parameters are upgraded
+     * @param [in] pwd Safety password
 	 * @return Error code
 	 */
-	errno_t DataPackageUpgrade(std::string filePath);
+	errno_t DataPackageUpgrade(std::string filePath, bool isSafetyParamUpgrade = false, std::string pwd = "");
 	/**
 	 * @brief Get the upgrade progress percentage of data backup package
 	 * @param [out] progress Upgrade progress percentage [0-100], -1: upgrade failed
@@ -5489,6 +5507,227 @@ public:
 	 * @return Error code
 	 */
 	errno_t GetJointAllParamUpgradeProgress(int& progress);
+
+	/**
+	 * @brief Get the robot DH compensation model
+	 * @param [out] mode 0-DH1.0; 1-DH2.0
+	 * @return Error code
+	 */
+	errno_t GetDHCompenMode(int& mode);
+
+	/**
+	 * @brief Get the robot DH2.0 parameters
+	 * @param [out] d Link offset (mm)
+	 * @param [out] a Link length (mm)
+	 * @param [out] alpha Link twist angle (°)
+	 * @param [out] beta Link offset angle (°)
+	 * @param [out] theta Joint zero position (°)
+	 * @return Error code
+	 */
+	errno_t GetDHAllParam(double d[6], double a[6], double alpha[6], double beta[6], double theta[6]);
+
+	/**
+	 * @brief Set welding type
+	 * @param [in] type 0 - Arc welding; 1 - Laser welding
+	 * @return Error code
+	 */
+	errno_t SetWeldType(int type);
+
+	/**
+	 * @brief Set welding power source manufacturer
+	 * @param [in] value 101 - Megmeet; 102 - OTC; 103 - Panasonic; 104 - Miller; 1001 - Everlast laser welding
+	 * @return Error code
+	 */
+	errno_t SetWeldCompany(int value);
+
+	/**
+	 * @brief Set wire feed speed
+	 * @param [in] io_type 0 - IO; 1 - UDP; 2 - ModbusTCP
+	 * @param [in] status Wire feed speed value
+	 * @return Error code
+	 */
+	errno_t SetWeldWFS(int io_type, double status);
+
+	/**
+	 * @brief Set welding arc length
+	 * @param [in] io_type 0 - IO; 1 - UDP; 2 - ModbusTCP
+	 * @param [in] status Arc length
+	 * @return Error code
+	 */
+	errno_t SetWeldArcLen(int io_type, int status);
+
+	/**
+	 * @brief Set arc control value
+	 * @param [in] io_type 0 - IO; 1 - UDP; 2 - ModbusTCP
+	 * @param [in] status Arc control value
+	 * @return Error code
+	 */
+	errno_t SetWeldArcCtrl(int io_type, int status);
+
+	/**
+	 * @brief Set program slot number
+	 * @param [in] io_type 0 - IO; 1 - UDP; 2 - ModbusTCP
+	 * @param [in] status Program slot index
+	 * @return Error code
+	 */
+	errno_t SetWeldSlot(int io_type, int status);
+
+	/**
+	 * @brief Set "weld inhibit" DO
+	 * @param [in] io_type 0 - IO; 1 - UDP; 2 - ModbusTCP
+	 * @param [in] status 0 - Disable weld inhibit; 1 - Enable weld inhibit
+	 * @return Error code
+	 */
+	errno_t SetWeldDisable(int io_type, int status);
+
+	/**
+	 * @brief Set UDP custom control word index for wire feed speed
+	 * @param [in] udpNum UDP custom control word index, default 44
+	 * @return Error code
+	 */
+	errno_t SetweldWFSUdpNum(int udpNum);
+
+	/**
+	 * @brief Set UDP custom control word index for arc length
+	 * @param [in] udpNum UDP custom control word index, default 45
+	 * @return Error code
+	 */
+	errno_t SetWeldArcLenUdpNum(int udpNum);
+
+	/**
+	 * @brief Set UDP custom control word index for arc control
+	 * @param [in] udpNum UDP custom control word index, default 46
+	 * @return Error code
+	 */
+	errno_t SetWeldArcCtrlUdpNum(int udpNum);
+
+	/**
+	 * @brief Set UDP custom control word index for program slot
+	 * @param [in] udpNum UDP custom control word index, default 47
+	 * @return Error code
+	 */
+	errno_t SetWeldSlotUdpNum(int udpNum);
+
+	/**
+	 * @brief Set UDP extended DO index for "weld inhibit"
+	 * @param [in] DONum UDP extended DO index, default 18
+	 * @return Error code
+	 */
+	errno_t SetWeldDisableExtDoNum(int DONum);
+
+	/**
+	 * @brief Set UDP extended DI index for "sync status"
+	 * @param [in] DINum UDP extended DI index, default -1: disabled
+	 * @return Error code
+	 */
+	errno_t SetWeldSynStateExtDINum(int DINum);
+
+	/**
+	 * @brief Get "sync status"
+	 * @param [in] io_type 0 - IO; 1 - UDP; 2 - ModbusTCP
+	 * @param [out] synState 0 - Non-sync; 1 - Sync
+	 * @return Error code
+	 */
+	errno_t GetWeldSynState(int io_type, int& synState);
+
+	/**
+	 * @brief Set UDP custom status word index for wire feed speed
+	 * @param [in] udpNum UDP custom status word index, default 47
+	 * @return Error code
+	 */
+	errno_t SetWeldWfsFeedbackUdpNum(int udpNum);
+
+	/**
+	 * @brief Get current wire feed speed
+	 * @param [in] io_type 0 - IO; 1 - UDP; 2 - ModbusTCP
+	 * @param [out] weldWfsFdbk Current wire feed speed
+	 * @return Error code
+	 */
+	errno_t GetWeldWfsFeedback(int io_type, double& weldWfsFdbk);
+
+	/**
+	 * @brief Enable function codes for end sucker action control
+	 * @param [in] id Station address
+	 * @param [in] func Function code array with length 16. Index 0~15 maps to Bit0~Bit15:
+	 * 0 - Sucker initialization; 1 - Set channel 1 max vacuum; 2 - Set channel 1 min vacuum;
+	 * 3 - Set channel 2 max vacuum; 4 - Set channel 2 min vacuum; 5 - Read channel 1 status; 6 - Read channel 2 status;
+	 * 7 - Read initialization status; 8 - Read error code; 9 - Read channel 1 actual vacuum; 10 - Read channel 2 actual vacuum;
+	 * 11 - Channel 1 control enable; 12 - Channel 2 control enable;
+	 * Each item: 0 - Disabled; 1 - Enabled
+	 * @return Error code
+	 */
+	errno_t SetAxleSuckerFunc(int id, const std::vector<int>& func);
+
+	/**
+	 * @brief Get function codes for end sucker action control
+	 * @param [in] id Station address
+	 * @param [out] func Function code array with length 16. Index 0~15 maps to Bit0~Bit15, same definition as SetAxleSuckerFunc
+	 * @return Error code
+	 */
+	errno_t GetAxleSuckerFunc(int id, std::vector<int>& func);
+
+	/**
+	 * @brief Set end sucker control parameters
+	 * @param [in] id Station address
+	 * @param [in] channel Channel enable array, length 4: channel[0]=1 - enable, 0 - disable (index 0~3 corresponds to channel1~channel4)
+	 * @param [in] minPress Minimum vacuum array, length 4
+	 * @param [in] maxPress Maximum vacuum (sucker error code) array, length 4
+	 * @param [in] time Timeout(ms)
+	 * @return Error code
+	 */
+	errno_t SetAxleSuckerCtrl(int id, const std::vector<int>& channel, const std::vector<int>& minPress, const std::vector<int>& maxPress, int time);
+
+	/**
+	 * @brief Activate / reset sucker
+	 * @param [in] id Station address
+	 * @param [in] act 1 - Activate; 0 - Reset
+	 * @return Error code
+	 */
+	errno_t SetAxleSuckerAct(int id, int act);
+
+	/**
+	 * @brief Get end sucker status
+	 * @param [in] channel Sucker channel; 0~3 (corresponds to channel1~channel4)
+	 * @param [out] enable Activation status
+	 * @param [out] done Pickup complete status
+	 * @param [out] vacuumValue Vacuum value
+	 * @param [out] error Sucker error code
+	 * @return Error code
+	 */
+	errno_t GetAxleSuckerState(int channel, int& enable, int& done, int& vacuumValue, int& error);
+
+	/**
+	 * @brief Wait for end sucker pickup complete signal
+	 * @param [in] channel Sucker channel; 0~3 (corresponds to channel1~channel4)
+	 * @param [in] timeout Timeout(ms), -1 means wait infinitely
+	 * @param [in] state Status: 0 - No workpiece picked; 1 - Workpiece picked; 2 - Workpiece dropped
+	 * @param [in] strategy Timeout strategy: 0 - Report error and stop; 1 - Continue running
+	 * @return Error code
+	 */
+	errno_t WaitAxleSuckerState(int channel, int timeout, int state, int strategy);
+
+	/**
+	 * @brief Get LUA end effector enable type (including end sucker)
+	 * @param [out] forceSensorEnable Force sensor enable status, 0 - Disabled; 1 - Enabled
+	 * @param [out] gripperEnable Gripper enable status, 0 - Disabled; 1 - Enabled
+	 * @param [out] IOEnable IO device enable status, 0 - Disabled; 1 - Enabled
+	 * @param [out] dexhandEnable Dexterous hand enable status, 0 - Disabled; 1 - Enabled
+	 * @param [out] suckerEnable End sucker enable status, 0 - Disabled; 1 - Enabled
+	 * @return Error code
+	 */
+	errno_t GetAxleLuaEnableDeviceType(int& forceSensorEnable, int& gripperEnable, int& IOEnable, int& dexhandEnable, int& suckerEnable);
+
+	/**
+	 * @brief Get configured end effector devices (including end sucker)
+	 * @param [out] forceSensorEnable Force sensor enable device flag, 0 - Disabled; 1 - Enabled
+	 * @param [out] gripperEnable Gripper enable device flag, 0 - Disabled; 1 - Enabled
+	 * @param [out] IODeviceEnable IO device enable device flag, 0 - Disabled; 1 - Enabled
+	 * @param [out] decHandEnable Dexterous hand enable device flag, 0 - Disabled; 1 - Enabled
+	 * @param [out] suckerEnable End sucker enable device flag, 0 - Disabled; 1 - Enabled (item 40~47 in comma-separated string)
+	 * @return Error code
+	 */
+	errno_t GetAxleLuaEnableDevice(std::vector<int>& forceSensorEnable, std::vector<int>& gripperEnable, std::vector<int>& IODeviceEnable, std::vector<int>& decHandEnable, std::vector<int>& suckerEnable);
+
 
 	/**
 	 *@brief  Robot interface class destructor

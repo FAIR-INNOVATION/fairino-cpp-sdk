@@ -40,21 +40,13 @@
     #include <WS2tcpip.h>
     #include <filesystem>
 
-    #define SDK_VERSION "SDK V2.1"
     #pragma comment(lib, "Shlwapi.lib")
 #else
     #include <stdlib.h>
     #include <unistd.h>
     #include <libgen.h>
-    // #include <filesystem>
-    // SDK版本号
-    #define SDK_VERSION_MAJOR "2"
-    #define SDK_VERSION_MINOR "4"
-    #define SDK_VERSION_RELEASE "1"
-    #define SDK_VERSION_RELEASE_NUM "0"
-    #define SDK_VERSION "SDK V" SDK_VERSION_MAJOR "." SDK_VERSION_MINOR
 #endif
-#define SDK_RELEASE "SDK V2.4.1.0-robot v4.0.1"
+#define SDK_RELEASE "SDK V2.4.2.0-robot v4.0.2"
 
 #define ROBOT_CNDE_TCP_PORT 20005
 #define ROBOT_CMD_PORT 8080
@@ -9635,12 +9627,16 @@ errno_t FRRobot::WeldingSetVoltage(int ioType, double voltage, int AOIndex, int 
  * @param [in] weaveCircleRadio 圆形摆动-回调比率(0-100%)
  * @param [in] weaveStationary 摆动位置等待，0-等待时间内位置继续移动；1-等待时间内位置静止
  * @param [in] weaveYawAngle 摆动方向方位角(绕摆动Z轴旋转)，单位°
+ * @param [in] weaveRotAngle 摆动方向侧倾角(绕摆动X轴偏转)，单位°[-180-180]
+ * @param [in] weavePendulumLength 摇枪摆动的摆长，单位mm 
+ * @param [in] weavePendulumAngle 摇枪摆动的摆角，单位°
  * @return 错误码
  */
 errno_t FRRobot::WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency, 
                             int weaveIncStayTime, double weaveRange, double weaveLeftRange, 
                             double weaveRightRange, int additionalStayTime, int weaveLeftStayTime, 
-                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle, double weaveRotAngle)
+                            int weaveRightStayTime, int weaveCircleRadio, int weaveStationary, double weaveYawAngle, 
+                            double weaveRotAngle, double weavePendulumLength, double weavePendulumAngle)
 {
     if (IsSockError())
     {
@@ -9664,6 +9660,8 @@ errno_t FRRobot::WeaveSetPara(int weaveNum, int weaveType, double weaveFrequency
     param[11] = weaveStationary;
     param[12] = weaveYawAngle;
     param[13] = weaveRotAngle;
+    param[14] = weavePendulumLength;
+    param[15] = weavePendulumAngle;
 
     if (c.execute("WeaveSetPara", param, result))
     {
@@ -16497,54 +16495,11 @@ errno_t FRRobot::GetAxleLuaEnableStatus(int status[])
 }
 
 /**
- * @brief 设置末端LUA末端设备启用类型
- * @param forceSensorEnable 力传感器启用状态，0-不启用；1-启用
- * @param gripperEnable 夹爪启用状态，0-不启用；1-启用
- * @param IOEnable IO设备启用状态，0-不启用；1-启用
- * @param dexhandEnable 灵巧手启用状态，0-不启用；1-启用
- * @return  错误码
- */
-errno_t FRRobot::SetAxleLuaEnableDeviceType(int forceSensorEnable, int gripperEnable, int IOEnable, int dexhandEnable)
-{
-    if (IsSockError())
-    {
-        return g_sock_com_err;
-    }
-    int errcode = 0;
-    XmlRpcClient c(serverUrl, 20003);
-    XmlRpcValue param, result;
-
-    param[0] = forceSensorEnable;
-    param[1] = gripperEnable;
-    param[2] = IOEnable;
-    param[3] = dexhandEnable;
-
-    if (c.execute("SetAxleLuaEnableDeviceType", param, result))
-    {
-        errcode = int(result);
-        if (0 != errcode)
-        {
-            logger_error("execute SetAxleLuaEnableDeviceType fail: %d.", errcode);
-            c.close();
-            return errcode;
-        }
-    }
-    else
-    {
-        c.close();
-        return ERR_XMLRPC_CMD_FAILED;
-    }
-
-    c.close();
-    return errcode;
-}
-
-/**
  * @brief 获取末端LUA末端设备启用类型
- * @param forceSensorEnable 力传感器启用状态，0-不启用；1-启用
- * @param gripperEnable 夹爪启用状态，0-不启用；1-启用
- * @param IOEnable IO设备启用状态，0-不启用；1-启用
- * @param dexhandEnable 灵巧手启用状态，0-不启用；1-启用
+ * @param [out] forceSensorEnable 力传感器启用状态，0-不启用；1-启用
+ * @param [out] gripperEnable 夹爪启用状态，0-不启用；1-启用
+ * @param [out] IOEnable IO设备启用状态，0-不启用；1-启用
+ * @param [out] dexhandEnable 灵巧手启用状态，0-不启用；1-启用
  * @return  错误码
  */
 errno_t FRRobot::GetAxleLuaEnableDeviceType(int* forceSensorEnable, int* gripperEnable, int* IOEnable, int* dexhandEnable)
@@ -23531,9 +23486,11 @@ errno_t FRRobot::SendTCPFrame(string frame)
 /**
 * @brief 数据备份包上传升级
 * @param [in] filePath 上传数据备份包文件路径；D://zUP/fr_user_data.tar.gz
+* @param [in] isSafetyParamUpgrade 是否升级安全配置参数
+* @param [in] pwd 安全密码
 * @return 错误码
 */
-errno_t FRRobot::DataPackageUpgrade(std::string filePath)
+errno_t FRRobot::DataPackageUpgrade(std::string filePath, bool isSafetyParamUpgrade, std::string pwd)
 {
     if (IsSockError())
     {
@@ -23545,7 +23502,8 @@ errno_t FRRobot::DataPackageUpgrade(std::string filePath)
     {
         XmlRpcClient c(serverUrl, 20003);
         XmlRpcValue param, result;
-
+        param[0] = isSafetyParamUpgrade? 1:0;
+        param[1] = pwd;
         if (c.execute("DataPackageUpgrade", param, result))
         {
             errcode = int(result);
@@ -23663,4 +23621,99 @@ errno_t FRRobot::GetJointAllParamUpgradeProgress(int& progress)
         logger_error("GetJointAllParamUpgradeProgress exception");
         return ERR_XMLRPC_CMD_FAILED;
     }
+}
+
+
+/**
+ * @brief 获取机器人DH补偿模型
+ * @param [out] mode 0-DH1.0；1-DH2.0
+ * @return 错误码
+ */
+errno_t FRRobot::GetDHCompenMode(int& mode)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetDHCompenMode", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            mode = int(result[1]);
+        }
+        else
+        {
+            logger_error("execute GetDHCompenMode fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
+}
+
+/**
+ * @brief 获取机器人DH2.0参数
+ * @param [out] d 连杆偏距(mm)
+ * @param [out] a 连杆长度(mm)
+ * @param [out] alpha 连杆扭角(°)
+ * @param [out] beta 连杆偏角(°)
+ * @param [out] theta 关节零位(°)
+ * @return 错误码
+ */
+errno_t FRRobot::GetDHAllParam(double d[6], double a[6], double alpha[6], double beta[6], double theta[6])
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+    int errcode = 0;
+    XmlRpcClient c(serverUrl, 20003);
+    XmlRpcValue param, result;
+
+    if (c.execute("GetDHAllParam", param, result))
+    {
+        errcode = int(result[0]);
+        if (errcode == 0)
+        {
+            string paramStr = (string)result[1];
+            std::vector<std::string> parS = split(paramStr, ',');
+            if (parS.size() != 30)
+            {
+                logger_error("get all param size fail");
+                return -1;
+            }
+            for (int i = 0; i < 6; i++)
+            {
+                d[i] = (double)stod(parS[i]);
+                a[i] = (double)stod(parS[i + 6]);
+                alpha[i] = (double)stod(parS[i + 12]);
+                beta[i] = (double)stod(parS[i + 18]);
+                theta[i] = (double)stod(parS[i + 24]);
+            }
+        }
+        else
+        {
+            logger_error("execute GetDHAllParam fail %d", errcode);
+        }
+    }
+    else
+    {
+        c.close();
+        return ERR_XMLRPC_CMD_FAILED;
+    }
+
+    c.close();
+
+    return errcode;
 }

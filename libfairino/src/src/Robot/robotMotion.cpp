@@ -778,30 +778,6 @@ errno_t FRRobot::SetWeaveOffsetRT(DescPose offset)
     }
 
     int errcode = 0;
-    //XmlRpcClient c(serverUrl, 20003);
-    //XmlRpcValue param, result;
-    //param[0] = offset.tran.x;
-    //param[1] = offset.tran.y;
-    //param[2] = offset.tran.z;
-    //param[3] = offset.rpy.rx;
-    //param[4] = offset.rpy.ry;
-    //param[5] = offset.rpy.rz;
-    //if (c.execute("SetWeaveOffsetRT", param, result))
-    //{
-    //    errcode = int(result);
-    //    if (0 != errcode)
-    //    {
-    //        logger_error("execute SetWeaveOffsetRT fail: %d.", errcode);
-    //        c.close();
-    //        return errcode;
-    //    }
-    //}
-    //else
-    //{
-    //    c.close();
-    //    return ERR_XMLRPC_CMD_FAILED;
-    //}
-    //c.close();
 
     const int BUFFER_SIZE = 1024 * 4;
 
@@ -818,6 +794,37 @@ errno_t FRRobot::SetWeaveOffsetRT(DescPose offset)
     is_sendcmd = true;
 
     logger_info("SetWeaveOffsetRT(%s).", sendFrame);
+
+    return 0;
+}
+
+/**
+ * @brief 设置运动实时偏移
+ * @param [in] mode 摆动坐标系；0-工件坐标系；1-基坐标系；2-工具坐标系；3-摆动坐标系
+ * @param [in] offset 实时偏移量[mm，°]
+ * @return 错误码
+ */
+errno_t FRRobot::SetCartOffsetRT(int mode, DescPose offset)
+{
+    if (IsSockError())
+    {
+        return g_sock_com_err;
+    }
+
+    int errcode = 0;
+
+    const int BUFFER_SIZE = 1024 * 4;
+
+    char paramStr[128] = "";
+    sprintf(paramStr, "%d,%f,%f,%f,%f,%f,%f", mode, offset.tran.x, offset.tran.y, offset.tran.z, offset.rpy.rx, offset.rpy.ry, offset.rpy.rz);
+
+    string cmdStr = string("SetCartOffsetRT(") + paramStr + ")";
+    FRAME frame(cmdFrameCnt, 1368, cmdStr);
+    string sendFrame = PackFrame(frame);
+
+    return SendTCPFrame(sendFrame);
+
+    logger_info("SetCartOffsetRT(%s).", sendFrame);
 
     return 0;
 }
